@@ -1,0 +1,29 @@
+Release scripts for websocketd
+==============================
+
+Perform a fully automated repeateable release of websocketd. Including:
+
+*   Downloading the correct version of Go
+*   Cross-compiling Go for all required platforms
+*   Cross-compiling websocketd for all required platforms
+*   [TODO] Packaging installation files for all platforms
+*   [TODO] Uploading releases to http://download.websocketd.com/
+
+The installation should run on a stock Ubuntu installation - it will download any
+additional tools it needs. The first run will be slow as it has to cross-compile
+Go, but subsequent builds are incremental.
+
+To build the packages for all platforms:
+
+    make
+
+[TODO] To release to http://download.websocketd.com/ as version 1.2.3.4
+
+    make release version=1.2.3.4
+
+To clean up:
+
+    make clean
+
+
+-Joe Walnes
