@@ -56,9 +56,10 @@ go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
 
 
 # Cross-compile final applications
-bin/%/.built: $(GO_DIR)/go/pkg/%/.built
+bin/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
 	rm -f $@
 	mkdir -p $(dir $@)
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ..
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -o bin/$*/websocketd$(EXTENSION_$*) ../main.go
 	touch $@
 
