@@ -55,7 +55,7 @@ work equally well on the command line, or in shell scripts, as they do in the se
 
 Now let's turn it into a WebSocket server:
 
-    $ websocketd --port=8080 --launch="./count.sh"
+    $ websocketd --port=8080 count.sh
 
 Finally, let's create a web-page that to test it.
 
