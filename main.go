@@ -47,11 +47,11 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 
 	done := make(chan bool)
 
-	outbound := make(chan string, 256)
+	outbound := make(chan string)
 	go readProcess(stdout, outbound, done, config)
 	go writeWebSocket(ws, outbound, done, config)
 
-	inbound := make(chan string, 256)
+	inbound := make(chan string)
 	go readWebSocket(ws, inbound, done, config)
 	go writeProcess(stdin, inbound, done, config)
 
