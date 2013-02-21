@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"path/filepath"
+	"os"
 
 	"code.google.com/p/go.net/websocket"
 )
@@ -21,12 +23,52 @@ func main() {
 	}))
 
 	if config.Verbose {
-		log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
+		if config.UsingScriptDir {
+			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.ScriptDir)
+		} else {
+			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
+		}
 	}
 	err := http.ListenAndServe(config.Addr, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getScriptPath(ws *websocket.Conn, config *Config) (string, string) {
+	if !config.UsingScriptDir {
+		return "/", ""
+	}
+	
+	req := ws.Request()
+	parts := strings.Split(req.URL.Path, "/")
+
+	path := config.ScriptDir
+	var statInfo os.FileInfo
+	pathInfo := ""
+
+	for i, p := range parts {
+		path = filepath.Join(path, p)
+		log.Print("checking if", path, "exists")
+		var err error
+		statInfo, err = os.Stat(path)
+		if err != nil {
+			log.Print(path, "does not exist")
+			// TODO: 404?
+		}
+		// end of parts and we are still a dir should fail
+		if i == len(parts)-1 && statInfo.IsDir() {
+			log.Print("could not find", path)
+			// 404?
+		}
+		if statInfo.IsDir() {
+			continue
+		} else {
+			pathInfo = strings.Join(parts[i:], "/")
+			break
+		}
+	}
+	return path, pathInfo
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config) {
@@ -36,6 +78,9 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		log.Print("websocket: CONNECT")
 		defer log.Print("websocket: DISCONNECT")
 	}
+
+	path, pathInfo := getScriptPath(ws, config)
+	log.Print(path, pathInfo)
 
 	env, err := createEnv(ws, config)
 	if err != nil {
