@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	Addr        string   // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
-	Verbose     bool     // Verbose logging.
-	BasePath    string   // Base URL path. e.g. "/"
-	CommandName string   // Command to execute.
-	CommandArgs []string // Additional args to pass to command
+	Addr          string   // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	Verbose       bool     // Verbose logging.
+	BasePath      string   // Base URL path. e.g. "/"
+	CommandName   string   // Command to execute.
+	CommandArgs   []string // Additional args to pass to command.
+	ReverseLookup bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
 }
 
 func parseCommandLine() Config {
@@ -21,12 +22,14 @@ func parseCommandLine() Config {
 	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging")
+	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 
 	flag.Parse()
 
 	config.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
 	config.Verbose = *verboseFlag
 	config.BasePath = *basePathFlag
+	config.ReverseLookup = *reverseLookupFlag
 
 	args := flag.Args()
 	if len(args) < 1 {

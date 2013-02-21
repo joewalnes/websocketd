@@ -37,7 +37,15 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		defer log.Print("websocket: DISCONNECT")
 	}
 
-	_, stdin, stdout, err := execCmd(config.CommandName, config.CommandArgs)
+	env, err := createEnv(ws, config)
+	if err != nil {
+		if config.Verbose {
+			log.Print("process: Could not setup env: ", err)
+		}
+		return
+	}
+
+	_, stdin, stdout, err := execCmd(config.CommandName, config.CommandArgs, env)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Failed to start: ", err)
@@ -58,8 +66,9 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 	<-done
 }
 
-func execCmd(commandName string, commandArgs []string) (*exec.Cmd, io.WriteCloser, io.ReadCloser, error) {
+func execCmd(commandName string, commandArgs []string, env []string) (*exec.Cmd, io.WriteCloser, io.ReadCloser, error) {
 	cmd := exec.Command(commandName, commandArgs...)
+	cmd.Env = env
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
