@@ -1,4 +1,4 @@
-package websocketd
+package main
 
 import (
 	"flag"

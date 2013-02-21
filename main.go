@@ -1,7 +1,7 @@
 // websocketd: See README
 // -Joe Walnes
 
-package websocketd
+package main
 
 import (
 	"io"

@@ -8,6 +8,7 @@ GO_UNPACKED=$(GO_DIR)/.unpacked
 
 # Prevent any global environment polluting the builds
 GOROOT=
+GOPATH=
 
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = GOOS=linux   GOARCH=386
@@ -60,7 +61,7 @@ bin/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
 	rm -f $@
 	mkdir -p $(dir $@)
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ..
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -o bin/$*/websocketd$(EXTENSION_$*) ../main.go
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -o bin/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
 apps: $(foreach PLATFORM,$(PLATFORMS),bin/$(PLATFORM)/.built)
