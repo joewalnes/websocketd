@@ -12,9 +12,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	scriptDir	:= filepath.Join(baseDir, "foo", "bar")
 	scriptPath	:= filepath.Join(scriptDir, "baz.sh")
 	
-	defer func () {
-		os.RemoveAll(baseDir)
-	}()
+	defer os.RemoveAll(baseDir)
 
 	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
 		t.Error("could not create ", scriptDir)
@@ -31,7 +29,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	var res *URLInfo
 
 	// simple url
-	res, err = parseURL("/foo/bar/baz.sh", config)
+	res, err = parsePath("/foo/bar/baz.sh", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +44,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	}
 
 	// url with extra path info
-	res, err = parseURL("/foo/bar/baz.sh/some/extra/stuff", config)
+	res, err = parsePath("/foo/bar/baz.sh/some/extra/stuff", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,13 +59,13 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	}
 
 	// non-existing file
-	res, err = parseURL("/foo/bar/bang.sh", config)
+	res, err = parsePath("/foo/bar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
 
 	// non-existing dir
-	res, err = parseURL("/hoohar/bang.sh", config)
+	res, err = parsePath("/hoohar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
@@ -78,7 +76,7 @@ func TestParsePathExplicitScript(t *testing.T) {
 	config := new(Config)
 	config.UsingScriptDir = false
 
-	res, err := parseURL("/some/path", config)
+	res, err := parsePath("/some/path", config)
 	if err != nil {
 		t.Error(err)
 	}
