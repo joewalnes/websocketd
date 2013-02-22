@@ -38,7 +38,7 @@ func parseCommandLine() Config {
 
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" {
-		log.Fatal("No executable command specified")
+		log.Fatal("Please specify a command OR a script dir")
 	}
 
 	if len(args) > 0 {

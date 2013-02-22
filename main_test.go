@@ -25,8 +25,8 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	config.UsingScriptDir = true
 	config.ScriptDir = baseDir
 
-	var err error
 	var res *URLInfo
+	var err error
 
 	// simple url
 	res, err = parsePath("/foo/bar/baz.sh", config)
@@ -59,17 +59,22 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	}
 
 	// non-existing file
-	res, err = parsePath("/foo/bar/bang.sh", config)
+	_, err = parsePath("/foo/bar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
+	if err != ScriptNotFoundError {
+		t.Error("should fail with script not found")
+	}
 
 	// non-existing dir
-	res, err = parsePath("/hoohar/bang.sh", config)
+	_, err = parsePath("/hoohar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
-	
+	if err != ScriptNotFoundError {
+		t.Error("should fail with script not found")
+	}
 }
 
 func TestParsePathExplicitScript(t *testing.T) {

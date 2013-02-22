@@ -36,6 +36,8 @@ func main() {
 	}
 }
 
+var ScriptNotFoundError = errors.New("script not found")
+
 type URLInfo struct {
 	ScriptPath string
 	PathInfo   string
@@ -58,12 +60,12 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 
 		// not a valid path
 		if err != nil {
-			return nil, errors.New("not found: " + urlInfo.FilePath)
+			return nil, ScriptNotFoundError
 		}
 
 		// at the end of url but is a dir
 		if isLastPart && statInfo.IsDir() {
-			return nil, errors.New("not found: " + urlInfo.FilePath)
+			return nil, ScriptNotFoundError
 		}
 
 		// we've hit a dir, carry on looking
