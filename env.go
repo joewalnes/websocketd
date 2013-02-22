@@ -50,7 +50,7 @@ func createEnv(ws *websocket.Conn, config *Config) ([]string, error) {
 
 	uniqueId := time.Now().UnixNano() // Just use this a unique counter.
 
-	standardEnvCount := 14
+	standardEnvCount := 20
 	env := make([]string, 0, len(headers)+standardEnvCount)
 
 	// IMPORTANT ---> Adding a header? Make sure standardHeaderCount (above) is up to date.
@@ -69,6 +69,13 @@ func createEnv(ws *websocket.Conn, config *Config) ([]string, error) {
 	env = appendEnv(env, "PATH_INFO", url.Path)
 	env = appendEnv(env, "PATH_TRANSLATED", url.Path)
 	env = appendEnv(env, "QUERY_STRING", url.RawQuery)
+
+	// Not supported, but we explicitly clear them so we don't get leaks from parent environment.
+	env = appendEnv(env, "AUTH_TYPE", "")
+	env = appendEnv(env, "CONTENT_LENGTH", "")
+	env = appendEnv(env, "CONTENT_TYPE", "")
+	env = appendEnv(env, "REMOTE_IDENT", "")
+	env = appendEnv(env, "REMOTE_USER", "")
 
 	// Non standard, but commonly used headers.
 	env = appendEnv(env, "UNIQUE_ID", strconv.FormatInt(uniqueId, 10)) // Based on Apache mod_unique_id.
