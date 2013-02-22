@@ -42,13 +42,12 @@ type URLInfo struct {
 	FilePath   string
 }
 
-func parseURL(ws *websocket.Conn, config *Config) (*URLInfo, error) {
+func parsePath(path string, config *Config) (*URLInfo, error) {
 	if !config.UsingScriptDir {
-		return &URLInfo{"/", ws.Request().URL.Path, ""}, nil
+		return &URLInfo{"/", path, ""}, nil
 	}
 	
-	req := ws.Request()
-	parts := strings.Split(req.URL.Path[1:], "/")
+	parts := strings.Split(path[1:], "/")
 	urlInfo := &URLInfo{}
 
 	for i, part := range parts {
@@ -81,7 +80,7 @@ func parseURL(ws *websocket.Conn, config *Config) (*URLInfo, error) {
 		urlInfo.PathInfo = "/" + strings.Join(parts[i+1:], "/")
 		return urlInfo, nil
 	}
-	panic("parseURL")
+	panic("parsePath")
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config) {
@@ -92,7 +91,7 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		defer log.Print("websocket: DISCONNECT")
 	}
 
-	urlInfo, err := parseURL(ws, config)
+	urlInfo, err := parsePath(ws.Request().URL.Path, config)
 	if err != nil {
 		// TODO: 404?
 		log.Print(err)
