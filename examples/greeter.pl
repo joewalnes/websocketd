@@ -4,7 +4,6 @@
 
 # Autoflush output
 use IO::Handle;
-STDERR->autoflush(1);
 STDOUT->autoflush(1);
 
 # Read STDIN
