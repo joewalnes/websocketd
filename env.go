@@ -18,7 +18,7 @@ const (
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 var headerDashToUnderscore = strings.NewReplacer("-", "_")
 
-func createEnv(ws *websocket.Conn, config *Config) ([]string, error) {
+func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, error) {
 	req := ws.Request()
 	headers := req.Header
 	url := req.URL
@@ -65,8 +65,8 @@ func createEnv(ws *websocket.Conn, config *Config) ([]string, error) {
 	env = appendEnv(env, "SERVER_SOFTWARE", serverSoftware)
 	env = appendEnv(env, "GATEWAY_INTERFACE", gatewayInterface)
 	env = appendEnv(env, "REQUEST_METHOD", req.Method)
-	env = appendEnv(env, "SCRIPT_NAME", "/")
-	env = appendEnv(env, "PATH_INFO", url.Path)
+	env = appendEnv(env, "SCRIPT_NAME", urlInfo.ScriptPath)
+	env = appendEnv(env, "PATH_INFO", urlInfo.PathInfo)
 	env = appendEnv(env, "PATH_TRANSLATED", url.Path)
 	env = appendEnv(env, "QUERY_STRING", url.RawQuery)
 

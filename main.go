@@ -11,6 +11,7 @@ import (
 	"strings"
 	"path/filepath"
 	"os"
+	"errors"
 
 	"code.google.com/p/go.net/websocket"
 )
@@ -35,40 +36,52 @@ func main() {
 	}
 }
 
-func getScriptPath(ws *websocket.Conn, config *Config) (string, string) {
+type URLInfo struct {
+	ScriptPath string
+	PathInfo   string
+	FilePath   string
+}
+
+func parseURL(ws *websocket.Conn, config *Config) (*URLInfo, error) {
 	if !config.UsingScriptDir {
-		return "/", ""
+		return &URLInfo{"/", ws.Request().URL.Path, ""}, nil
 	}
 	
 	req := ws.Request()
-	parts := strings.Split(req.URL.Path, "/")
+	parts := strings.Split(req.URL.Path[1:], "/")
+	urlInfo := &URLInfo{}
 
-	path := config.ScriptDir
-	var statInfo os.FileInfo
-	pathInfo := ""
+	for i, part := range parts {
+		urlInfo.ScriptPath = strings.Join([]string{urlInfo.ScriptPath, part}, "/")
+		urlInfo.FilePath = filepath.Join(config.ScriptDir, urlInfo.ScriptPath)
+		isLastPart := i == len(parts) - 1
+		statInfo, err := os.Stat(urlInfo.FilePath)
 
-	for i, p := range parts {
-		path = filepath.Join(path, p)
-		log.Print("checking if", path, "exists")
-		var err error
-		statInfo, err = os.Stat(path)
+		// not a valid path
 		if err != nil {
-			log.Print(path, "does not exist")
-			// TODO: 404?
+			return nil, errors.New("not found: " + urlInfo.FilePath)
 		}
-		// end of parts and we are still a dir should fail
-		if i == len(parts)-1 && statInfo.IsDir() {
-			log.Print("could not find", path)
-			// 404?
+
+		// at the end of url but is a dir
+		if isLastPart && statInfo.IsDir() {
+			return nil, errors.New("not found: " + urlInfo.FilePath)
 		}
+
+		// we've hit a dir, carry on looking
 		if statInfo.IsDir() {
 			continue
-		} else {
-			pathInfo = strings.Join(parts[i:], "/")
-			break
+		} 
+
+		// no extra args
+		if isLastPart {
+			return urlInfo, nil
 		}
+
+		// build path info from extra parts of url
+		urlInfo.PathInfo = "/" + strings.Join(parts[i+1:], "/")
+		return urlInfo, nil
 	}
-	return path, pathInfo
+	panic("parseURL")
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config) {
@@ -79,18 +92,31 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		defer log.Print("websocket: DISCONNECT")
 	}
 
-	path, pathInfo := getScriptPath(ws, config)
-	log.Print(path, pathInfo)
+	urlInfo, err := parseURL(ws, config)
+	if err != nil {
+		// TODO: 404?
+		log.Print(err)
+		return
+	}
 
-	env, err := createEnv(ws, config)
+	if config.Verbose {
+		log.Print("process: URLInfo - ", urlInfo)
+	}
+
+	env, err := createEnv(ws, config, urlInfo)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Could not setup env: ", err)
 		}
 		return
 	}
+	
+	commandName := config.CommandName
+	if config.UsingScriptDir {
+		commandName = urlInfo.FilePath
+	}
 
-	_, stdin, stdout, err := execCmd(config.CommandName, config.CommandArgs, env)
+	_, stdin, stdout, err := execCmd(commandName, config.CommandArgs, env)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Failed to start: ", err)
