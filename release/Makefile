@@ -1,3 +1,9 @@
+# Copyright 2013 Joe Walnes and the websocketd team.
+# All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+
 GO_VERSION=1.0.3
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
 
