@@ -64,20 +64,30 @@ go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
 
 
 # Cross-compile final applications
-bin/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
+out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
 	rm -f $@
 	mkdir -p $(dir $@)
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ..
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o bin/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
-apps: $(foreach PLATFORM,$(PLATFORMS),bin/$(PLATFORM)/.built)
+apps: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built)
 .PHONY: apps
+
+
+# Upload to http://download.websocketd.com/
+out/$(RELEASE_VERSION)/%/.uploaded: out/$(RELEASE_VERSION)/%/.built
+	rm -f $@
+	s3cmd put --acl-public --mime-type=application/octet-stream out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) s3://download.websocketd.com/releases/websocketd/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*)
+	touch $@
+
+upload: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.uploaded)
+.PHONY: upload
 
 
 # Clean up
 clean:
-	rm -rf bin
+	rm -rf out
 .PHONY: clean
 
 clobber: clean
