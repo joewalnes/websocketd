@@ -34,7 +34,7 @@ func parseCommandLine() Config {
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging")
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
-	scriptDirFlag := flag.String("scriptdir", "", "Base directory for websocket scripts")
+	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 
 	flag.Parse()
 

@@ -26,6 +26,10 @@ Usage:
 
     {{binary}} [options] program [program args]
 
+  Or, export an entire directory of executables as WebSocket endpoints:
+
+    {{binary}} [options] --dir=SOMEDIR
+
 Options:
 
   --port=PORT                    HTTP port to listen on.
@@ -40,6 +44,11 @@ Options:
 
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: true
+
+  --dir=DIR                      Allow all scripts in the local directory
+                                 to be accessed as WebSockets. If using this,
+                                 option, then the standard program and args
+                                 options should not be specified.
 
 Full documentation at http://websocketd.com/
 
