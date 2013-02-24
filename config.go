@@ -23,7 +23,10 @@ type Config struct {
 func parseCommandLine() Config {
 	var config Config
 
-	portFlag := flag.Int("port", 80, "HTTP port to listen on (required)")
+	// If adding new command line options, also update the help text in help.go.
+	// The flag library's auto-generate help message isn't pretty enough.
+
+	portFlag := flag.Int("port", 80, "HTTP port to listen on")
 	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging")

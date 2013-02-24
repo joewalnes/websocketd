@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	serverSoftware   = "websocketd/0.0.0.0" // TODO: Update this at each release.
 	gatewayInterface = "websocketd-CGI/0.1"
 )
 
@@ -67,7 +66,7 @@ func createEnv(ws *websocket.Conn, config *Config) ([]string, error) {
 	env = appendEnv(env, "SERVER_NAME", serverName)
 	env = appendEnv(env, "SERVER_PORT", serverPort)
 	env = appendEnv(env, "SERVER_PROTOCOL", req.Proto)
-	env = appendEnv(env, "SERVER_SOFTWARE", serverSoftware)
+	env = appendEnv(env, "SERVER_SOFTWARE", fmt.Sprintf("websocketd/%s", Version()))
 	env = appendEnv(env, "GATEWAY_INTERFACE", gatewayInterface)
 	env = appendEnv(env, "REQUEST_METHOD", req.Method)
 	env = appendEnv(env, "SCRIPT_NAME", "/")

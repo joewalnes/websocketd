@@ -6,6 +6,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 )
 
 func main() {
+	flag.Usage = PrintHelp
 	config := parseCommandLine()
 
 	http.Handle(config.BasePath, websocket.Handler(func(ws *websocket.Conn) {

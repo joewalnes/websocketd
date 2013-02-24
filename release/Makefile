@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+RELEASE_VERSION=0.0.0.0
 
 GO_VERSION=1.0.3
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
@@ -67,7 +68,7 @@ bin/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
 	rm -f $@
 	mkdir -p $(dir $@)
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ..
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -o bin/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o bin/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
 apps: $(foreach PLATFORM,$(PLATFORMS),bin/$(PLATFORM)/.built)
