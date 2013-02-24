@@ -12,6 +12,9 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"path/filepath"
+	"os"
+	"errors"
 
 	"code.google.com/p/go.net/websocket"
 )
@@ -25,12 +28,65 @@ func main() {
 	}))
 
 	if config.Verbose {
-		log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
+		if config.UsingScriptDir {
+			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.ScriptDir)
+		} else {
+			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
+		}
 	}
 	err := http.ListenAndServe(config.Addr, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+var ScriptNotFoundError = errors.New("script not found")
+
+type URLInfo struct {
+	ScriptPath string
+	PathInfo   string
+	FilePath   string
+}
+
+func parsePath(path string, config *Config) (*URLInfo, error) {
+	if !config.UsingScriptDir {
+		return &URLInfo{"/", path, ""}, nil
+	}
+	
+	parts := strings.Split(path[1:], "/")
+	urlInfo := &URLInfo{}
+
+	for i, part := range parts {
+		urlInfo.ScriptPath = strings.Join([]string{urlInfo.ScriptPath, part}, "/")
+		urlInfo.FilePath = filepath.Join(config.ScriptDir, urlInfo.ScriptPath)
+		isLastPart := i == len(parts) - 1
+		statInfo, err := os.Stat(urlInfo.FilePath)
+
+		// not a valid path
+		if err != nil {
+			return nil, ScriptNotFoundError
+		}
+
+		// at the end of url but is a dir
+		if isLastPart && statInfo.IsDir() {
+			return nil, ScriptNotFoundError
+		}
+
+		// we've hit a dir, carry on looking
+		if statInfo.IsDir() {
+			continue
+		} 
+
+		// no extra args
+		if isLastPart {
+			return urlInfo, nil
+		}
+
+		// build path info from extra parts of url
+		urlInfo.PathInfo = "/" + strings.Join(parts[i+1:], "/")
+		return urlInfo, nil
+	}
+	panic("parsePath")
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config) {
@@ -41,15 +97,31 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		defer log.Print("websocket: DISCONNECT")
 	}
 
-	env, err := createEnv(ws, config)
+	urlInfo, err := parsePath(ws.Request().URL.Path, config)
+	if err != nil {
+		// TODO: 404?
+		log.Print(err)
+		return
+	}
+
+	if config.Verbose {
+		log.Print("process: URLInfo - ", urlInfo)
+	}
+
+	env, err := createEnv(ws, config, urlInfo)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Could not setup env: ", err)
 		}
 		return
 	}
+	
+	commandName := config.CommandName
+	if config.UsingScriptDir {
+		commandName = urlInfo.FilePath
+	}
 
-	_, stdin, stdout, err := execCmd(config.CommandName, config.CommandArgs, env)
+	_, stdin, stdout, err := execCmd(commandName, config.CommandArgs, env)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Failed to start: ", err)
