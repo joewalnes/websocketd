@@ -61,13 +61,13 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		}
 		return
 	}
-	
+
 	commandName := config.CommandName
 	if config.UsingScriptDir {
 		commandName = urlInfo.FilePath
 	}
 
-	_, stdin, stdout, err := launchCmd(commandName, config.CommandArgs, env)
+	_, stdin, stdout, stderr, err := launchCmd(commandName, config.CommandArgs, env)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Failed to start: ", err)
@@ -84,6 +84,8 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 	inbound := make(chan string)
 	go readWebSocket(ws, inbound, done, config)
 	go writeProcess(stdin, inbound, done, config)
+
+	go pipeStdErr(stderr, done, config)
 
 	<-done
 }

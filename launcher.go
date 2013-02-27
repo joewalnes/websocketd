@@ -5,7 +5,7 @@
 
 package main
 
-import(
+import (
 	"errors"
 	"io"
 	"os"
@@ -26,14 +26,14 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 	if !config.UsingScriptDir {
 		return &URLInfo{"/", path, ""}, nil
 	}
-	
+
 	parts := strings.Split(path[1:], "/")
 	urlInfo := &URLInfo{}
 
 	for i, part := range parts {
 		urlInfo.ScriptPath = strings.Join([]string{urlInfo.ScriptPath, part}, "/")
 		urlInfo.FilePath = filepath.Join(config.ScriptDir, urlInfo.ScriptPath)
-		isLastPart := i == len(parts) - 1
+		isLastPart := i == len(parts)-1
 		statInfo, err := os.Stat(urlInfo.FilePath)
 
 		// not a valid path
@@ -49,7 +49,7 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 		// we've hit a dir, carry on looking
 		if statInfo.IsDir() {
 			continue
-		} 
+		}
 
 		// no extra args
 		if isLastPart {
@@ -63,24 +63,29 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 	panic("parsePath")
 }
 
-func launchCmd(commandName string, commandArgs []string, env []string) (*exec.Cmd, io.WriteCloser, io.ReadCloser, error) {
+func launchCmd(commandName string, commandArgs []string, env []string) (*exec.Cmd, io.WriteCloser, io.ReadCloser, io.ReadCloser, error) {
 	cmd := exec.Command(commandName, commandArgs...)
 	cmd.Env = env
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return cmd, nil, nil, err
+		return cmd, nil, nil, nil, err
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return cmd, nil, nil, nil, err
 	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return cmd, nil, nil, err
+		return cmd, nil, nil, nil, err
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return cmd, nil, nil, err
+		return cmd, nil, nil, nil, err
 	}
 
-	return cmd, stdin, stdout, err
+	return cmd, stdin, stdout, stderr, err
 }

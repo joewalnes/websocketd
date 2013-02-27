@@ -6,17 +6,17 @@
 package main
 
 import (
-	"testing"
 	"io/ioutil"
-	"path/filepath"
 	"os"
+	"path/filepath"
+	"testing"
 )
 
 func TestParsePathWithScriptDir(t *testing.T) {
-	baseDir, _	:= ioutil.TempDir("", "websockets")
-	scriptDir	:= filepath.Join(baseDir, "foo", "bar")
-	scriptPath	:= filepath.Join(scriptDir, "baz.sh")
-	
+	baseDir, _ := ioutil.TempDir("", "websockets")
+	scriptDir := filepath.Join(baseDir, "foo", "bar")
+	scriptPath := filepath.Join(scriptDir, "baz.sh")
+
 	defer os.RemoveAll(baseDir)
 
 	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
@@ -24,7 +24,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	}
 	if _, err := os.Create(scriptPath); err != nil {
 		t.Error("could not create ", scriptPath)
-	} 
+	}
 
 	config := new(Config)
 	config.UsingScriptDir = true

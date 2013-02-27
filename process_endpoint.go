@@ -20,7 +20,6 @@ func readProcess(stdout io.ReadCloser, outbound chan<- string, done chan<- bool,
 				log.Fatal("Unexpected read from process: ", err)
 			} else {
 				if config.Verbose {
-
 					log.Print("process: CLOSED")
 				}
 			}
@@ -42,6 +41,26 @@ func writeProcess(stdin io.WriteCloser, inbound <-chan string, done chan<- bool,
 		bufstdin.WriteString(msg)
 		bufstdin.WriteString("\n")
 		bufstdin.Flush()
+	}
+	done <- true
+}
+
+func pipeStdErr(stderr io.ReadCloser, done chan<- bool, config *Config) {
+	bufstderr := bufio.NewReader(stderr)
+	for {
+		str, err := bufstderr.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				log.Fatal("Unexpected read from process: ", err)
+			} else {
+				if config.Verbose {
+					log.Print("process: CLOSED")
+				}
+			}
+			break
+		}
+		msg := str[0 : len(str)-1] // Trim new line
+		log.Print("process: STDERR : ", msg)
 	}
 	done <- true
 }
