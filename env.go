@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +56,12 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, 
 	uniqueId := time.Now().UnixNano() // Just use this a unique counter.
 
 	standardEnvCount := 20
-	env := make([]string, 0, len(headers)+standardEnvCount)
+	parentEnv := os.Environ()
+	fmt.Printf("len %d\n", len(parentEnv))
+	env := make([]string, 0, len(headers)+standardEnvCount+len(parentEnv))
+	for _, v := range parentEnv {
+		env = append(env, v)
+	}
 
 	// IMPORTANT ---> Adding a header? Make sure standardHeaderCount (above) is up to date.
 
