@@ -63,29 +63,36 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 	panic("parsePath")
 }
 
-func launchCmd(commandName string, commandArgs []string, env []string) (*exec.Cmd, io.WriteCloser, io.ReadCloser, io.ReadCloser, error) {
+type LaunchedProcess struct {
+	cmd *exec.Cmd
+	stdin io.WriteCloser
+	stdout io.ReadCloser
+	stderr io.ReadCloser
+}
+
+func launchCmd(commandName string, commandArgs []string, env []string) (*LaunchedProcess, error) {
 	cmd := exec.Command(commandName, commandArgs...)
 	cmd.Env = env
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return cmd, nil, nil, nil, err
+		return nil, err
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return cmd, nil, nil, nil, err
+		return nil, err
 	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return cmd, nil, nil, nil, err
+		return nil, err
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return cmd, nil, nil, nil, err
+		return nil, err
 	}
 
-	return cmd, stdin, stdout, stderr, err
+	return &LaunchedProcess{cmd, stdin, stdout, stderr}, err
 }

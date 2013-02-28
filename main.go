@@ -6,9 +6,7 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -69,7 +67,7 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		commandName = urlInfo.FilePath
 	}
 
-	_, stdin, stdout, stderr, err := launchCmd(commandName, config.CommandArgs, env)
+	launched, err := launchCmd(commandName, config.CommandArgs, env)
 	if err != nil {
 		if config.Verbose {
 			log.Print("process: Failed to start: ", err)
@@ -77,100 +75,36 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 		return
 	}
 
-	bufferedStdin := bufio.NewWriter(stdin)
+	process := NewProcessEndpoint(launched)
+	webs := NewWebsocketEndpoint(ws)
 
-	outbound := make(chan string)
-	inbound := make(chan string)
+	go process.ReadOutput(launched.stdout, config)
+	go webs.ReadOutput(config)
+	go process.pipeStdErr(config)
 
-	go readBufferIntoChannel(stdout, outbound, "process stdout", config)
-	go readWebsocketIntoChannel(ws, inbound, config)
-	go pipeStdErr(stderr, config)
-	
-LABEL:
+	pipeEndpoints(process, webs)
+}
+
+func pipeEndpoints(process Endpoint, ws Endpoint) {
 	for {
 		select {
-		case msgFromProcess, ok := <- outbound:
-			err := websocket.Message.Send(ws, msgFromProcess)
-			if err != nil {
-				log.Print("websocket: SENDERROR: ", err)
-				stdin.Close()
-				break LABEL
+		case msgFromProcess, ok := <-process.Output():
+			sent := ws.Send(msgFromProcess)
+			if !sent {
+				process.Terminate()
+				return
 			}
 			if !ok {
 				log.Printf("process terminated")
-				break LABEL
+				return
 			}
-		case msgFromSocket, ok  := <- inbound:
-			bufferedStdin.WriteString(msgFromSocket)
-			bufferedStdin.WriteString("\n")
-			bufferedStdin.Flush()
+		case msgFromSocket, ok := <-ws.Output():
+			process.Send(msgFromSocket)
 			if !ok {
+				process.Terminate()
 				log.Printf("websocket closed")
-				break LABEL
+				return
 			}
 		}
-	}
-
-	
-}
-
-func readBufferIntoChannel(input io.ReadCloser, channel chan<- string, name string, config *Config) {
-	bufin := bufio.NewReader(input)
-	for {
-		str, err := bufin.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				log.Fatalf("Unexpected while reading %s: ", name, err)
-			} else {
-				if config.Verbose {
-					log.Printf("%s: CLOSED", name)
-				}
-			}
-			break
-		}
-		msg := str[0 : len(str)-1] // Trim new line
-		if config.Verbose {
-			log.Printf("%s: OUT : <%s>", name, msg)
-		}
-		channel <- msg
-	}
-	close(channel)
-}
-
-func readWebsocketIntoChannel(ws *websocket.Conn, channel chan<- string, config *Config) {
-	for {
-		var msg string
-		err := websocket.Message.Receive(ws, &msg)
-		if err != nil {
-			if config.Verbose {
-				log.Print("websocket: RECVERROR: ", err)
-				break
-			}
-			break
-		}
-		if config.Verbose {
-			log.Print("websocket: IN : <", msg, ">")
-		}
-		channel <- msg
-	}
-	close(channel)
-}
-
-func pipeStdErr(stderr io.ReadCloser, config *Config) {
-	bufstderr := bufio.NewReader(stderr)
-	for {
-		str, err := bufstderr.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				log.Fatal("Unexpected read from process: ", err)
-			} else {
-				if config.Verbose {
-					log.Print("process stderr: CLOSED")
-				}
-			}
-			break
-		}
-		msg := str[0 : len(str)-1] // Trim new line
-		log.Print("process: STDERR : ", msg)
 	}
 }
