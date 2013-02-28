@@ -57,7 +57,6 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, 
 
 	standardEnvCount := 20
 	parentEnv := os.Environ()
-	fmt.Printf("len %d\n", len(parentEnv))
 	env := make([]string, 0, len(headers)+standardEnvCount+len(parentEnv))
 	for _, v := range parentEnv {
 		env = append(env, v)
