@@ -76,7 +76,7 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 	}
 
 	process := NewProcessEndpoint(launched)
-	webs := NewWebsocketEndpoint(ws)
+	webs := NewWebSocketEndpoint(ws)
 
 	go process.ReadOutput(launched.stdout, config)
 	go webs.ReadOutput(config)

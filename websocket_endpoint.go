@@ -10,25 +10,25 @@ import (
 	"log"
 )
 
-type WebsocketEndpoint struct {
+type WebSocketEndpoint struct {
 	ws     *websocket.Conn
 	output chan string
 }
 
-func NewWebsocketEndpoint(ws *websocket.Conn) *WebsocketEndpoint {
-	return &WebsocketEndpoint{
+func NewWebSocketEndpoint(ws *websocket.Conn) *WebSocketEndpoint {
+	return &WebSocketEndpoint{
 		ws:     ws,
 		output: make(chan string)}
 }
 
-func (we *WebsocketEndpoint) Terminate() {
+func (we *WebSocketEndpoint) Terminate() {
 }
 
-func (we *WebsocketEndpoint) Output() chan string {
+func (we *WebSocketEndpoint) Output() chan string {
 	return we.output
 }
 
-func (we *WebsocketEndpoint) Send(msg string) bool {
+func (we *WebSocketEndpoint) Send(msg string) bool {
 	err := websocket.Message.Send(we.ws, msg)
 	if err != nil {
 		log.Print("websocket: SENDERROR: ", err)
@@ -37,7 +37,7 @@ func (we *WebsocketEndpoint) Send(msg string) bool {
 	return true
 }
 
-func (we *WebsocketEndpoint) ReadOutput(config *Config) {
+func (we *WebSocketEndpoint) ReadOutput(config *Config) {
 	for {
 		var msg string
 		err := websocket.Message.Receive(we.ws, &msg)
