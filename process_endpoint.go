@@ -72,7 +72,6 @@ func (pe *ProcessEndpoint) ReadOutput(input io.ReadCloser, config *Config) {
 	close(pe.output)
 }
 
-
 func (pe *ProcessEndpoint) pipeStdErr(config *Config) {
 	bufstderr := bufio.NewReader(pe.process.stderr)
 	for {

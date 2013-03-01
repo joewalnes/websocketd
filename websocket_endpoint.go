@@ -6,8 +6,8 @@
 package main
 
 import (
-	"log"
 	"code.google.com/p/go.net/websocket"
+	"log"
 )
 
 type WebsocketEndpoint struct {
@@ -17,8 +17,8 @@ type WebsocketEndpoint struct {
 
 func NewWebsocketEndpoint(ws *websocket.Conn) *WebsocketEndpoint {
 	return &WebsocketEndpoint{
-		ws:      ws,
-		output:     make(chan string)}
+		ws:     ws,
+		output: make(chan string)}
 }
 
 func (we *WebsocketEndpoint) Terminate() {

@@ -64,8 +64,8 @@ func parsePath(path string, config *Config) (*URLInfo, error) {
 }
 
 type LaunchedProcess struct {
-	cmd *exec.Cmd
-	stdin io.WriteCloser
+	cmd    *exec.Cmd
+	stdin  io.WriteCloser
 	stdout io.ReadCloser
 	stderr io.ReadCloser
 }

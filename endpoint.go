@@ -10,4 +10,3 @@ type Endpoint interface {
 	Output() chan string
 	Send(msg string) bool
 }
-
