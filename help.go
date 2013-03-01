@@ -50,6 +50,10 @@ Options:
                                  option, then the standard program and args
                                  options should not be specified.
 
+  --help                         Print help and exit.
+
+  --version                      Print version and exit.
+
 Full documentation at http://websocketd.com/
 
 Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.
