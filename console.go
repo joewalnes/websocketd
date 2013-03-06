@@ -279,7 +279,7 @@ Full documentation at http://websocketd.com/
 			try {
 				ws.send(msg);
 			} catch (ex) {
-				appendMessage('execption', 'Cannot send: ' + ex);
+				appendMessage('exception', 'Cannot send: ' + ex);
 			}
 		} else {
 			appendMessage('exception', 'Cannot send: Not connected');
