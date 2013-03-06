@@ -11,17 +11,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Config struct {
-	Addr           string   // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
-	Verbose        bool     // Verbose logging.
-	BasePath       string   // Base URL path. e.g. "/"
-	CommandName    string   // Command to execute.
-	CommandArgs    []string // Additional args to pass to command.
-	ReverseLookup  bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
-	ScriptDir      string   // Base directory for websocket scripts
-	UsingScriptDir bool     // Are we running with a script dir
+	Addr           string    // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	Verbose        bool      // Verbose logging.
+	BasePath       string    // Base URL path. e.g. "/"
+	CommandName    string    // Command to execute.
+	CommandArgs    []string  // Additional args to pass to command.
+	ReverseLookup  bool      // Perform reverse DNS lookups on hostnames (useful, but slower).
+	ScriptDir      string    // Base directory for websocket scripts
+	UsingScriptDir bool      // Are we running with a script dir
+	DevConsole     bool      // Enable dev console
+	StartupTime    time.Time // Server startup time (used for dev console caching)
 }
 
 func parseCommandLine() Config {
@@ -37,6 +40,7 @@ func parseCommandLine() Config {
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
+	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console")
 
 	flag.Parse()
 
@@ -45,6 +49,8 @@ func parseCommandLine() Config {
 	config.BasePath = *basePathFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.ScriptDir = *scriptDirFlag
+	config.DevConsole = *devConsoleFlag
+	config.StartupTime = time.Now()
 
 	if len(os.Args) == 1 {
 		PrintHelp()

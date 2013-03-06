@@ -54,6 +54,14 @@ Options:
 
   --version                      Print version and exit.
 
+  --devconsole                   Enable interactive development console.
+                                 This enables you to access the websocketd
+                                 server with a web-browser and use a
+                                 user interface to quickly test WebSocket
+                                 endpoints. For example, to test an
+                                 endpoint at ws://[host]/foo, you can
+                                 visit http://[host]/foo in your browser.
+
 Full documentation at http://websocketd.com/
 
 Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.

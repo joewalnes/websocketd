@@ -36,10 +36,7 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, 
 	var remoteHost string
 	if config.ReverseLookup {
 		remoteHosts, err := net.LookupAddr(remoteAddr)
-		if err != nil {
-			return nil, err
-		}
-		if len(remoteHosts) == 0 {
+		if err != nil || len(remoteHosts) == 0 {
 			remoteHost = remoteAddr
 		} else {
 			remoteHost = remoteHosts[0]

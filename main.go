@@ -18,9 +18,9 @@ func main() {
 	flag.Usage = PrintHelp
 	config := parseCommandLine()
 
-	http.Handle(config.BasePath, websocket.Handler(func(ws *websocket.Conn) {
-		acceptWebSocket(ws, &config)
-	}))
+	http.Handle(config.BasePath, HttpWsMuxHandler{
+		config: &config,
+	})
 
 	if config.Verbose {
 		if config.UsingScriptDir {
@@ -28,10 +28,35 @@ func main() {
 		} else {
 			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
 		}
+		if config.DevConsole {
+			log.Print("Developer tools available at http://", config.Addr, "/")
+		}
 	}
 	err := http.ListenAndServe(config.Addr, nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+type HttpWsMuxHandler struct {
+	config *Config
+}
+
+// Main HTTP handler. Muxes between WebSocket handler, DevConsole or 404.
+func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	hdrs := req.Header
+	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && strings.ToLower(hdrs.Get("Connection")) == "upgrade" {
+		// WebSocket
+		wsHandler := websocket.Handler(func(ws *websocket.Conn) {
+			acceptWebSocket(ws, h.config)
+		})
+		wsHandler.ServeHTTP(w, req)
+	} else if h.config.DevConsole {
+		// Dev console (if enabled)
+		http.ServeContent(w, req, ".html", h.config.StartupTime, strings.NewReader(ConsoleContent))
+	} else {
+		// 404
+		http.NotFound(w, req)
 	}
 }
 
