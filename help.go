@@ -54,6 +54,8 @@ Options:
 
   --version                      Print version and exit.
 
+  --license                      Print license and exit.
+
   --devconsole                   Enable interactive development console.
                                  This enables you to access the websocketd
                                  server with a web-browser and use a
@@ -65,7 +67,7 @@ Options:
 Full documentation at http://websocketd.com/
 
 Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.
-BSD license: https://raw.github.com/joewalnes/websocketd/master/LICENSE
+BSD license: Run '{{binary}} --license' for details.
 `
 )
 

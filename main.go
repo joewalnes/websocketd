@@ -53,7 +53,8 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		wsHandler.ServeHTTP(w, req)
 	} else if h.config.DevConsole {
 		// Dev console (if enabled)
-		http.ServeContent(w, req, ".html", h.config.StartupTime, strings.NewReader(ConsoleContent))
+		content := strings.Replace(ConsoleContent, "{{license}}", License, -1)
+		http.ServeContent(w, req, ".html", h.config.StartupTime, strings.NewReader(content))
 	} else {
 		// 404
 		http.NotFound(w, req)

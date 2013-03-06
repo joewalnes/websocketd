@@ -16,12 +16,11 @@ const (
 	ConsoleContent = `
 
 <!--
-	websocketd console
+websocketd console
 
-	Full documentation at http://websocketd.com/
+Full documentation at http://websocketd.com/
 
-	Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.
-	BSD license: https://raw.github.com/joewalnes/websocketd/master/LICENSE
+{{license}}
 -->
 
 <!DOCTYPE html>

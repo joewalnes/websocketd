@@ -40,6 +40,7 @@ func parseCommandLine() Config {
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
+	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console")
 
 	flag.Parse()
@@ -59,6 +60,12 @@ func parseCommandLine() Config {
 
 	if *versionFlag {
 		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
+		os.Exit(2)
+	}
+
+	if *licenseFlag {
+		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
+		fmt.Printf("%s\n", License)
 		os.Exit(2)
 	}
 
