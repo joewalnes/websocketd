@@ -8,7 +8,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -55,7 +54,7 @@ func parseCommandLine() Config {
 
 	if len(os.Args) == 1 {
 		PrintHelp()
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if *versionFlag {
@@ -71,12 +70,14 @@ func parseCommandLine() Config {
 
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" {
-		log.Fatal("Please specify a command OR a script dir")
+		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir argument.\n")
+		os.Exit(1)
 	}
 
 	if len(args) > 0 {
 		if config.ScriptDir != "" {
-			log.Fatal("Please specify a command OR a script dir")
+			fmt.Fprintf(os.Stderr, "Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.\n")
+			os.Exit(1)
 		}
 		config.CommandName = args[0]
 		config.CommandArgs = flag.Args()[1:]
@@ -86,7 +87,8 @@ func parseCommandLine() Config {
 	if len(config.ScriptDir) > 0 {
 		scriptDir, err := filepath.Abs(config.ScriptDir)
 		if err != nil {
-			log.Fatal("Could not find", config.ScriptDir)
+			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
+			os.Exit(1)
 		}
 		config.ScriptDir = scriptDir
 		config.UsingScriptDir = true
