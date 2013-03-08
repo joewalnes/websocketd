@@ -8,20 +8,21 @@ package main
 import (
 	"bufio"
 	"io"
-	"log"
 )
 
 type ProcessEndpoint struct {
 	process    *LaunchedProcess
 	bufferedIn *bufio.Writer
 	output     chan string
+	log        *LogScope
 }
 
-func NewProcessEndpoint(process *LaunchedProcess) *ProcessEndpoint {
+func NewProcessEndpoint(process *LaunchedProcess, log *LogScope) *ProcessEndpoint {
 	return &ProcessEndpoint{
 		process:    process,
 		bufferedIn: bufio.NewWriter(process.stdin),
-		output:     make(chan string)}
+		output:     make(chan string),
+		log:        log}
 }
 
 func (pe *ProcessEndpoint) Terminate() {
@@ -29,12 +30,12 @@ func (pe *ProcessEndpoint) Terminate() {
 
 	err := pe.process.cmd.Process.Kill()
 	if err != nil {
-		log.Printf("websocketd failed to kill process %v", pe.process.cmd.Process.Pid)
+		pe.log.Error("process", "Failed to kill process %v: %s", pe.process.cmd.Process.Pid, err)
 	}
 
 	err = pe.process.cmd.Wait()
 	if err != nil {
-		log.Printf("websocketd couldn't reap process %v", pe.process.cmd.Process.Pid)
+		pe.log.Error("process", "Failed to reap process %v: %s", pe.process.cmd.Process.Pid, err)
 	}
 }
 
@@ -55,18 +56,13 @@ func (pe *ProcessEndpoint) ReadOutput(input io.ReadCloser, config *Config) {
 		str, err := bufin.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				log.Fatalf("Unexpected while reading process stdout: ", err)
+				pe.log.Error("process", "Unexpected STDOUT read from process: %s", err)
 			} else {
-				if config.Verbose {
-					log.Printf("process stdout: CLOSED")
-				}
+				pe.log.Debug("process", "Process STDOUT closed")
 			}
 			break
 		}
 		msg := str[0 : len(str)-1] // Trim new line
-		if config.Verbose {
-			log.Printf("process: OUT : <%s>", msg)
-		}
 		pe.output <- msg
 	}
 	close(pe.output)
@@ -78,15 +74,13 @@ func (pe *ProcessEndpoint) pipeStdErr(config *Config) {
 		str, err := bufstderr.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				log.Fatal("Unexpected read from process: ", err)
+				pe.log.Error("process", "Unexpected STDERR read from process: %s", err)
 			} else {
-				if config.Verbose {
-					log.Print("process stderr: CLOSED")
-				}
+				pe.log.Debug("process", "Process STDERR closed")
 			}
 			break
 		}
 		msg := str[0 : len(str)-1] // Trim new line
-		log.Print("process: STDERR : ", msg)
+		pe.log.Error("stderr", "%s", msg)
 	}
 }

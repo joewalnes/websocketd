@@ -23,14 +23,14 @@ const (
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 var headerDashToUnderscore = strings.NewReplacer("-", "_")
 
-func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, error) {
-	req := ws.Request()
-	headers := req.Header
-	url := req.URL
+func generateId() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
+}
 
-	remoteAddr, remotePort, err := net.SplitHostPort(req.RemoteAddr)
+func remoteDetails(ws *websocket.Conn, config *Config) (string, string, string, error) {
+	remoteAddr, remotePort, err := net.SplitHostPort(ws.Request().RemoteAddr)
 	if err != nil {
-		return nil, err
+		return "", "", "", err
 	}
 
 	var remoteHost string
@@ -45,12 +45,23 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, 
 		remoteHost = remoteAddr
 	}
 
-	serverName, serverPort, err := net.SplitHostPort(req.Host)
+	return remoteAddr, remoteHost, remotePort, nil
+}
+
+func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo, id string) ([]string, error) {
+	req := ws.Request()
+	headers := req.Header
+	url := req.URL
+
+	remoteAddr, remoteHost, remotePort, err := remoteDetails(ws, config)
 	if err != nil {
 		return nil, err
 	}
 
-	uniqueId := time.Now().UnixNano() // Just use this a unique counter.
+	serverName, serverPort, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		return nil, err
+	}
 
 	standardEnvCount := 20
 	parentEnv := os.Environ()
@@ -84,7 +95,7 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo) ([]string, 
 	env = appendEnv(env, "REMOTE_USER", "")
 
 	// Non standard, but commonly used headers.
-	env = appendEnv(env, "UNIQUE_ID", strconv.FormatInt(uniqueId, 10)) // Based on Apache mod_unique_id.
+	env = appendEnv(env, "UNIQUE_ID", id) // Based on Apache mod_unique_id.
 	env = appendEnv(env, "REMOTE_PORT", remotePort)
 	env = appendEnv(env, "REQUEST_URI", url.RequestURI()) // e.g. /foo/blah?a=b
 

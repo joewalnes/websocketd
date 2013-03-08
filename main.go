@@ -7,8 +7,10 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 
 	"code.google.com/p/go.net/websocket"
@@ -18,28 +20,32 @@ func main() {
 	flag.Usage = PrintHelp
 	config := parseCommandLine()
 
+	log := RootLogScope(logAccess) // TODO: Command line option to change level.
+
 	http.Handle(config.BasePath, HttpWsMuxHandler{
 		config: &config,
-	})
+		log:    log})
 
-	if config.Verbose {
-		if config.UsingScriptDir {
-			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.ScriptDir)
-		} else {
-			log.Print("Listening on ws://", config.Addr, config.BasePath, " -> ", config.CommandName, " ", strings.Join(config.CommandArgs, " "))
-		}
-		if config.DevConsole {
-			log.Print("Developer tools available at http://", config.Addr, "/")
-		}
+	log.Info("server", "Starting WebSocket server : ws://%s%s", config.Addr, config.BasePath)
+	if config.DevConsole {
+		log.Info("server", "Developer console enabled : http://%s/", config.Addr)
 	}
+	if config.UsingScriptDir {
+		log.Info("server", "Serving from directory    : %s", config.ScriptDir)
+	} else {
+		log.Info("server", "Serving using application : %s %s", config.CommandName, strings.Join(config.CommandArgs, " "))
+	}
+
 	err := http.ListenAndServe(config.Addr, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("server", "Could start server: %s", err)
+		os.Exit(3)
 	}
 }
 
 type HttpWsMuxHandler struct {
 	config *Config
+	log    *LogScope
 }
 
 // Main HTTP handler. Muxes between WebSocket handler, DevConsole or 404.
@@ -48,7 +54,7 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && strings.ToLower(hdrs.Get("Connection")) == "upgrade" {
 		// WebSocket
 		wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-			acceptWebSocket(ws, h.config)
+			acceptWebSocket(ws, h.config, h.log)
 		})
 		wsHandler.ServeHTTP(w, req)
 	} else if h.config.DevConsole {
@@ -61,30 +67,36 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func acceptWebSocket(ws *websocket.Conn, config *Config) {
+func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
 	defer ws.Close()
 
-	if config.Verbose {
-		log.Print("websocket: CONNECT")
-		defer log.Print("websocket: DISCONNECT")
-	}
-
-	urlInfo, err := parsePath(ws.Request().URL.Path, config)
+	req := ws.Request()
+	id := generateId()
+	_, remoteHost, _, err := remoteDetails(ws, config)
 	if err != nil {
-		// TODO: 404?
-		log.Print(err)
+		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
 		return
 	}
 
-	if config.Verbose {
-		log.Print("process: URLInfo - ", urlInfo)
-	}
+	log = log.NewLevel()
+	log.Associate("id", id)
+	log.Associate("url", fmt.Sprintf("http://%s%s", req.RemoteAddr, req.URL.RequestURI()))
+	log.Associate("origin", req.Header.Get("Origin"))
+	log.Associate("remote", remoteHost)
 
-	env, err := createEnv(ws, config, urlInfo)
+	log.Access("session", "CONNECT")
+	defer log.Access("session", "DISCONNECT")
+
+	urlInfo, err := parsePath(ws.Request().URL.Path, config)
 	if err != nil {
-		if config.Verbose {
-			log.Print("process: Could not setup env: ", err)
-		}
+		log.Access("session", "NOT FOUND: %s", err)
+		return
+	}
+	log.Debug("session", "URLInfo: %s", urlInfo)
+
+	env, err := createEnv(ws, config, urlInfo, id)
+	if err != nil {
+		log.Error("process", "Could not create ENV: %s", err)
 		return
 	}
 
@@ -92,43 +104,49 @@ func acceptWebSocket(ws *websocket.Conn, config *Config) {
 	if config.UsingScriptDir {
 		commandName = urlInfo.FilePath
 	}
+	log.Associate("command", commandName)
 
 	launched, err := launchCmd(commandName, config.CommandArgs, env)
 	if err != nil {
-		if config.Verbose {
-			log.Print("process: Failed to start: ", err)
-		}
+		log.Error("process", "Could not launch process %s %s (%s)", commandName, strings.Join(config.CommandArgs, " "), err)
 		return
 	}
 
-	process := NewProcessEndpoint(launched)
-	webs := NewWebSocketEndpoint(ws)
+	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
+
+	process := NewProcessEndpoint(launched, log)
+	wsEndpoint := NewWebSocketEndpoint(ws, log)
 
 	go process.ReadOutput(launched.stdout, config)
-	go webs.ReadOutput(config)
+	go wsEndpoint.ReadOutput(config)
 	go process.pipeStdErr(config)
 
-	pipeEndpoints(process, webs)
+	pipeEndpoints(process, wsEndpoint, log)
 }
 
-func pipeEndpoints(process Endpoint, ws Endpoint) {
+func pipeEndpoints(process Endpoint, wsEndpoint *WebSocketEndpoint, log *LogScope) {
 	for {
 		select {
 		case msgFromProcess, ok := <-process.Output():
-			sent := ws.Send(msgFromProcess)
-			if !sent {
-				process.Terminate()
+			if ok {
+				log.Trace("send<-", "%s", msgFromProcess)
+				sent := wsEndpoint.Send(msgFromProcess)
+				if !sent {
+					process.Terminate()
+					return
+				}
+			} else {
+				// TODO: Log exit code. Mechanism differs on different platforms.
+				log.Trace("process", "Process terminated")
 				return
 			}
-			if !ok {
-				log.Printf("process terminated")
-				return
-			}
-		case msgFromSocket, ok := <-ws.Output():
-			process.Send(msgFromSocket)
-			if !ok {
+		case msgFromSocket, ok := <-wsEndpoint.Output():
+			if ok {
+				log.Trace("recv->", "%s", msgFromSocket)
+				process.Send(msgFromSocket)
+			} else {
 				process.Terminate()
-				log.Printf("websocket closed")
+				log.Trace("websocket", "WebSocket connection closed")
 				return
 			}
 		}

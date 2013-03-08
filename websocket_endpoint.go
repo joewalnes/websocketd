@@ -6,19 +6,22 @@
 package main
 
 import (
+	"io"
+
 	"code.google.com/p/go.net/websocket"
-	"log"
 )
 
 type WebSocketEndpoint struct {
 	ws     *websocket.Conn
 	output chan string
+	log    *LogScope
 }
 
-func NewWebSocketEndpoint(ws *websocket.Conn) *WebSocketEndpoint {
+func NewWebSocketEndpoint(ws *websocket.Conn, log *LogScope) *WebSocketEndpoint {
 	return &WebSocketEndpoint{
 		ws:     ws,
-		output: make(chan string)}
+		output: make(chan string),
+		log:    log}
 }
 
 func (we *WebSocketEndpoint) Terminate() {
@@ -31,7 +34,7 @@ func (we *WebSocketEndpoint) Output() chan string {
 func (we *WebSocketEndpoint) Send(msg string) bool {
 	err := websocket.Message.Send(we.ws, msg)
 	if err != nil {
-		log.Print("websocket: SENDERROR: ", err)
+		we.log.Trace("websocket", "Cannot send: %s", err)
 		return false
 	}
 	return true
@@ -42,14 +45,10 @@ func (we *WebSocketEndpoint) ReadOutput(config *Config) {
 		var msg string
 		err := websocket.Message.Receive(we.ws, &msg)
 		if err != nil {
-			if config.Verbose {
-				log.Print("websocket: RECVERROR: ", err)
-				break
+			if err != io.EOF {
+				we.log.Debug("websocket", "Cannot receive: %s", err)
 			}
 			break
-		}
-		if config.Verbose {
-			log.Print("websocket: IN : <", msg, ">")
 		}
 		we.output <- msg
 	}
