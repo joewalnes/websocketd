@@ -117,6 +117,8 @@ func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
 	process := NewProcessEndpoint(launched, log)
 	wsEndpoint := NewWebSocketEndpoint(ws, log)
 
+	defer process.Terminate()
+
 	go process.ReadOutput(launched.stdout, config)
 	go wsEndpoint.ReadOutput(config)
 	go process.pipeStdErr(config)
@@ -130,9 +132,7 @@ func pipeEndpoints(process Endpoint, wsEndpoint *WebSocketEndpoint, log *LogScop
 		case msgFromProcess, ok := <-process.Output():
 			if ok {
 				log.Trace("send<-", "%s", msgFromProcess)
-				sent := wsEndpoint.Send(msgFromProcess)
-				if !sent {
-					process.Terminate()
+				if !wsEndpoint.Send(msgFromProcess) {
 					return
 				}
 			} else {
@@ -145,7 +145,6 @@ func pipeEndpoints(process Endpoint, wsEndpoint *WebSocketEndpoint, log *LogScop
 				log.Trace("recv->", "%s", msgFromSocket)
 				process.Send(msgFromSocket)
 			} else {
-				process.Terminate()
 				log.Trace("websocket", "WebSocket connection closed")
 				return
 			}

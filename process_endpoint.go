@@ -30,12 +30,12 @@ func (pe *ProcessEndpoint) Terminate() {
 
 	err := pe.process.cmd.Process.Kill()
 	if err != nil {
-		pe.log.Error("process", "Failed to kill process %v: %s", pe.process.cmd.Process.Pid, err)
+		pe.log.Debug("process", "Failed to kill process %v: %s", pe.process.cmd.Process.Pid, err)
 	}
 
-	err = pe.process.cmd.Wait()
+	pe.process.cmd.Wait()
 	if err != nil {
-		pe.log.Error("process", "Failed to reap process %v: %s", pe.process.cmd.Process.Pid, err)
+		pe.log.Debug("process", "Failed to reap process %v: %s", pe.process.cmd.Process.Pid, err)
 	}
 }
 
