@@ -62,8 +62,7 @@ func (pe *ProcessEndpoint) ReadOutput(input io.ReadCloser, config *Config) {
 			}
 			break
 		}
-		msg := str[0 : len(str)-1] // Trim new line
-		pe.output <- msg
+		pe.output <- trimEOL(str)
 	}
 	close(pe.output)
 }
@@ -80,7 +79,21 @@ func (pe *ProcessEndpoint) pipeStdErr(config *Config) {
 			}
 			break
 		}
-		msg := str[0 : len(str)-1] // Trim new line
-		pe.log.Error("stderr", "%s", msg)
+		pe.log.Error("stderr", "%s", trimEOL(str))
 	}
+}
+
+func trimEOL(s string) string {
+	// Handles unixy style \n and windowsy style \r\n
+	trimCount := 0
+	if len(s) > 0 && s[len(s)-1] == '\n' {
+		trimCount = 1
+		if len(s) > 1 && s[len(s)-2] == '\r' {
+			trimCount = 2
+		}
+	}
+	if trimCount == 0 {
+		return s
+	}
+	return s[0 : len(s)-trimCount]
 }
