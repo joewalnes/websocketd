@@ -60,7 +60,12 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo, id string) 
 
 	serverName, serverPort, err := net.SplitHostPort(req.Host)
 	if err != nil {
-		return nil, err
+		if !strings.Contains(req.Host, ":") {
+			serverName = req.Host
+			serverPort = "80"
+		} else {
+			return nil, err
+		}
 	}
 
 	standardEnvCount := 20
