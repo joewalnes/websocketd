@@ -21,6 +21,12 @@ Any message sent from the WebSocket client will be piped to the process `STDIN` 
 Any text printed by the process to `STDOUT` shall be sent as a WebSocket message whenever a `\n` newline is encountered.
 
 
+Download
+--------
+
+**[Download for Linux, OS X and Windows](https://github.com/joewalnes/websocketd/wiki/Download-and-install)**
+
+
 Quickstart
 ----------
 
@@ -85,4 +91,9 @@ __count.html__:
 Open this page in your web-browser. It will even work if you open it directly
 from disk using a `file://` URL.
 
+
+User Manual
+-----------
+
+**[More documentation in the user manual](https://github.com/joewalnes/websocketd/wiki)**
 
