@@ -8,9 +8,17 @@ Perform a fully automated repeateable release of websocketd. Including:
 *   Cross-compiling websocketd for all required platforms
 *   Uploading releases to http://download.websocketd.com/
 
-The installation should run on a stock Ubuntu installation - it will download any
-additional tools it needs. The first run will be slow as it has to cross-compile
-Go, but subsequent builds are incremental.
+The release process has been built and test on Ubuntu.
+
+Pre-reqs:
+
+    sudo apt-get install libc6-dev-i386 s3cmd git mercurial
+    s3cmd --configure  # Setup Amazon S3 credentials
+
+The actual Go release will be downloaded and cross-compiled. All compilation
+occurs in an isolated environment to ensure there are no conflicts with any
+system install Go. The first build will be really slow (cross compiling Go core),
+but subsequent builds are incremental.
 
 To build the packages for all platforms:
 
