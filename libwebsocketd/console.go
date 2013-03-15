@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package libwebsocketd
 
 // Although this isn't particularly elegant, it's the simplest
 // way to embed the console content into the binary.

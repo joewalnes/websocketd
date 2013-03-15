@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
 const (
@@ -64,6 +66,13 @@ Options:
                                  endpoint at ws://[host]/foo, you can
                                  visit http://[host]/foo in your browser.
 
+  --loglevel={debug,             Log level to use (from most to least
+              trace,             verbose).
+              access,
+              info,
+              error,
+              fatal}
+
 Full documentation at http://websocketd.com/
 
 Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.
@@ -74,6 +83,6 @@ BSD license: Run '{{binary}} --license' for details.
 func PrintHelp() {
 	msg := strings.Trim(help, " \n")
 	msg = strings.Replace(msg, "{{binary}}", filepath.Base(os.Args[0]), -1)
-	msg = strings.Replace(msg, "{{version}}", Version(), -1)
+	msg = strings.Replace(msg, "{{version}}", libwebsocketd.Version(), -1)
 	fmt.Fprintf(os.Stderr, "%s\n", msg)
 }

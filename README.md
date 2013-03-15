@@ -91,9 +91,51 @@ __count.html__:
 Open this page in your web-browser. It will even work if you open it directly
 from disk using a `file://` URL.
 
+Embedding Websocketd in your application
+----------------------------------------
+
+It is possible to embed websocketd directly inside an existing go
+project by registering a handler. Here is an example:
+
+    package main
+
+    import (
+        "fmt"
+        wsd "github.com/joewalnes/websocketd/libwebsocketd"
+        "net/http"
+    )
+
+    func main() {
+        // A log scope allows you to customize the logging that websocketd performs. You can provide your own
+        // log scope with a log func.
+        logScope := wsd.RootLogScope(wsd.LogAccess, func(l *wsd.LogScope, level wsd.LogLevel, levelName string,
+            category string, msg string, args ...interface{}) {
+            fmt.Println(args...)
+        })
+        // Configuration options tell websocketd where to look for programs to run as WebSockets.
+        config := &wsd.Config{
+            ScriptDir:      "./ws-bin",
+            UsingScriptDir: true,
+            StartupTime:    time.Now(),
+            DevConsole:     true,
+        }
+        // Register your route and handler.
+        http.HandleFunc("/ws-bin/", func(rw http.ResponseWriter, req *http.Request) {
+            handler := http.StripPrefix("/ws-bin", wsd.HttpWsMuxHandler{
+                Config: config,
+                Log:    logScope,
+            })
+            handler.ServeHTTP(rw, req)
+        })
+        if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {
+            fmt.Println("could not start server!", err)
+            os.Exit(1)
+        }
+    }
 
 User Manual
 -----------
 
 **[More documentation in the user manual](https://github.com/joewalnes/websocketd/wiki)**
 
+=======

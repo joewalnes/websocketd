@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package libwebsocketd
 
 // This value can be set for releases at build time using:
 //   go {build|run} -ldflags "-X main.version 1.2.3.4".

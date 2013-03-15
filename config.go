@@ -11,42 +11,69 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
 type Config struct {
-	Addr           string    // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
-	Verbose        bool      // Verbose logging.
-	BasePath       string    // Base URL path. e.g. "/"
-	CommandName    string    // Command to execute.
-	CommandArgs    []string  // Additional args to pass to command.
-	ReverseLookup  bool      // Perform reverse DNS lookups on hostnames (useful, but slower).
-	ScriptDir      string    // Base directory for websocket scripts
-	UsingScriptDir bool      // Are we running with a script dir
-	DevConsole     bool      // Enable dev console
-	StartupTime    time.Time // Server startup time (used for dev console caching)
+	BasePath string // Base URL path. e.g. "/"
+	Addr     string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	Verbose  bool   // Verbose logging.
+	LogLevel libwebsocketd.LogLevel
+	*libwebsocketd.Config
 }
 
 func parseCommandLine() Config {
-	var config Config
+	var mainConfig Config
+	var config libwebsocketd.Config
 
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
+	// server config options
 	portFlag := flag.Int("port", 80, "HTTP port to listen on")
 	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
-	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging")
-	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
-	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
+	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
+
+	// lib config options
+	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
+	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
+	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console")
 
 	flag.Parse()
 
-	config.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
-	config.Verbose = *verboseFlag
-	config.BasePath = *basePathFlag
+	mainConfig.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
+	mainConfig.Verbose = *verboseFlag
+	mainConfig.BasePath = *basePathFlag
+
+	switch *logLevelFlag {
+	case "debug":
+		mainConfig.LogLevel = libwebsocketd.LogDebug
+		break
+	case "trace":
+		mainConfig.LogLevel = libwebsocketd.LogTrace
+		break
+	case "access":
+		mainConfig.LogLevel = libwebsocketd.LogAccess
+		break
+	case "info":
+		mainConfig.LogLevel = libwebsocketd.LogInfo
+		break
+	case "error":
+		mainConfig.LogLevel = libwebsocketd.LogError
+		break
+	case "fatal":
+		mainConfig.LogLevel = libwebsocketd.LogFatal
+		break
+	default:
+		PrintHelp()
+		os.Exit(1)
+	}
+
 	config.ReverseLookup = *reverseLookupFlag
 	config.ScriptDir = *scriptDirFlag
 	config.DevConsole = *devConsoleFlag
@@ -58,13 +85,13 @@ func parseCommandLine() Config {
 	}
 
 	if *versionFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
+		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), libwebsocketd.Version())
 		os.Exit(2)
 	}
 
 	if *licenseFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
-		fmt.Printf("%s\n", License)
+		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), libwebsocketd.Version())
+		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(2)
 	}
 
@@ -94,5 +121,7 @@ func parseCommandLine() Config {
 		config.UsingScriptDir = true
 	}
 
-	return config
+	mainConfig.Config = &config
+
+	return mainConfig
 }
