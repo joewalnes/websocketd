@@ -15,7 +15,6 @@ GO_UNPACKED=$(GO_DIR)/.unpacked
 
 # Prevent any global environment polluting the builds
 GOROOT=
-GOPATH=
 
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = GOOS=linux   GOARCH=386

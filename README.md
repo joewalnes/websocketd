@@ -133,6 +133,30 @@ project by registering a handler. Here is an example:
         }
     }
 
+Hacking on Websocketd
+---------------------
+
+Install Go
+----------
+
+Use apt, homebrew etc or install directly from source. Follow the instructions at http://golang.org/doc/install.
+
+Building Websocketd
+-------------------
+
+Make sure you have set your `$GOPATH` to somewhere, e.g: `$HOME/gocode`:
+
+    $ mkdir -p $GOPATH/src/github.com/joewalnes
+    $ cd $GOPATH/src/github.com/joewalnes
+    $ git clone https://github.com/joewalnes/websocketd
+    $ cd websocketd
+    $ make
+
+This will build the binary which you can run to play with. If you just wish to run it, you can do:
+
+    $ go run *.go
+
+
 User Manual
 -----------
 
