@@ -14,14 +14,16 @@ GO_DIR=go-local/$(GO_VERSION)
 GO_UNPACKED=$(GO_DIR)/.unpacked
 
 # Prevent any global environment polluting the builds
-GOROOT=
+GOROOT=$(shell readlink -f $(GO_DIR))/go
+GOPATH=$(shell readlink -f go-path)
 
-FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
-FLAGS_linux_386     = GOOS=linux   GOARCH=386
-FLAGS_linux_arm     = GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
-FLAGS_darwin_amd64  = GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
-FLAGS_windows_386   = GOOS=windows GOARCH=386   CGO_ENABLED=0
-FLAGS_windows_amd64 = GOOS=windows GOARCH=amd64 CGO_ENABLED=0
+FLAGS_all = GOROOT=$(GOROOT) GOPATH=$(GOPATH)
+FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
+FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
+FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
+FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
+FLAGS_windows_386   = $(FLAGS_all) GOOS=windows GOARCH=386   CGO_ENABLED=0
+FLAGS_windows_amd64 = $(FLAGS_all) GOOS=windows GOARCH=amd64 CGO_ENABLED=0
 
 EXTENSION_windows_386=.exe
 EXTENSION_windows_amd64=.exe
@@ -30,6 +32,9 @@ EXTENSION_windows_amd64=.exe
 all: apps
 .PHONY: all
 
+go-path/src/github.com/joewalnes/websocketd:
+	mkdir -p go-path/src/github.com/joewalnes
+	ln -s ../../../../../ go-path/src/github.com/joewalnes/websocketd
 
 # Download Go source code
 $(GO_DOWNLOAD):
@@ -63,10 +68,10 @@ go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
 
 
 # Cross-compile final applications
-out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go)
+out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ..
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ./go-path/src/github.com/joewalnes/websocketd
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 

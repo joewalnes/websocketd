@@ -1,2 +1,5 @@
 bin
 go-local
+out
+go-path
+websocketd.exe
