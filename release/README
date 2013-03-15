@@ -5,8 +5,10 @@ Perform a fully automated repeateable release of websocketd. Including:
 
 *   Downloading the correct version of Go
 *   Cross-compiling Go for all required platforms
+*   Inferring the next websocketd release version
 *   Cross-compiling websocketd for all required platforms
 *   Uploading releases to http://download.websocketd.com/
+*   Git tagging the version
 
 The release process has been built and test on Ubuntu.
 
@@ -22,11 +24,12 @@ but subsequent builds are incremental.
 
 To build the packages for all platforms:
 
+    make build
+
+To perform a release to http://download.websocketd.com/
+(version number will be automatically determined based on last git tag):
+
     make
-
-To upload to http://download.websocketd.com/ as version 1.2.3.4
-
-    make RELEASE_VERSION=1.2.3.4 upload
 
 To clean up:
 

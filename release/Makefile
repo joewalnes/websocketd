@@ -3,7 +3,15 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-RELEASE_VERSION=0.0.0.0
+ifndef RELEASE_VERSION
+# If RELEASE_VERSION not defined, we'll figure it out by looking at the remote git tags, picking the most recent, and incrementing.
+RELEASE_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
+		| grep -e 'refs/tags/v[0-9\.]*$$' \
+		| sed -e 's|^.*refs/tags/v||' \
+		| sort \
+		| tail -n 1 \
+		| python -c 'import sys; chunks=map(int,sys.stdin.readline().strip().split(".")); chunks[len(chunks)-1]+=1; print ".".join(map(str,chunks))')
+endif
 
 GO_VERSION=1.0.3
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
@@ -29,7 +37,7 @@ EXTENSION_windows_386=.exe
 EXTENSION_windows_amd64=.exe
 
 
-all: apps
+all: release
 .PHONY: all
 
 go-path/src/github.com/joewalnes/websocketd:
@@ -75,24 +83,32 @@ out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) g
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
-apps: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built)
-.PHONY: apps
+build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built)
+.PHONY: build
 
 
-# Upload to http://download.websocketd.com/
-out/$(RELEASE_VERSION)/%/.uploaded: out/$(RELEASE_VERSION)/%/.built
+# release to http://download.websocketd.com/
+out/$(RELEASE_VERSION)/%/.releaseed: out/$(RELEASE_VERSION)/%/.built
 	rm -f $@
 	s3cmd put --acl-public --mime-type=application/octet-stream out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) s3://download.websocketd.com/releases/websocketd/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*)
 	touch $@
 
-upload: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.uploaded)
-.PHONY: upload
+release: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.releaseed) tag
+.PHONY: release 
+
+
+# Create remote Git tag
+tag:
+	git tag -a v$(RELEASE_VERSION) -m 'Tagged $(RELEASE_VERSION)'
+	git push git@github.com:joewalnes/websocketd.git --tags
+.PHONY: tag
 
 
 # Clean up
 clean:
 	rm -rf out
 .PHONY: clean
+
 
 clobber: clean
 	rm -rf go-local
