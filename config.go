@@ -18,7 +18,6 @@ import (
 type Config struct {
 	BasePath string // Base URL path. e.g. "/"
 	Addr     string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
-	Verbose  bool   // Verbose logging.
 	LogLevel libwebsocketd.LogLevel
 	*libwebsocketd.Config
 }
@@ -33,7 +32,6 @@ func parseCommandLine() Config {
 	// server config options
 	portFlag := flag.Int("port", 80, "HTTP port to listen on")
 	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
-	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -47,7 +45,6 @@ func parseCommandLine() Config {
 	flag.Parse()
 
 	mainConfig.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
-	mainConfig.Verbose = *verboseFlag
 	mainConfig.BasePath = *basePathFlag
 
 	switch *logLevelFlag {

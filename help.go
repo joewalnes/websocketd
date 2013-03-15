@@ -42,8 +42,6 @@ Options:
   --basepath=PATH                Base path in URLs to serve from. 
                                  Default: / (root of domain)
 
-  --verbose                      Enable verbose logging to stdout.
-
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: true
 
@@ -68,7 +66,7 @@ Options:
 
   --loglevel={debug,             Log level to use (from most to least
               trace,             verbose).
-              access,
+              access,            Default: access
               info,
               error,
               fatal}
