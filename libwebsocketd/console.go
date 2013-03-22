@@ -137,7 +137,7 @@ Full documentation at http://websocketd.com/
 	<button class="disconnect" title="Disconnect" style="display:none">&times;</button>
 	<button class="connect" title="Connect" style="display:none">&#x2714;</button>
 	<div class="url-holder">
-		<input class="url" type="text" value="ws://localhost:1234/">
+		<input class="url" type="text" value="ws://localhost:1234/" spellcheck="false">
 	</div>
 </header>
 
@@ -148,7 +148,7 @@ Full documentation at http://websocketd.com/
 	</div>
 	<div class="message type-input">
 		<span class="message-type">send &#xbb;</span>
-		<span class="message-data"><input type="text" class="send-input"></span>
+		<span class="message-data"><input type="text" class="send-input" spellcheck="false"></span>
 	</div>
 </section>
 
