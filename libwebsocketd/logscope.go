@@ -70,7 +70,7 @@ func (parent *LogScope) NewLevel(logFunc LogFunc) *LogScope {
 		MinLevel:   parent.MinLevel,
 		Mutex:      parent.Mutex,
 		Associated: make([]AssocPair, 0),
-	    LogFunc: logFunc}
+		LogFunc:    logFunc}
 }
 
 func RootLogScope(minLevel LogLevel, logFunc LogFunc) *LogScope {
@@ -79,7 +79,7 @@ func RootLogScope(minLevel LogLevel, logFunc LogFunc) *LogScope {
 		MinLevel:   minLevel,
 		Mutex:      &sync.Mutex{},
 		Associated: make([]AssocPair, 0),
-	    LogFunc: logFunc}
+		LogFunc:    logFunc}
 }
 
 func Timestamp() string {
