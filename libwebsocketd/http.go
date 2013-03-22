@@ -24,6 +24,14 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	hdrs := req.Header
 	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && strings.ToLower(hdrs.Get("Connection")) == "upgrade" {
 		// WebSocket
+
+		if hdrs.Get("Origin") == "null" {
+			// Fix up mismatch between how Chrome reports Origin
+			// when using file:// url (using the string "null"), and
+			// how the WebSocket library expects to see it.
+			hdrs.Set("Origin", "file:")
+		}
+
 		wsHandler := websocket.Handler(func(ws *websocket.Conn) {
 			acceptWebSocket(ws, h.Config, h.Log)
 		})
