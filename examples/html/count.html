@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>websocketd count example</title>
+    <style>
+      #count {
+        font: bold 150px arial;
+        margin: auto;
+        padding: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="count"></div>
+
+    <script>
+      var ws = new WebSocket('ws://localhost:8080/');
+      ws.onopen = function() {
+        document.body.style.backgroundColor = '#cfc';
+      };
+      ws.onclose = function() {
+        document.body.style.backgroundColor = null;
+      };
+      ws.onmessage = function(event) {
+        document.getElementById('count').innerText = event.data;
+      };
+    </script>
+
+  </body>
+</html>

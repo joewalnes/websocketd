@@ -88,12 +88,12 @@ build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built
 
 
 # release to http://download.websocketd.com/
-out/$(RELEASE_VERSION)/%/.releaseed: out/$(RELEASE_VERSION)/%/.built
+out/$(RELEASE_VERSION)/%/.released: out/$(RELEASE_VERSION)/%/.built
 	rm -f $@
 	s3cmd put --acl-public --mime-type=application/octet-stream out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) s3://download.websocketd.com/releases/websocketd/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*)
 	touch $@
 
-release: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.releaseed) tag
+release: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.released) tag
 .PHONY: release 
 
 
