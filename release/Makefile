@@ -41,6 +41,7 @@ FLAGS_windows_amd64 = $(FLAGS_all) GOOS=windows GOARCH=amd64 CGO_ENABLED=0
 EXTENSION_windows_386=.exe
 EXTENSION_windows_amd64=.exe
 
+msg=@/bin/echo -e "\x1b[33;01m>>> $1\x1b[0m"
 
 all: release
 .PHONY: all
@@ -51,6 +52,7 @@ go-path/src/github.com/joewalnes/websocketd:
 
 # Download Go source code
 $(GO_DOWNLOAD):
+	$(call msg,"Dowloading Go $(GO_VERSION)")
 	mkdir -p $(dir $@)
 	curl --silent --fail --output $@ $(GO_SRC_URL)
 
@@ -60,6 +62,7 @@ go-download: $(GO_DOWNLOAD)
 
 # Unpack Go source code
 $(GO_UNPACKED): $(GO_DOWNLOAD)
+	$(call msg,"Unpacking Go $(GO_VERSION)")
 	rm -f $(GO_UNPACKED)
 	mkdir -p $(GO_DIR)
 	tar xzf $(GO_DOWNLOAD) -C $(GO_DIR)
@@ -71,7 +74,7 @@ go-unpack: $(GO_UNPACKED)
 
 # Cross-compile Go package for target platform
 $(GO_DIR)/go/pkg/%/.built: $(GO_UNPACKED)
-	@echo "===========  Cross compiling GO for $*"
+	$(call msg,"Building Go for $*")
 	rm -f $@
 	cd $(GO_DIR)/go/src && $(FLAGS_$*) ./make.bash --no-clean
 	touch $@
@@ -82,6 +85,7 @@ go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
 
 # Cross-compile final applications
 out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
+	$(call msg,"Compiling release for $*")
 	rm -f $@
 	mkdir -p $(dir $@)
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go get ./go-path/src/github.com/joewalnes/websocketd
@@ -94,6 +98,7 @@ build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built
 
 # release to http://download.websocketd.com/
 out/$(RELEASE_VERSION)/%/.released: out/$(RELEASE_VERSION)/%/.built
+	$(call msg,"Uploading $(RELEASE_VERSION) $*")
 	rm -f $@
 	s3cmd put --acl-public --mime-type=application/octet-stream out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) s3://download.websocketd.com/releases/websocketd/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*)
 	touch $@
@@ -104,6 +109,7 @@ release: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.rel
 
 # Create remote Git tag
 tag:
+	$(call msg,"Git tagging $(RELEASE_VERSION)")
 	git tag -a v$(RELEASE_VERSION) -m 'Tagged $(RELEASE_VERSION)'
 	git push git@github.com:joewalnes/websocketd.git --tags
 .PHONY: tag
@@ -111,7 +117,7 @@ tag:
 
 # Clean up
 clean:
-	rm -rf out $(PLATFORMS) go-path
+	rm -rf out go-path
 .PHONY: clean
 
 
