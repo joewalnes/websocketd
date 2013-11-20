@@ -18,7 +18,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION) + 1),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.0.3
+GO_VERSION=1.1.2
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
 
 GO_SRC_URL=https://go.googlecode.com/files/go$(GO_VERSION).src.tar.gz
