@@ -52,7 +52,7 @@ go-path/src/github.com/joewalnes/websocketd:
 # Download Go source code
 $(GO_DOWNLOAD):
 	mkdir -p $(dir $@)
-	curl $(GO_SRC_URL) > $@
+	curl --silent --fail --output $@ $(GO_SRC_URL)
 
 go-download: $(GO_DOWNLOAD)
 .PHONY: go-download
@@ -62,7 +62,7 @@ go-download: $(GO_DOWNLOAD)
 $(GO_UNPACKED): $(GO_DOWNLOAD)
 	rm -f $(GO_UNPACKED)
 	mkdir -p $(GO_DIR)
-	tar xvzf $(GO_DOWNLOAD) -C $(GO_DIR)
+	tar xzf $(GO_DOWNLOAD) -C $(GO_DIR)
 	touch $(GO_UNPACKED)
 
 go-unpack: $(GO_UNPACKED)
@@ -111,7 +111,7 @@ tag:
 
 # Clean up
 clean:
-	rm -rf out
+	rm -rf out $(PLATFORMS) go-path
 .PHONY: clean
 
 
