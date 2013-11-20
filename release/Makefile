@@ -3,15 +3,20 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-ifndef RELEASE_VERSION
-# If RELEASE_VERSION not defined, we'll figure it out by looking at the remote git tags, picking the most recent, and incrementing.
-RELEASE_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
+# Uses Semantic Versioning scheme - http://semver.org/
+VERSION_MAJOR=0
+VERSION_MINOR=2
+
+# Last part of version number (patch) is incremented automatically from Git tags
+LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
 		| grep -e 'refs/tags/v[0-9\.]*$$' \
 		| sed -e 's|^.*refs/tags/v||' \
-		| sort \
-		| tail -n 1 \
-		| python -c 'import sys; chunks=map(int,sys.stdin.readline().strip().split(".")); chunks[len(chunks)-1]+=1; print ".".join(map(str,chunks))')
-endif
+		| grep -e "^$(VERSION_MAJOR)\.$(VERSION_MINOR)\.[0-9][0-9]*$$" \
+		| sed -e 's/^.*\.//' \
+		| sort -n \
+		| tail -n 1)
+VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION) + 1),0)
+RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
 GO_VERSION=1.0.3
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
