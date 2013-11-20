@@ -8,7 +8,7 @@ package libwebsocketd
 import (
 	"bufio"
 	"io"
-    "syscall"
+	"syscall"
 )
 
 type ProcessEndpoint struct {
@@ -32,10 +32,10 @@ func (pe *ProcessEndpoint) Terminate() {
 	err := pe.process.cmd.Process.Signal(syscall.SIGINT)
 	if err != nil {
 		pe.log.Debug("process", "Failed to Interupt process %v: %s, attempting to kill", pe.process.cmd.Process.Pid, err)
-        err = pe.process.cmd.Process.Kill()
-        if err != nil {
-            pe.log.Debug("process", "Failed to Kill process %v: %s", pe.process.cmd.Process.Pid, err)
-        }
+		err = pe.process.cmd.Process.Kill()
+		if err != nil {
+			pe.log.Debug("process", "Failed to Kill process %v: %s", pe.process.cmd.Process.Pid, err)
+		}
 	}
 
 	pe.process.cmd.Wait()

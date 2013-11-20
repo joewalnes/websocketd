@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
 const (
@@ -81,6 +79,6 @@ BSD license: Run '{{binary}} --license' for details.
 func PrintHelp() {
 	msg := strings.Trim(help, " \n")
 	msg = strings.Replace(msg, "{{binary}}", filepath.Base(os.Args[0]), -1)
-	msg = strings.Replace(msg, "{{version}}", libwebsocketd.Version(), -1)
+	msg = strings.Replace(msg, "{{version}}", Version(), -1)
 	fmt.Fprintf(os.Stderr, "%s\n", msg)
 }

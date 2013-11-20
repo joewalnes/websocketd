@@ -17,5 +17,6 @@ type Config struct {
 	UsingScriptDir bool      // Are we running with a script dir.
 	StartupTime    time.Time // Server startup time (used for dev console caching).
 	DevConsole     bool      // Enable dev console.
+	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
 	Env            []string  // Additional environment variables to pass to process ("key=value").
 }

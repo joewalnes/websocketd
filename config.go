@@ -75,6 +75,7 @@ func parseCommandLine() Config {
 	config.ScriptDir = *scriptDirFlag
 	config.DevConsole = *devConsoleFlag
 	config.StartupTime = time.Now()
+	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
 
 	if len(os.Args) == 1 {
 		PrintHelp()
@@ -82,12 +83,12 @@ func parseCommandLine() Config {
 	}
 
 	if *versionFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), libwebsocketd.Version())
+		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
 		os.Exit(2)
 	}
 
 	if *licenseFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), libwebsocketd.Version())
+		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
 		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(2)
 	}
