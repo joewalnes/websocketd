@@ -16,7 +16,8 @@ type Config struct {
 	ScriptDir      string    // Base directory for websocket scripts.
 	UsingScriptDir bool      // Are we running with a script dir.
 	StartupTime    time.Time // Server startup time (used for dev console caching).
-	DevConsole     bool      // Enable dev console.
+	StaticDir      string    // If set, static files will be served from this dir over HTTP.
+	DevConsole     bool      // Enable dev console. This disables StaticDir.
 	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
 	Env            []string  // Additional environment variables to pass to process ("key=value").
 }

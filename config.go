@@ -40,7 +40,8 @@ func parseCommandLine() Config {
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
-	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console")
+	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
+	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjuction with --staticdir)")
 
 	flag.Parse()
 
@@ -73,6 +74,7 @@ func parseCommandLine() Config {
 
 	config.ReverseLookup = *reverseLookupFlag
 	config.ScriptDir = *scriptDirFlag
+	config.StaticDir = *staticDirFlag
 	config.DevConsole = *devConsoleFlag
 	config.StartupTime = time.Now()
 	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())

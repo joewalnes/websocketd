@@ -40,6 +40,10 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// Dev console (if enabled)
 		content := strings.Replace(ConsoleContent, "{{license}}", License, -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
+	} else if h.Config.StaticDir != "" {
+		// Serve static files
+		handler := http.FileServer(http.Dir(h.Config.StaticDir))
+		handler.ServeHTTP(w, req)
 	} else {
 		// 404
 		http.NotFound(w, req)

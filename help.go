@@ -48,6 +48,13 @@ Options:
                                  option, then the standard program and args
                                  options should not be specified.
 
+  --staticdir=DIR                Serve static files in this directory over HTTP.
+                                 If a static file has the same filename as a
+                                 WebSocket handler, the WebSocket handler will
+                                 always take priority.
+                                 This flag cannot be used in conjunction
+                                 with --devconsole.
+
   --help                         Print help and exit.
 
   --version                      Print version and exit.
@@ -61,6 +68,8 @@ Options:
                                  endpoints. For example, to test an
                                  endpoint at ws://[host]/foo, you can
                                  visit http://[host]/foo in your browser.
+                                 This flag cannot be used in conjunction
+                                 with --staticdir.
 
   --loglevel={debug,             Log level to use (from most to least
               trace,             verbose).

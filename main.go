@@ -40,6 +40,11 @@ func main() {
 
 	log := libwebsocketd.RootLogScope(config.LogLevel, log)
 
+	if config.DevConsole && config.StaticDir != "" {
+		log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")
+		os.Exit(4)
+	}
+
 	http.Handle(config.BasePath, libwebsocketd.HttpWsMuxHandler{
 		Config: config.Config,
 		Log:    log})
@@ -52,6 +57,9 @@ func main() {
 		log.Info("server", "Serving from directory    : %s", config.ScriptDir)
 	} else {
 		log.Info("server", "Serving using application : %s %s", config.CommandName, strings.Join(config.CommandArgs, " "))
+	}
+	if config.StaticDir != "" {
+		log.Info("server", "Serving static content from : %s", config.StaticDir)
 	}
 
 	err := http.ListenAndServe(config.Addr, nil)
