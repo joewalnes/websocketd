@@ -6,12 +6,15 @@
 package libwebsocketd
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"fmt"
 	"net/http"
+	"net/http/cgi"
+	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
-
-	"code.google.com/p/go.net/websocket"
 )
 
 type HttpWsMuxHandler struct {
@@ -22,8 +25,20 @@ type HttpWsMuxHandler struct {
 // Main HTTP handler. Muxes between WebSocket handler, DevConsole or 404.
 func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	hdrs := req.Header
+
+	log := h.Log.NewLevel(h.Log.LogFunc)
+	log.Associate("url", fmt.Sprintf("http://%s%s", req.RemoteAddr, req.URL.RequestURI()))
+
+	_, remoteHost, _, err := remoteDetails(req, h.Config)
+	if err != nil {
+		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
+		return
+	}
+
+	log.Associate("remote", remoteHost)
+
+	// WebSocket
 	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && strings.ToLower(hdrs.Get("Connection")) == "upgrade" {
-		// WebSocket
 
 		if hdrs.Get("Origin") == "null" {
 			// Fix up mismatch between how Chrome reports Origin
@@ -32,22 +47,48 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			hdrs.Set("Origin", "file:")
 		}
 
-		wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-			acceptWebSocket(ws, h.Config, h.Log)
-		})
-		wsHandler.ServeHTTP(w, req)
-	} else if h.Config.DevConsole {
-		// Dev console (if enabled)
+		if h.Config.CommandName != "" || h.Config.UsingScriptDir {
+			wsHandler := websocket.Handler(func(ws *websocket.Conn) {
+				acceptWebSocket(ws, h.Config, log)
+			})
+			wsHandler.ServeHTTP(w, req)
+			return
+		}
+	}
+
+	// Dev console (if enabled)
+	if h.Config.DevConsole {
 		content := strings.Replace(ConsoleContent, "{{license}}", License, -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
-	} else if h.Config.StaticDir != "" {
-		// Serve static files
-		handler := http.FileServer(http.Dir(h.Config.StaticDir))
-		handler.ServeHTTP(w, req)
-	} else {
-		// 404
-		http.NotFound(w, req)
+		return
 	}
+
+	// CGI scripts
+	if h.Config.CgiDir != "" {
+		filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
+
+		if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
+			cgiHandler := &cgi.Handler{
+				Path: filePath,
+			}
+			log.Associate("cgiscript", filePath)
+			log.Access("http", "CGI")
+			cgiHandler.ServeHTTP(w, req)
+			return
+		}
+	}
+
+	// Static files
+	if h.Config.StaticDir != "" {
+		handler := http.FileServer(http.Dir(h.Config.StaticDir))
+		log.Access("http", "STATIC")
+		handler.ServeHTTP(w, req)
+		return
+	}
+
+	// 404
+	log.Access("http", "NOT FOUND")
+	http.NotFound(w, req)
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
@@ -55,17 +96,9 @@ func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
 
 	req := ws.Request()
 	id := generateId()
-	_, remoteHost, _, err := remoteDetails(ws, config)
-	if err != nil {
-		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
-		return
-	}
 
-	log = log.NewLevel(log.LogFunc)
 	log.Associate("id", id)
-	log.Associate("url", fmt.Sprintf("http://%s%s", req.RemoteAddr, req.URL.RequestURI()))
 	log.Associate("origin", req.Header.Get("Origin"))
-	log.Associate("remote", remoteHost)
 
 	log.Access("session", "CONNECT")
 	defer log.Access("session", "DISCONNECT")

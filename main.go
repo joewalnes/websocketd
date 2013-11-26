@@ -40,26 +40,35 @@ func main() {
 
 	log := libwebsocketd.RootLogScope(config.LogLevel, log)
 
-	if config.DevConsole && config.StaticDir != "" {
-		log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")
-		os.Exit(4)
+	if config.DevConsole {
+		if config.StaticDir != "" {
+			log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")
+			os.Exit(4)
+		}
+		if config.CgiDir != "" {
+			log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --cgidir. Pick one.")
+			os.Exit(4)
+		}
 	}
 
 	http.Handle(config.BasePath, libwebsocketd.HttpWsMuxHandler{
 		Config: config.Config,
 		Log:    log})
 
-	log.Info("server", "Starting WebSocket server : ws://%s%s", config.Addr, config.BasePath)
+	log.Info("server", "Starting WebSocket server   : ws://%s%s", config.Addr, config.BasePath)
 	if config.DevConsole {
-		log.Info("server", "Developer console enabled : http://%s/", config.Addr)
+		log.Info("server", "Developer console enable  d : http://%s/", config.Addr)
 	}
 	if config.UsingScriptDir {
-		log.Info("server", "Serving from directory    : %s", config.ScriptDir)
-	} else {
-		log.Info("server", "Serving using application : %s %s", config.CommandName, strings.Join(config.CommandArgs, " "))
+		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
+	} else if config.CommandName != "" {
+		log.Info("server", "Serving using application   : %s %s", config.CommandName, strings.Join(config.CommandArgs, " "))
 	}
 	if config.StaticDir != "" {
 		log.Info("server", "Serving static content from : %s", config.StaticDir)
+	}
+	if config.CgiDir != "" {
+		log.Info("server", "Serving CGI scripts from    : %s", config.CgiDir)
 	}
 
 	err := http.ListenAndServe(config.Addr, nil)

@@ -8,6 +8,7 @@ package libwebsocketd
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -27,8 +28,8 @@ func generateId() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }
 
-func remoteDetails(ws *websocket.Conn, config *Config) (string, string, string, error) {
-	remoteAddr, remotePort, err := net.SplitHostPort(ws.Request().RemoteAddr)
+func remoteDetails(req *http.Request, config *Config) (string, string, string, error) {
+	remoteAddr, remotePort, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -53,7 +54,7 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo, id string) 
 	headers := req.Header
 	url := req.URL
 
-	remoteAddr, remoteHost, remotePort, err := remoteDetails(ws, config)
+	remoteAddr, remoteHost, remotePort, err := remoteDetails(ws.Request(), config)
 	if err != nil {
 		return nil, err
 	}

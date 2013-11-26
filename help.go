@@ -49,11 +49,8 @@ Options:
                                  options should not be specified.
 
   --staticdir=DIR                Serve static files in this directory over HTTP.
-                                 If a static file has the same filename as a
-                                 WebSocket handler, the WebSocket handler will
-                                 always take priority.
-                                 This flag cannot be used in conjunction
-                                 with --devconsole.
+
+  --cgidir=DIR                   Serve CGI scripts in this directory over HTTP.
 
   --help                         Print help and exit.
 
@@ -69,7 +66,7 @@ Options:
                                  endpoint at ws://[host]/foo, you can
                                  visit http://[host]/foo in your browser.
                                  This flag cannot be used in conjunction
-                                 with --staticdir.
+                                 with --staticdir or --cgidir.
 
   --loglevel={debug,             Log level to use (from most to least
               trace,             verbose).

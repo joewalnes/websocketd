@@ -41,6 +41,7 @@ func parseCommandLine() Config {
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
+	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjuction with --staticdir)")
 
 	flag.Parse()
@@ -75,6 +76,7 @@ func parseCommandLine() Config {
 	config.ReverseLookup = *reverseLookupFlag
 	config.ScriptDir = *scriptDirFlag
 	config.StaticDir = *staticDirFlag
+	config.CgiDir = *cgiDirFlag
 	config.DevConsole = *devConsoleFlag
 	config.StartupTime = time.Now()
 	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
@@ -96,8 +98,8 @@ func parseCommandLine() Config {
 	}
 
 	args := flag.Args()
-	if len(args) < 1 && config.ScriptDir == "" {
-		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir argument.\n")
+	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
+		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.\n")
 		os.Exit(1)
 	}
 
