@@ -8,7 +8,7 @@ WebSocket capable applications can now be built very easily. So long as you can 
 can build a WebSocket server. Do it in Python, Ruby, Perl, Bash, .NET, C, Go, PHP, Java, Clojure, Scala, Groovy, Expect, Awk, VBScript,
 Haskell, Lua, R, whatever! No networking libraries necessary.
 
-Like this? Subscribe to my email list at (The Igloo Lab)[http://theigloolab.com/] for other projects and writings.
+Like this? Subscribe to my email list at [The Igloo Lab](http://theigloolab.com/) for other projects and writings.
 
 Details
 -------
