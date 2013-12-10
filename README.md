@@ -37,57 +37,64 @@ To show how simple it is, let's do it in Bash!
 
 __count.sh__:
 
-    #!/bin/bash
-    for COUNT in $(seq 1 10); do
-      echo $COUNT
-      sleep 1
-    done
+```sh
+#!/bin/bash
+for COUNT in $(seq 1 10); do
+  echo $COUNT
+  sleep 1
+done
+```
 
 Before turning it into a WebSocket server, let's test it from the command line. The beauty of `websocketd` is servers
 work equally well on the command line, or in shell scripts, as they do in the server - with no modifications required.
 
-    $ chmod +x count.sh
-    $ ./count.sh
-    1
-    2
-    3
-    4
-    5
-    6
-    7
-    8
-    9
-    10
+```sh
+$ chmod +x count.sh
+$ ./count.sh
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
 
 Now let's turn it into a WebSocket server:
 
-    $ websocketd --port=8080 ./count.sh
+```sh
+$ websocketd --port=8080 ./count.sh
+```
 
 Finally, let's create a web-page that to test it.
 
 __count.html__:
 
-    <!DOCTYPE html>
-    <pre id="log"></pre>
-    <script>
-      // helper function: log message to screen
-      function log(msg) {
-        document.getElementById('log').innerText += msg + '\n';
-      }
+```html
+<!DOCTYPE html>
+<pre id="log"></pre>
+<script>
+  // helper function: log message to screen
+  function log(msg) {
+    document.getElementById('log').innerText += msg + '\n';
+  }
 
-      // setup websocket with callbacks
-      var ws = new WebSocket('ws://localhost:8080/');
-      ws.onopen = function() {
-        log('CONNECT');
-      };
-      ws.onclose = function() {
-        log('DISCONNECT');
-      };
-      ws.onmessage = function(event) {
-        log('MESSAGE: ' + event.data);
-      };
-    </script>
-
+  // setup websocket with callbacks
+  var ws = new WebSocket('ws://localhost:8080/');
+  ws.onopen = function() {
+    log('CONNECT');
+  };
+  ws.onclose = function() {
+    log('DISCONNECT');
+  };
+  ws.onmessage = function(event) {
+    log('MESSAGE: ' + event.data);
+  };
+</script>
+```
 Open this page in your web-browser. It will even work if you open it directly
 from disk using a `file://` URL.
 
