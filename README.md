@@ -97,4 +97,11 @@ User Manual
 
 **[More documentation in the user manual](https://github.com/joewalnes/websocketd/wiki)**
 
+Example Project
+---------------
+
+*   [Plot real time Linux CPU/IO/Mem stats to a dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats)
+
+Got more examples? Open a pull request.
+
 =======
