@@ -2,12 +2,13 @@ websocketd
 ==========
 
 `websocketd` is a small command line tool that will wrap an existing command line interface program, and allow it to be accessed
-via a WebSocket. It provides a quick mechanism for allowing web-applications to interact with existing command line tools.
+via a WebSocket.
 
-WebSocket servers can now be built very easily. So long as you can write an executable program that reads `STDIN` and writes `STDOUT`, you
+WebSocket capable applications can now be built very easily. So long as you can write an executable program that reads `STDIN` and writes `STDOUT`, you
 can build a WebSocket server. Do it in Python, Ruby, Perl, Bash, .NET, C, Go, PHP, Java, Clojure, Scala, Groovy, Expect, Awk, VBScript,
-Haskell, Lua, Rwhatever! No networking libraries necessary.
+Haskell, Lua, R, whatever! No networking libraries necessary.
 
+Like this? Subscribe to my email list at (The Igloo Lab)[http://theigloolab.com/] for other projects and writings.
 
 Details
 -------
