@@ -111,4 +111,9 @@ Example Project
 
 Got more examples? Open a pull request.
 
+My Other Projects
+-----------------
+
+Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thingies I make.
+
 =======
