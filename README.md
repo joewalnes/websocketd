@@ -8,8 +8,6 @@ WebSocket capable applications can now be built very easily. So long as you can 
 can build a WebSocket server. Do it in Python, Ruby, Perl, Bash, .NET, C, Go, PHP, Java, Clojure, Scala, Groovy, Expect, Awk, VBScript,
 Haskell, Lua, R, whatever! No networking libraries necessary.
 
-Like this? Subscribe to my email list at [The Igloo Lab](http://theigloolab.com/) for other projects and writings.
-
 Details
 -------
 
@@ -99,6 +97,14 @@ __count.html__:
 Open this page in your web-browser. It will even work if you open it directly
 from disk using a `file://` URL.
 
+More Features
+-------------
+
+*   Very simple install. Just [download](https://github.com/joewalnes/websocketd/wiki/Download-and-install) the single executable for Linux, Mac or Windows and run it. No dependencies, no installers, no package managers, no external libraries. Suitable for development and production servers.
+*   Server side scripts can access details about the WebSocket HTTP request (e.g. remote host, query parameters, cookies, path, etc) via standard [CGI environment variables](https://github.com/joewalnes/websocketd/wiki/Environment-variables).
+*   As well as serving websocket daemons it also includes a static file server and classic CGI server for convenience.
+*   Command line help available via `websocketd --help`.
+*   Includes [WebSocket developer console](https://github.com/joewalnes/websocketd/wiki/Developer-console) to make it easy to test your scripts before you've built a JavaScript frontend.
 
 User Manual
 -----------
