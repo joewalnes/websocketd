@@ -1,7 +1,7 @@
 Release scripts for websocketd
 ==============================
 
-Perform a fully automated repeateable release of websocketd. Including:
+Perform a fully automated repeatable release of websocketd. Including:
 
 *   Downloading the correct version of Go
 *   Cross-compiling Go for all required platforms

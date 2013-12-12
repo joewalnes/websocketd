@@ -42,7 +42,7 @@ func parseCommandLine() Config {
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
 	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
-	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjuction with --staticdir)")
+	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
 
 	flag.Parse()
 
