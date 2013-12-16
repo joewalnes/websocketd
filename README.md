@@ -119,3 +119,5 @@ My Other Projects
 Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thingies I make.
 
 =======
+
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/aeb01930fd25ab098615558d14e52ccb "githalytics.com")](http://githalytics.com/joewalnes/websocketd)
