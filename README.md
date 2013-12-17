@@ -121,3 +121,7 @@ Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thi
 =======
 
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/aeb01930fd25ab098615558d14e52ccb "githalytics.com")](http://githalytics.com/joewalnes/websocketd)
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/joewalnes/websocketd/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
