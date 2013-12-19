@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -37,8 +38,10 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	log.Associate("remote", remoteHost)
 
+	upgradeRe := regexp.MustCompile("(?i)([A-z]\\s*,)?\\s*Upgrade\\s*(,\\s*[A-z])?")
+
 	// WebSocket
-	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && strings.ToLower(hdrs.Get("Connection")) == "upgrade" {
+	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
 
 		if hdrs.Get("Origin") == "null" {
 			// Fix up mismatch between how Chrome reports Origin
