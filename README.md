@@ -110,6 +110,7 @@ Example Project
 ---------------
 
 *   [Plot real time Linux CPU/IO/Mem stats to a dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats)
+*   [Remote JScript & VBScript code execution tool based on websocket, websocketd is required](https://github.com/dab00/ws-console)
 
 Got more examples? Open a pull request.
 
