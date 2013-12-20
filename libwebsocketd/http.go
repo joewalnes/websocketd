@@ -38,7 +38,7 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	log.Associate("remote", remoteHost)
 
-	upgradeRe := regexp.MustCompile("(?i)([A-z]\\s*,)?\\s*Upgrade\\s*(,\\s*[A-z])?")
+	upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
 
 	// WebSocket
 	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
