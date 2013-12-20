@@ -109,8 +109,8 @@ User Manual
 Example Project
 ---------------
 
-*   [Plot real time Linux CPU/IO/Mem stats to a dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats)
-*   [Remote JScript & VBScript code execution tool based on websocketd](https://github.com/dab00/ws-console)
+*   [Plot real time Linux CPU/IO/Mem stats to a dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats) _(for Linux)_
+*   [Remote JScript & VBScript code execution tool based on websocketd](https://github.com/dab00/ws-console) _(for Windows)_
 
 Got more examples? Open a pull request.
 
