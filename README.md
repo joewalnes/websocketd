@@ -5,6 +5,8 @@ websocketd
 
 WebSocket-capable applications can now be built very easily. As long as you can write an executable program that reads `STDIN` and writes to `STDOUT`, you can build a WebSocket server. Do it in Python, Ruby, Perl, Bash, .NET, C, Go, PHP, Java, Clojure, Scala, Groovy, Expect, Awk, VBScript, Haskell, Lua, R, whatever! No networking libraries necessary.
 
+-[@joewalnes](https://twitter.com/joewalnes)
+
 Details
 -------
 
@@ -117,7 +119,11 @@ Got more examples? Open a pull request.
 My Other Projects
 -----------------
 
-Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thingies I make.
+*   [ReconnectingWebSocket](https://github.com/joewalnes/reconnecting-websocket) - Simplest way to add some robustness to your WebSocket connections.
+*   [Smoothie Charts](http://smoothiecharts.org/) - JavaScript charts for streaming data.
+*   Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thingies I make.
+
+And [follow @joewalnes](https://twitter.com/joewalnes)!
 
 =======
 
