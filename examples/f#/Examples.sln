@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Echo", "Echo\Echo.fsproj", "{6F680332-CAA0-447B-A87E-AF272DED5701}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Count", "Count\Count.fsproj", "{367C65FD-485B-45C0-9C0E-7CE455951EAE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F680332-CAA0-447B-A87E-AF272DED5701}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F680332-CAA0-447B-A87E-AF272DED5701}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F680332-CAA0-447B-A87E-AF272DED5701}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F680332-CAA0-447B-A87E-AF272DED5701}.Release|Any CPU.Build.0 = Release|Any CPU
+		{367C65FD-485B-45C0-9C0E-7CE455951EAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{367C65FD-485B-45C0-9C0E-7CE455951EAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{367C65FD-485B-45C0-9C0E-7CE455951EAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{367C65FD-485B-45C0-9C0E-7CE455951EAE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
