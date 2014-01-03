@@ -1,13 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2FCA7AD2-394D-46AF-AC6C-9A720F06922F}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Echo", "Echo\Echo.fsproj", "{6F680332-CAA0-447B-A87E-AF272DED5701}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Count", "Count\Count.fsproj", "{367C65FD-485B-45C0-9C0E-7CE455951EAE}"
