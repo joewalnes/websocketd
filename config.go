@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/joewalnes/websocketd/libwebsocketd"
@@ -23,6 +22,17 @@ type Config struct {
 	*libwebsocketd.Config
 }
 
+type AddrList []string
+
+func (al *AddrList) String() string {
+	return fmt.Sprintf("%v", []string(*al))
+}
+
+func (al *AddrList) Set(value string) error {
+	*al = append(*al, value)
+	return nil
+}
+
 func parseCommandLine() Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
@@ -30,9 +40,11 @@ func parseCommandLine() Config {
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
+	addrlist := AddrList(make([]string, 0, 1)) // pre-reserve for 1 address
+	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
+
 	// server config options
 	portFlag := flag.Int("port", 80, "HTTP port to listen on")
-	addressFlag := flag.String("address", "", "Interfaces to bind to separated by comma (e.g. 127.0.0.1). Empty means all.")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -47,10 +59,13 @@ func parseCommandLine() Config {
 
 	flag.Parse()
 
-	addrFields := strings.Split(*addressFlag, ",")
-	mainConfig.Addr = make([]string, len(addrFields))
-	for i, addrSingle := range addrFields {
-		mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
+	if socknum := len(addrlist); socknum != 0 {
+		mainConfig.Addr = make([]string, socknum)
+		for i, addrSingle := range addrlist {
+			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
+		}
+	} else {
+		mainConfig.Addr = []string{fmt.Sprintf(":%d", *portFlag)}
 	}
 	mainConfig.BasePath = *basePathFlag
 
