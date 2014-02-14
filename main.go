@@ -55,9 +55,11 @@ func main() {
 		Config: config.Config,
 		Log:    log})
 
-	log.Info("server", "Starting WebSocket server   : ws://%s%s", config.Addr, config.BasePath)
-	if config.DevConsole {
-		log.Info("server", "Developer console enable  d : http://%s/", config.Addr)
+	for _, addrSingle := range config.Addr {
+		log.Info("server", "Starting WebSocket server   : ws://%s%s", addrSingle, config.BasePath)
+		if config.DevConsole {
+			log.Info("server", "Developer console enabled : http://%s/", addrSingle)
+		}
 	}
 	if config.UsingScriptDir {
 		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
@@ -71,9 +73,11 @@ func main() {
 		log.Info("server", "Serving CGI scripts from    : %s", config.CgiDir)
 	}
 
-	err := http.ListenAndServe(config.Addr, nil)
-	if err != nil {
-		log.Fatal("server", "Could start server: %s", err)
-		os.Exit(3)
+	for _, addrSingle := range config.Addr {
+		err := http.ListenAndServe(addrSingle, nil)
+		if err != nil {
+			log.Fatal("server", "Can't start server: %s", err)
+			os.Exit(3)
+		}
 	}
 }

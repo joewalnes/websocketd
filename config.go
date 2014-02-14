@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/joewalnes/websocketd/libwebsocketd"
@@ -17,7 +18,7 @@ import (
 
 type Config struct {
 	BasePath string // Base URL path. e.g. "/"
-	Addr     string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	Addr     []string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
 	LogLevel libwebsocketd.LogLevel
 	*libwebsocketd.Config
 }
@@ -46,7 +47,11 @@ func parseCommandLine() Config {
 
 	flag.Parse()
 
-	mainConfig.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
+	addrFields := strings.Split(*addressFlag, ",")
+	mainConfig.Addr = make([]string, len(addrFields))
+	for i,addrSingle := range addrFields {
+		mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
+	}
 	mainConfig.BasePath = *basePathFlag
 
 	switch *logLevelFlag {
