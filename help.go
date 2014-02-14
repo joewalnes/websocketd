@@ -34,8 +34,9 @@ Options:
 
   --port=PORT                    HTTP port to listen on.
 
-  --address=ADDRESS              Address to bind to. 
-                                 Default: 0.0.0.0 (all)
+  --address=ADDRESS              Addresseto bind to (multiple options allowed)
+                                 Use square brackets to specify IPv6 address. 
+                                 Default: "" (all)
 
   --basepath=PATH                Base path in URLs to serve from. 
                                  Default: / (root of domain)

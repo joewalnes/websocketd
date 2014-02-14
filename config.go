@@ -16,10 +16,21 @@ import (
 )
 
 type Config struct {
-	BasePath string // Base URL path. e.g. "/"
-	Addr     string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	BasePath string   // Base URL path. e.g. "/"
+	Addr     []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	LogLevel libwebsocketd.LogLevel
 	*libwebsocketd.Config
+}
+
+type AddrList []string
+
+func (al *AddrList) String() string {
+	return fmt.Sprintf("%v", []string(*al))
+}
+
+func (al *AddrList) Set(value string) error {
+	*al = append(*al, value)
+	return nil
 }
 
 func parseCommandLine() Config {
@@ -29,9 +40,11 @@ func parseCommandLine() Config {
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
+	addrlist := AddrList(make([]string, 0, 1)) // pre-reserve for 1 address
+	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
+
 	// server config options
 	portFlag := flag.Int("port", 80, "HTTP port to listen on")
-	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -46,7 +59,14 @@ func parseCommandLine() Config {
 
 	flag.Parse()
 
-	mainConfig.Addr = fmt.Sprintf("%s:%d", *addressFlag, *portFlag)
+	if socknum := len(addrlist); socknum != 0 {
+		mainConfig.Addr = make([]string, socknum)
+		for i, addrSingle := range addrlist {
+			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
+		}
+	} else {
+		mainConfig.Addr = []string{fmt.Sprintf(":%d", *portFlag)}
+	}
 	mainConfig.BasePath = *basePathFlag
 
 	switch *logLevelFlag {
