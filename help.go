@@ -34,7 +34,7 @@ Options:
 
   --port=PORT                    HTTP port to listen on.
 
-  --address=ADDRESS              Addresseto bind to (multiple options allowed)
+  --address=ADDRESS              Address to bind to (multiple options allowed)
                                  Use square brackets to specify IPv6 address. 
                                  Default: "" (all)
 
