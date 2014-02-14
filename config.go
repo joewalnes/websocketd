@@ -17,8 +17,8 @@ import (
 )
 
 type Config struct {
-	BasePath string // Base URL path. e.g. "/"
-	Addr     []string // TCP address to listen on. e.g. ":1234", "1.2.3.4:1234"
+	BasePath string   // Base URL path. e.g. "/"
+	Addr     []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	LogLevel libwebsocketd.LogLevel
 	*libwebsocketd.Config
 }
@@ -32,7 +32,7 @@ func parseCommandLine() Config {
 
 	// server config options
 	portFlag := flag.Int("port", 80, "HTTP port to listen on")
-	addressFlag := flag.String("address", "0.0.0.0", "Interface to bind to (e.g. 127.0.0.1)")
+	addressFlag := flag.String("address", "", "Interfaces to bind to separated by comma (e.g. 127.0.0.1). Empty means all.")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -49,7 +49,7 @@ func parseCommandLine() Config {
 
 	addrFields := strings.Split(*addressFlag, ",")
 	mainConfig.Addr = make([]string, len(addrFields))
-	for i,addrSingle := range addrFields {
+	for i, addrSingle := range addrFields {
 		mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
 	}
 	mainConfig.BasePath = *basePathFlag
