@@ -55,12 +55,6 @@ func main() {
 		Config: config.Config,
 		Log:    log})
 
-	for _, addrSingle := range config.Addr {
-		log.Info("server", "Starting WebSocket server   : ws://%s%s", addrSingle, config.BasePath)
-		if config.DevConsole {
-			log.Info("server", "Developer console enabled : http://%s/", addrSingle)
-		}
-	}
 	if config.UsingScriptDir {
 		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
 	} else if config.CommandName != "" {
@@ -73,11 +67,22 @@ func main() {
 		log.Info("server", "Serving CGI scripts from    : %s", config.CgiDir)
 	}
 
+	rejects := make(chan error, 1)
 	for _, addrSingle := range config.Addr {
-		err := http.ListenAndServe(addrSingle, nil)
-		if err != nil {
-			log.Fatal("server", "Can't start server: %s", err)
-			os.Exit(3)
+		log.Info("server", "Starting WebSocket server   : ws://%s%s", addrSingle, config.BasePath)
+		if config.DevConsole {
+			log.Info("server", "Developer console enabled : http://%s/", addrSingle)
 		}
+		// ListenAndServe is blocking function. Let's run it in
+		// go routine, reporting result to control channel.
+		// Since it's blocking it'll never return non-error.
+		go func(addr string) {
+			rejects <- http.ListenAndServe(addr, nil)
+		}(addrSingle)
+	}
+	select {
+	case err := <-rejects:
+		log.Fatal("server", "Can't start server: %s", err)
+		os.Exit(3)
 	}
 }
