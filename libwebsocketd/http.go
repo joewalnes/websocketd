@@ -28,7 +28,7 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	hdrs := req.Header
 
 	log := h.Log.NewLevel(h.Log.LogFunc)
-	log.Associate("url", fmt.Sprintf("http://%s%s", req.RemoteAddr, req.URL.RequestURI()))
+	log.Associate("url", fmt.Sprintf("http://%s%s", req.Host, req.URL.RequestURI()))
 
 	_, remoteHost, _, err := remoteDetails(req, h.Config)
 	if err != nil {
