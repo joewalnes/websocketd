@@ -26,7 +26,8 @@ var names = [
   'SERVER_PORT',
   'SERVER_PROTOCOL',
   'SERVER_SOFTWARE',
-  'UNIQUE_ID'
+  'UNIQUE_ID',
+  'HTTPS'
 ];
 
 var shell = WScript.CreateObject("WScript.Shell");

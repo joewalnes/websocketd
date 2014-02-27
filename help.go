@@ -38,6 +38,11 @@ Options:
                                  Use square brackets to specify IPv6 address. 
                                  Default: "" (all)
 
+  --ssl                          Listen for HTTPS socket instead of regular HTTP.                     
+  --sslcert=FILE                 All three options must be used together or all of
+  --sslkey=FILE                  them should be omitted. 
+
+
   --basepath=PATH                Base path in URLs to serve from. 
                                  Default: / (root of domain)
 

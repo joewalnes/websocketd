@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"code.google.com/p/go.net/websocket"
 )
 
 const (
@@ -49,27 +47,37 @@ func remoteDetails(req *http.Request, config *Config) (string, string, string, e
 	return remoteAddr, remoteHost, remotePort, nil
 }
 
-func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo, id string) ([]string, error) {
-	req := ws.Request()
+func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, log *LogScope) ([]string, error) {
 	headers := req.Header
+
 	url := req.URL
 
-	remoteAddr, remoteHost, remotePort, err := remoteDetails(ws.Request(), config)
+	remoteAddr, remoteHost, remotePort, err := remoteDetails(req, config)
 	if err != nil {
 		return nil, err
 	}
 
 	serverName, serverPort, err := net.SplitHostPort(req.Host)
 	if err != nil {
-		if !strings.Contains(req.Host, ":") {
+		// Without hijacking socket connection we cannot know port for sure.
+		if addrerr, ok := err.(*net.AddrError); ok && strings.Contains(addrerr.Err, "missing port") {
 			serverName = req.Host
-			serverPort = "80"
+			if config.Ssl {
+				serverPort = "443"
+			} else {
+				serverPort = "80"
+			}
 		} else {
-			return nil, err
+			// this does mean that we cannot detect port from Host: header... Just keep going with ""
+			serverPort = ""
 		}
 	}
 
 	standardEnvCount := 20
+	if config.Ssl {
+		standardEnvCount += 1
+	}
+
 	parentEnv := os.Environ()
 	env := make([]string, 0, len(headers)+standardEnvCount+len(parentEnv)+len(config.Env))
 	for _, v := range parentEnv {
@@ -114,15 +122,28 @@ func createEnv(ws *websocket.Conn, config *Config, urlInfo *URLInfo, id string) 
 	//   CONTENT_LENGTH, CONTENT_TYPE
 	//     -- makes no sense for WebSocket connections.
 	//
-	//   HTTPS, SSL_*
-	//     -- SSL not supported
+	//   SSL_*
+	//     -- SSL variables are not supported, HTTPS=on added for websocketd running with --ssl
 
-	for k, _ := range headers {
-		env = appendEnv(env, fmt.Sprintf("HTTP_%s", headerDashToUnderscore.Replace(k)), headers[k]...)
+	if config.Ssl {
+		env = appendEnv(env, "HTTPS", "on")
+	}
+
+	if log.MinLevel == LogDebug {
+		for k, v := range env {
+			log.Debug("env", "Std. variable: %s %v", k, v)
+		}
+	}
+
+	for k, hdrs := range headers {
+		header := fmt.Sprintf("HTTP_%s", headerDashToUnderscore.Replace(k))
+		env = appendEnv(env, header, hdrs...)
+		log.Debug("env", "Header variable %s=%v", header, hdrs)
 	}
 
 	for _, v := range config.Env {
 		env = append(env, v)
+		log.Debug("env", "External variable: %s %v", env, v)
 	}
 
 	return env, nil
@@ -133,6 +154,7 @@ func appendEnv(env []string, k string, v ...string) []string {
 	if len(v) == 0 {
 		return env
 	}
+
 	vCleaned := make([]string, 0, len(v))
 	for _, val := range v {
 		vCleaned = append(vCleaned, strings.TrimSpace(headerNewlineToSpace.Replace(val)))
