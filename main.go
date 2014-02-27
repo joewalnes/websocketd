@@ -68,16 +68,24 @@ func main() {
 	}
 
 	rejects := make(chan error, 1)
+	wsschema, httpschema := "ws", "http"
+	if config.Ssl {
+		wsschema, httpschema = "wss", "https"
+	}
 	for _, addrSingle := range config.Addr {
-		log.Info("server", "Starting WebSocket server   : ws://%s%s", addrSingle, config.BasePath)
+		log.Info("server", "Starting WebSocket server   : %s://%s%s", wsschema, addrSingle, config.BasePath)
 		if config.DevConsole {
-			log.Info("server", "Developer console enabled : http://%s/", addrSingle)
+			log.Info("server", "Developer console enabled : %s://%s/", httpschema, addrSingle)
 		}
 		// ListenAndServe is blocking function. Let's run it in
 		// go routine, reporting result to control channel.
 		// Since it's blocking it'll never return non-error.
 		go func(addr string) {
-			rejects <- http.ListenAndServe(addr, nil)
+			if config.Ssl {
+				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
+			} else {
+				rejects <- http.ListenAndServe(addr, nil)
+			}
 		}(addrSingle)
 	}
 	select {
