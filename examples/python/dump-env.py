@@ -30,7 +30,8 @@ var_names = [
   'SERVER_PORT',
   'SERVER_PROTOCOL',
   'SERVER_SOFTWARE',
-  'UNIQUE_ID'
+  'UNIQUE_ID',
+  'HTTPS'
 ]
 for var_name in var_names:
   print '%s=%s' % (var_name, os.environ.get(var_name, '<unset>'))

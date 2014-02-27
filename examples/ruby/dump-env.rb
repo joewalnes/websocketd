@@ -31,6 +31,7 @@ names = [
   'SERVER_PROTOCOL',
   'SERVER_SOFTWARE',
   'UNIQUE_ID',
+  'HTTPS',
 ]
 
 names.each do |name|
