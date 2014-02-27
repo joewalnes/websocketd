@@ -16,9 +16,10 @@ import (
 )
 
 type Config struct {
-	BasePath string   // Base URL path. e.g. "/"
-	Addr     []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
-	LogLevel libwebsocketd.LogLevel
+	BasePath          string   // Base URL path. e.g. "/"
+	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	LogLevel          libwebsocketd.LogLevel
+	CertFile, KeyFile string
 	*libwebsocketd.Config
 }
 
@@ -56,6 +57,9 @@ func parseCommandLine() Config {
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
 	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
+	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
+	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
+	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 
 	flag.Parse()
 
@@ -94,6 +98,7 @@ func parseCommandLine() Config {
 	}
 
 	config.ReverseLookup = *reverseLookupFlag
+	config.Ssl = *sslFlag
 	config.ScriptDir = *scriptDirFlag
 	config.StaticDir = *staticDirFlag
 	config.CgiDir = *cgiDirFlag
@@ -116,6 +121,22 @@ func parseCommandLine() Config {
 		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(2)
 	}
+
+	// Reading SSL options
+	if config.Ssl {
+		if *sslCert == "" || *sslKey == "" {
+			fmt.Fprintf(os.Stderr, "Please specify both --sslcert and --sslkey when requesting --ssl.\n")
+			os.Exit(1)
+		}
+	} else {
+		if *sslCert != "" || *sslKey != "" {
+			fmt.Fprintf(os.Stderr, "You should not be using --ssl* flags when there is no --ssl option.\n")
+			os.Exit(1)
+		}
+	}
+
+	mainConfig.CertFile = *sslCert
+	mainConfig.KeyFile = *sslKey
 
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
