@@ -45,7 +45,7 @@ func parseCommandLine() Config {
 	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
 
 	// server config options
-	portFlag := flag.Int("port", 80, "HTTP port to listen on")
+	portFlag := flag.Int("port", 0, "HTTP port to listen on")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -63,13 +63,22 @@ func parseCommandLine() Config {
 
 	flag.Parse()
 
+	port := *portFlag
+	if port == 0 {
+		if *sslFlag {
+			port = 443
+		} else {
+			port = 80
+		}
+	}
+
 	if socknum := len(addrlist); socknum != 0 {
 		mainConfig.Addr = make([]string, socknum)
 		for i, addrSingle := range addrlist {
-			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, *portFlag)
+			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, port)
 		}
 	} else {
-		mainConfig.Addr = []string{fmt.Sprintf(":%d", *portFlag)}
+		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
 	mainConfig.BasePath = *basePathFlag
 
