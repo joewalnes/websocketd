@@ -13,7 +13,7 @@ type Config struct {
 	CommandName    string    // Command to execute.
 	CommandArgs    []string  // Additional args to pass to command.
 	ReverseLookup  bool      // Perform reverse DNS lookups on hostnames (useful, but slower).
-	Ssl            bool      // WebsocketD works with --ssl which means TLS is in use
+	Ssl            bool      // websocketd works with --ssl which means TLS is in use
 	ScriptDir      string    // Base directory for websocket scripts.
 	UsingScriptDir bool      // Are we running with a script dir.
 	StartupTime    time.Time // Server startup time (used for dev console caching).
