@@ -25,10 +25,15 @@ type HttpWsMuxHandler struct {
 
 // Main HTTP handler. Muxes between WebSocket handler, DevConsole or 404.
 func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	log := h.Log.NewLevel(h.Log.LogFunc)
+
 	hdrs := req.Header
 
-	log := h.Log.NewLevel(h.Log.LogFunc)
-	log.Associate("url", fmt.Sprintf("http://%s%s", req.RemoteAddr, req.URL.RequestURI()))
+	schema := "http"
+	if h.Config.Ssl {
+		schema = "https"
+	}
+	log.Associate("url", fmt.Sprintf("%s://%s%s", schema, req.Host, req.URL.RequestURI()))
 
 	_, remoteHost, _, err := remoteDetails(req, h.Config)
 	if err != nil {
@@ -61,7 +66,9 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Dev console (if enabled)
 	if h.Config.DevConsole {
-		content := strings.Replace(ConsoleContent, "{{license}}", License, -1)
+		content := ConsoleContent
+		content = strings.Replace(content, "{{license}}", License, -1)
+		content = strings.Replace(content, "{{addr}}", fmt.Sprintf("%s://%s", schema, req.Host), -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 		return
 	}
@@ -69,10 +76,12 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// CGI scripts
 	if h.Config.CgiDir != "" {
 		filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
-
 		if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
 			cgiHandler := &cgi.Handler{
 				Path: filePath,
+				Env: []string{
+					"SERVER_SOFTWARE=" + h.Config.ServerSoftware,
+				},
 			}
 			log.Associate("cgiscript", filePath)
 			log.Access("http", "CGI")
@@ -113,7 +122,7 @@ func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
 	}
 	log.Debug("session", "URLInfo: %s", urlInfo)
 
-	env, err := createEnv(ws, config, urlInfo, id)
+	env, err := createEnv(ws.Request(), config, urlInfo, id, log)
 	if err != nil {
 		log.Error("process", "Could not create ENV: %s", err)
 		return

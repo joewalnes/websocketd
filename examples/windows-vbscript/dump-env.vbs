@@ -26,7 +26,8 @@ names = Array(_
   "SERVER_PORT", _
   "SERVER_PROTOCOL", _
   "SERVER_SOFTWARE", _
-  "UNIQUE_ID"_
+  "UNIQUE_ID", _
+  "HTTPS"_
 )
 
 set shell = WScript.CreateObject("WScript.Shell")

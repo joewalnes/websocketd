@@ -28,6 +28,7 @@ NAMES="""
   SERVER_PROTOCOL
   SERVER_SOFTWARE
   UNIQUE_ID
+  HTTPS
 """
 
 echo "Content-type: text/plain"
@@ -39,4 +40,4 @@ do
 done
 
 # Additional HTTP headers
-env | grep '^HTTP_'
+env | egrep '^(HTTP|SSL)_'

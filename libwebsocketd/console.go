@@ -137,7 +137,7 @@ Full documentation at http://websocketd.com/
 	<button class="disconnect" title="Disconnect" style="display:none">&times;</button>
 	<button class="connect" title="Connect" style="display:none">&#x2714;</button>
 	<div class="url-holder">
-		<input class="url" type="text" value="ws://localhost:1234/" spellcheck="false">
+		<input class="url" type="text" value="{{addr}}" spellcheck="false">
 	</div>
 </header>
 
@@ -216,8 +216,8 @@ Full documentation at http://websocketd.com/
 		var el = template.parentElement.insertBefore(template.cloneNode(true), select('.message.type-input'));
 		el.classList.remove('template');
 		el.classList.add('type-' + type.toLowerCase());
-		el.querySelector('.message-type').innerText = type;
-		el.querySelector('.message-data').innerText = data || '';
+		el.querySelector('.message-type').textContent = type;
+		el.querySelector('.message-data').textContent = data || '';
 		el.querySelector('.message-data').innerHTML += '&nbsp;';
 		el.scrollIntoView(true);
 	}

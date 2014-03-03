@@ -28,7 +28,8 @@ $names = array(
   'SERVER_PORT',
   'SERVER_PROTOCOL',
   'SERVER_SOFTWARE',
-  'UNIQUE_ID'
+  'UNIQUE_ID',
+  'HTTPS'
 );
 
 foreach ($names as $name) {

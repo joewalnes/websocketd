@@ -34,6 +34,7 @@ my @names = qw(
   SERVER_PROTOCOL
   SERVER_SOFTWARE
   UNIQUE_ID
+  HTTPS
 );
 
 for my $name (@names) {
