@@ -29,11 +29,11 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	hdrs := req.Header
 
-	schema := "http"
+	wsschema, httpschema := "ws", "http"
 	if h.Config.Ssl {
-		schema = "https"
+		wsschema, httpschema = "wss", "https"
 	}
-	log.Associate("url", fmt.Sprintf("%s://%s%s", schema, req.Host, req.URL.RequestURI()))
+	log.Associate("url", fmt.Sprintf("%s://%s%s", httpschema, req.Host, req.URL.RequestURI()))
 
 	_, remoteHost, _, err := remoteDetails(req, h.Config)
 	if err != nil {
@@ -68,7 +68,7 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if h.Config.DevConsole {
 		content := ConsoleContent
 		content = strings.Replace(content, "{{license}}", License, -1)
-		content = strings.Replace(content, "{{addr}}", fmt.Sprintf("%s://%s", schema, req.Host), -1)
+		content = strings.Replace(content, "{{addr}}", fmt.Sprintf("%s://%s%s", wsschema, req.Host, req.RequestURI), -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 		return
 	}
@@ -77,11 +77,17 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if h.Config.CgiDir != "" {
 		filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
 		if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
+			// Make variables to supplement cgi... Environ it uses will show empty list.
+			envlen := len(h.Config.ParentEnv)
+			cgienv := make([]string, envlen+1)
+			if envlen > 0 {
+				copy(cgienv, h.Config.ParentEnv)
+			}
+			cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
+
 			cgiHandler := &cgi.Handler{
 				Path: filePath,
-				Env: []string{
-					"SERVER_SOFTWARE=" + h.Config.ServerSoftware,
-				},
+				Env:  cgienv,
 			}
 			log.Associate("cgiscript", filePath)
 			log.Access("http", "CGI")
