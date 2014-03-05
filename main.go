@@ -69,7 +69,7 @@ func main() {
 
 	rejects := make(chan error, 1)
 	wsschema, httpschema := "ws", "http"
-	if config.Ssl {
+	if config.CertFile != "" {
 		wsschema, httpschema = "wss", "https"
 	}
 	for _, addrSingle := range config.Addr {
@@ -81,7 +81,7 @@ func main() {
 		// go routine, reporting result to control channel.
 		// Since it's blocking it'll never return non-error.
 		go func(addr string) {
-			if config.Ssl {
+			if config.CertFile != "" {
 				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
 			} else {
 				rejects <- http.ListenAndServe(addr, nil)
