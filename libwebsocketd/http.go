@@ -30,7 +30,7 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	hdrs := req.Header
 
 	schema := "http"
-	if h.Config.Ssl {
+	if req.TLS != nil {
 		schema = "https"
 	}
 	log.Associate("url", fmt.Sprintf("%s://%s%s", schema, req.Host, req.URL.RequestURI()))

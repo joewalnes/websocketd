@@ -62,7 +62,7 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 		// Without hijacking socket connection we cannot know port for sure.
 		if addrerr, ok := err.(*net.AddrError); ok && strings.Contains(addrerr.Err, "missing port") {
 			serverName = req.Host
-			if config.Ssl {
+			if req.TLS != nil {
 				serverPort = "443"
 			} else {
 				serverPort = "80"
@@ -74,7 +74,7 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 	}
 
 	standardEnvCount := 20
-	if config.Ssl {
+	if req.TLS != nil {
 		standardEnvCount += 1
 	}
 
@@ -125,7 +125,7 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 	//   SSL_*
 	//     -- SSL variables are not supported, HTTPS=on added for websocketd running with --ssl
 
-	if config.Ssl {
+	if req.TLS != nil {
 		env = appendEnv(env, "HTTPS", "on")
 	}
 

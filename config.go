@@ -107,7 +107,6 @@ func parseCommandLine() Config {
 	}
 
 	config.ReverseLookup = *reverseLookupFlag
-	config.Ssl = *sslFlag
 	config.ScriptDir = *scriptDirFlag
 	config.StaticDir = *staticDirFlag
 	config.CgiDir = *cgiDirFlag
@@ -132,7 +131,7 @@ func parseCommandLine() Config {
 	}
 
 	// Reading SSL options
-	if config.Ssl {
+	if *sslFlag {
 		if *sslCert == "" || *sslKey == "" {
 			fmt.Fprintf(os.Stderr, "Please specify both --sslcert and --sslkey when requesting --ssl.\n")
 			os.Exit(1)
