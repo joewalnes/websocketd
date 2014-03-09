@@ -18,6 +18,7 @@ import (
 type Config struct {
 	BasePath          string   // Base URL path. e.g. "/"
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
 	CertFile, KeyFile string
 	*libwebsocketd.Config
@@ -49,6 +50,7 @@ func parseCommandLine() Config {
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
+	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 
 	// lib config options
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
@@ -80,6 +82,7 @@ func parseCommandLine() Config {
 	} else {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
+	mainConfig.MaxForks = *maxForksFlag
 	mainConfig.BasePath = *basePathFlag
 
 	switch *logLevelFlag {

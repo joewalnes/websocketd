@@ -51,9 +51,7 @@ func main() {
 		}
 	}
 
-	http.Handle(config.BasePath, libwebsocketd.HttpWsMuxHandler{
-		Config: config.Config,
-		Log:    log})
+	http.Handle(config.BasePath, libwebsocketd.NewHandler(config.Config, log, config.MaxForks))
 
 	if config.UsingScriptDir {
 		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
