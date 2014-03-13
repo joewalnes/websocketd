@@ -42,6 +42,8 @@ Options:
   --sslcert=FILE                 All three options must be used together or all of
   --sslkey=FILE                  them should be omitted. 
 
+  --passenv VAR[,VAR...]         Lists environment variables allowed to be passed
+                                 to executed scripts.
 
   --basepath=PATH                Base path in URLs to serve from. 
                                  Default: / (root of domain)

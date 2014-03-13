@@ -22,4 +22,5 @@ type Config struct {
 	DevConsole     bool      // Enable dev console. This disables StaticDir and CgiDir.
 	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
 	Env            []string  // Additional environment variables to pass to process ("key=value").
+	ParentEnv      []string  // Variables kept from os.Environ() before sanitizing it for subprocess.
 }
