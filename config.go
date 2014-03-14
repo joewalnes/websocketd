@@ -53,6 +53,9 @@ func parseCommandLine() Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
 
+	flag.Usage = func() {}
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
@@ -78,7 +81,15 @@ func parseCommandLine() Config {
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
 	passEnvFlag := flag.String("passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
 
-	flag.Parse()
+	err := flag.CommandLine.Parse(os.Args[1:])
+	if err != nil {
+		if err == flag.ErrHelp {
+			PrintHelp()
+		} else {
+			ShortHelp()
+		}
+		os.Exit(2)
+	}
 
 	port := *portFlag
 	if port == 0 {
@@ -99,28 +110,10 @@ func parseCommandLine() Config {
 	}
 	mainConfig.MaxForks = *maxForksFlag
 	mainConfig.BasePath = *basePathFlag
-
-	switch *logLevelFlag {
-	case "debug":
-		mainConfig.LogLevel = libwebsocketd.LogDebug
-		break
-	case "trace":
-		mainConfig.LogLevel = libwebsocketd.LogTrace
-		break
-	case "access":
-		mainConfig.LogLevel = libwebsocketd.LogAccess
-		break
-	case "info":
-		mainConfig.LogLevel = libwebsocketd.LogInfo
-		break
-	case "error":
-		mainConfig.LogLevel = libwebsocketd.LogError
-		break
-	case "fatal":
-		mainConfig.LogLevel = libwebsocketd.LogFatal
-		break
-	default:
-		PrintHelp()
+	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
+	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
+		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
+		ShortHelp()
 		os.Exit(1)
 	}
 
@@ -134,17 +127,18 @@ func parseCommandLine() Config {
 	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
 
 	if len(os.Args) == 1 {
-		PrintHelp()
+		fmt.Printf("Command line arguments are missing.\n")
+		ShortHelp()
 		os.Exit(1)
 	}
 
 	if *versionFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
+		fmt.Printf("%s %s\n", HelpProcessName(), Version())
 		os.Exit(2)
 	}
 
 	if *licenseFlag {
-		fmt.Printf("%s %s\n", filepath.Base(os.Args[0]), Version())
+		fmt.Printf("%s %s\n", HelpProcessName(), Version())
 		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(2)
 	}
@@ -184,12 +178,14 @@ func parseCommandLine() Config {
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
 		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.\n")
+		ShortHelp()
 		os.Exit(1)
 	}
 
 	if len(args) > 0 {
 		if config.ScriptDir != "" {
 			fmt.Fprintf(os.Stderr, "Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.\n")
+			ShortHelp()
 			os.Exit(1)
 		}
 		config.CommandName = args[0]
@@ -201,6 +197,7 @@ func parseCommandLine() Config {
 		scriptDir, err := filepath.Abs(config.ScriptDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
+			ShortHelp()
 			os.Exit(1)
 		}
 		config.ScriptDir = scriptDir
