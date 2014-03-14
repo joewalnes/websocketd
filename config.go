@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -49,7 +50,7 @@ var defaultPassEnv = map[string]string{
 	"windows": "SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
-func parseCommandLine() Config {
+func parseCommandLine() *Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
 
@@ -188,23 +189,57 @@ func parseCommandLine() Config {
 			ShortHelp()
 			os.Exit(1)
 		}
-		config.CommandName = args[0]
-		config.CommandArgs = flag.Args()[1:]
-		config.UsingScriptDir = false
+		if path, err := exec.LookPath(args[0]); err == nil {
+			config.CommandName = path // This can be command in PATH that we are able to execute
+			config.CommandArgs = flag.Args()[1:]
+			config.UsingScriptDir = false
+		} else {
+			fmt.Fprintf(os.Stderr, "Unable to locate specified COMMAND '%s' in OS path.\n", args[0])
+			ShortHelp()
+			os.Exit(1)
+		}
 	}
 
-	if len(config.ScriptDir) > 0 {
+	if config.ScriptDir != "" {
 		scriptDir, err := filepath.Abs(config.ScriptDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
 			ShortHelp()
 			os.Exit(1)
 		}
-		config.ScriptDir = scriptDir
-		config.UsingScriptDir = true
+		inf, err := os.Stat(scriptDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not find your script dir '%s'.\n", config.ScriptDir)
+			ShortHelp()
+			os.Exit(1)
+		}
+		if !inf.IsDir() {
+			fmt.Fprintf(os.Stderr, "Did you mean to specify COMMAND instead of --dir '%s'?\n", config.ScriptDir)
+			ShortHelp()
+			os.Exit(1)
+		} else {
+			config.ScriptDir = scriptDir
+			config.UsingScriptDir = true
+		}
+	}
+
+	if config.CgiDir != "" {
+		if inf, err := os.Stat(config.CgiDir); err != nil || !inf.IsDir() {
+			fmt.Fprintf(os.Stderr, "Your CGI dir '%s' is not pointing to an accessible directory.\n", config.CgiDir)
+			ShortHelp()
+			os.Exit(1)
+		}
+	}
+
+	if config.StaticDir != "" {
+		if inf, err := os.Stat(config.StaticDir); err != nil || !inf.IsDir() {
+			fmt.Fprintf(os.Stderr, "Your static dir '%s' is not pointing to an accessible directory.\n", config.StaticDir)
+			ShortHelp()
+			os.Exit(1)
+		}
 	}
 
 	mainConfig.Config = &config
 
-	return mainConfig
+	return &mainConfig
 }
