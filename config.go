@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/joewalnes/websocketd/libwebsocketd"
@@ -35,6 +37,18 @@ func (al *AddrList) Set(value string) error {
 	return nil
 }
 
+// Borrowed from net/http/cgi
+var defaultPassEnv = map[string]string{
+	"darwin":  "DYLD_LIBRARY_PATH",
+	"freebsd": "LD_LIBRARY_PATH",
+	"hpux":    "LD_LIBRARY_PATH,SHLIB_PATH",
+	"irix":    "LD_LIBRARY_PATH,LD_LIBRARYN32_PATH,LD_LIBRARY64_PATH",
+	"linux":   "LD_LIBRARY_PATH",
+	"openbsd": "LD_LIBRARY_PATH",
+	"solaris": "LD_LIBRARY_PATH,LD_LIBRARY_PATH_32,LD_LIBRARY_PATH_64",
+	"windows": "SystemRoot,COMSPEC,PATHEXT,WINDIR",
+}
+
 func parseCommandLine() Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
@@ -50,6 +64,9 @@ func parseCommandLine() Config {
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
+	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
+	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
+	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 
 	// lib config options
@@ -59,9 +76,7 @@ func parseCommandLine() Config {
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
 	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
-	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
-	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
-	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
+	passEnvFlag := flag.String("passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
 
 	flag.Parse()
 
@@ -149,6 +164,22 @@ func parseCommandLine() Config {
 
 	mainConfig.CertFile = *sslCert
 	mainConfig.KeyFile = *sslKey
+
+	// Building config.ParentEnv to avoid calling Environ all the time in the scripts
+	// (caller is responsible for wiping environment if desired)
+	config.ParentEnv = make([]string, 0)
+	newlineCleaner := strings.NewReplacer("\n", " ", "\r", " ")
+	for _, key := range strings.Split(*passEnvFlag, ",") {
+		if key != "HTTPS" {
+			if v := os.Getenv(key); v != "" {
+				// inevitably adding flavor of libwebsocketd appendEnv func.
+				// it's slightly nicer than in net/http/cgi implementation
+				if clean := strings.TrimSpace(newlineCleaner.Replace(v)); clean != "" {
+					config.ParentEnv = append(config.ParentEnv, fmt.Sprintf("%s=%s", key, clean))
+				}
+			}
+		}
+	}
 
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {

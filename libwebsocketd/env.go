@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -78,9 +77,14 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 		standardEnvCount += 1
 	}
 
-	parentEnv := os.Environ()
-	env := make([]string, 0, len(headers)+standardEnvCount+len(parentEnv)+len(config.Env))
-	for _, v := range parentEnv {
+	parentLen := len(config.ParentEnv)
+	env := make([]string, 0, len(headers)+standardEnvCount+parentLen+len(config.Env))
+
+	// This variable could be rewritten from outside
+	env = appendEnv(env, "SERVER_SOFTWARE", config.ServerSoftware)
+
+	parentStarts := len(env)
+	for _, v := range config.ParentEnv {
 		env = append(env, v)
 	}
 
@@ -93,7 +97,6 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 	env = appendEnv(env, "SERVER_NAME", serverName)
 	env = appendEnv(env, "SERVER_PORT", serverPort)
 	env = appendEnv(env, "SERVER_PROTOCOL", req.Proto)
-	env = appendEnv(env, "SERVER_SOFTWARE", config.ServerSoftware)
 	env = appendEnv(env, "GATEWAY_INTERFACE", gatewayInterface)
 	env = appendEnv(env, "REQUEST_METHOD", req.Method)
 	env = appendEnv(env, "SCRIPT_NAME", urlInfo.ScriptPath)
@@ -130,20 +133,24 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 	}
 
 	if log.MinLevel == LogDebug {
-		for k, v := range env {
-			log.Debug("env", "Std. variable: %s %v", k, v)
+		for i, v := range env {
+			if i >= parentStarts && i < parentLen+parentStarts {
+				log.Debug("env", "Parent envvar: %v", v)
+			} else {
+				log.Debug("env", "Std. variable: %v", v)
+			}
 		}
 	}
 
 	for k, hdrs := range headers {
 		header := fmt.Sprintf("HTTP_%s", headerDashToUnderscore.Replace(k))
 		env = appendEnv(env, header, hdrs...)
-		log.Debug("env", "Header variable %s=%v", header, hdrs)
+		log.Debug("env", "Header variable %s", env[len(env)-1])
 	}
 
 	for _, v := range config.Env {
 		env = append(env, v)
-		log.Debug("env", "External variable: %s %v", env, v)
+		log.Debug("env", "External variable: %s", v)
 	}
 
 	return env, nil
