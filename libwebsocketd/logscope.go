@@ -19,6 +19,9 @@ const (
 	LogInfo
 	LogError
 	LogFatal
+
+	LogNone    = 126
+	LogUnknown = 127
 )
 
 type LogFunc func(logScope *LogScope, level LogLevel, levelName string, category string, msg string, args ...interface{})
@@ -84,4 +87,25 @@ func RootLogScope(minLevel LogLevel, logFunc LogFunc) *LogScope {
 
 func Timestamp() string {
 	return time.Now().Format(time.RFC1123Z)
+}
+
+func LevelFromString(s string) LogLevel {
+	switch s {
+	case "debug":
+		return LogDebug
+	case "trace":
+		return LogTrace
+	case "access":
+		return LogAccess
+	case "info":
+		return LogInfo
+	case "error":
+		return LogError
+	case "fatal":
+		return LogFatal
+	case "none":
+		return LogNone
+	default:
+		return LogUnknown
+	}
 }
