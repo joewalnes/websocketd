@@ -7,6 +7,7 @@ package libwebsocketd
 
 import (
 	"code.google.com/p/go.net/websocket"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/cgi"
@@ -18,13 +19,29 @@ import (
 	"strings"
 )
 
+var ForkNotAllowedError = errors.New("too many forks active")
+
+// HttpWsMuxHandler presents http.Handler interface for requests libwebsocketd is handling.
 type HttpWsMuxHandler struct {
 	Config *Config
 	Log    *LogScope
+	forks  chan byte
 }
 
-// Main HTTP handler. Muxes between WebSocket handler, DevConsole or 404.
-func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// NewHandler creates libwebsocketd mux with given config, logscope and maxforks limit
+func NewHandler(config *Config, log *LogScope, maxforks int) *HttpWsMuxHandler {
+	mux := &HttpWsMuxHandler{
+		Config: config,
+		Log:    log,
+	}
+	if maxforks > 0 {
+		mux.forks = make(chan byte, maxforks)
+	}
+	return mux
+}
+
+// ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
+func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log := h.Log.NewLevel(h.Log.LogFunc)
 
 	hdrs := req.Header
@@ -45,9 +62,8 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
 
-	// WebSocket
+	// WebSocket, limited to size of h.forks
 	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
-
 		if hdrs.Get("Origin") == "null" {
 			// Fix up mismatch between how Chrome reports Origin
 			// when using file:// url (using the string "null"), and
@@ -56,10 +72,16 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if h.Config.CommandName != "" || h.Config.UsingScriptDir {
-			wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-				acceptWebSocket(ws, h.Config, log)
-			})
-			wsHandler.ServeHTTP(w, req)
+			if h.noteForkCreated() == nil {
+				defer h.noteForkCompled()
+				wsHandler := websocket.Handler(func(ws *websocket.Conn) {
+					acceptWebSocket(ws, h.Config, log)
+				})
+				wsHandler.ServeHTTP(w, req)
+			} else {
+				log.Error("http", "Max of possible forks already active, upgrade rejected")
+				http.Error(w, "429 Too Many Requests", 429)
+			}
 			return
 		}
 	}
@@ -73,25 +95,34 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// CGI scripts
+	// CGI scripts, limited to size of h.forks
 	if h.Config.CgiDir != "" {
 		filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
 		if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
-			// Make variables to supplement cgi... Environ it uses will show empty list.
-			envlen := len(h.Config.ParentEnv)
-			cgienv := make([]string, envlen+1)
-			if envlen > 0 {
-				copy(cgienv, h.Config.ParentEnv)
-			}
-			cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
 
-			cgiHandler := &cgi.Handler{
-				Path: filePath,
-				Env:  cgienv,
-			}
 			log.Associate("cgiscript", filePath)
-			log.Access("http", "CGI")
-			cgiHandler.ServeHTTP(w, req)
+			if h.noteForkCreated() == nil {
+				defer h.noteForkCompled()
+
+				// Make variables to supplement cgi... Environ it uses will show empty list.
+				envlen := len(h.Config.ParentEnv)
+				cgienv := make([]string, envlen+1)
+				if envlen > 0 {
+					copy(cgienv, h.Config.ParentEnv)
+				}
+				cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
+				cgiHandler := &cgi.Handler{
+					Path: filePath,
+					Env: []string{
+						"SERVER_SOFTWARE=" + h.Config.ServerSoftware,
+					},
+				}
+				log.Access("http", "CGI")
+				cgiHandler.ServeHTTP(w, req)
+			} else {
+				log.Error("http", "Fork not allowed since maxforks amount has been reached. CGI was not run.")
+				http.Error(w, "429 Too Many Requests", 429)
+			}
 			return
 		}
 	}
@@ -107,6 +138,36 @@ func (h HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 404
 	log.Access("http", "NOT FOUND")
 	http.NotFound(w, req)
+}
+
+func (h *HttpWsMuxHandler) noteForkCreated() error {
+	// note that forks can be nil since the construct could've been created by
+	// someone who is not using NewHandler
+	if h.forks != nil {
+		select {
+		case h.forks <- 1:
+			return nil
+		default:
+			return ForkNotAllowedError
+		}
+	} else {
+		return nil
+	}
+}
+
+func (h *HttpWsMuxHandler) noteForkCompled() {
+	if h.forks != nil { // see comment in noteForkCreated
+		select {
+		case <-h.forks:
+			return
+		default:
+			// This could only happen if the completion handler called more times than creation handler above
+			// Code should be audited to not allow this to happen, it's desired to have test that would
+			// make sure this is impossible but it is not exist yet.
+			panic("Cannot deplet number of allowed forks, something is not right in code!")
+		}
+	}
+	return
 }
 
 func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {

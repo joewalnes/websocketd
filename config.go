@@ -20,6 +20,7 @@ import (
 type Config struct {
 	BasePath          string   // Base URL path. e.g. "/"
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
 	CertFile, KeyFile string
 	*libwebsocketd.Config
@@ -66,6 +67,7 @@ func parseCommandLine() Config {
 	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
 	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
+	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 
 	// lib config options
 	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
@@ -95,6 +97,7 @@ func parseCommandLine() Config {
 	} else {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
+	mainConfig.MaxForks = *maxForksFlag
 	mainConfig.BasePath = *basePathFlag
 
 	switch *logLevelFlag {
