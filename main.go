@@ -6,7 +6,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -35,7 +34,6 @@ func log(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName stri
 }
 
 func main() {
-	flag.Usage = PrintHelp
 	config := parseCommandLine()
 
 	log := libwebsocketd.RootLogScope(config.LogLevel, log)
