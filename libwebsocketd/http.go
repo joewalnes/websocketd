@@ -72,12 +72,32 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if h.Config.CommandName != "" || h.Config.UsingScriptDir {
+			urlInfo, err := parsePath(req.URL.Path, h.Config)
+			if err != nil {
+				log.Access("session", "NOT FOUND: %s", err)
+				http.Error(w, "404 Not Found", 404)
+				return
+			}
+			log.Debug("session", "URLInfo: %s", urlInfo)
+
 			if h.noteForkCreated() == nil {
 				defer h.noteForkCompled()
 				wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-					acceptWebSocket(ws, h.Config, log)
+					acceptWebSocket(urlInfo, ws, h.Config, log)
 				})
-				wsHandler.ServeHTTP(w, req)
+
+				wsHandshake := func(config *websocket.Config, req *http.Request) error {
+					// check for origin to be correct in future
+					// handshaker triggers answering with 403 if error was returned we cannot serve 404 out of here
+					config.Origin, err = websocket.Origin(config, req)
+					if err == nil && config.Origin == nil {
+						return fmt.Errorf("null origin")
+					}
+					return err
+				}
+
+				wsServer := websocket.Server{Handler: wsHandler, Handshake: wsHandshake}
+				wsServer.ServeHTTP(w, req)
 			} else {
 				log.Error("http", "Max of possible forks already active, upgrade rejected")
 				http.Error(w, "429 Too Many Requests", 429)
@@ -171,7 +191,7 @@ func (h *HttpWsMuxHandler) noteForkCompled() {
 	return
 }
 
-func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
+func acceptWebSocket(urlInfo *URLInfo, ws *websocket.Conn, config *Config, log *LogScope) {
 	defer ws.Close()
 
 	req := ws.Request()
@@ -182,13 +202,6 @@ func acceptWebSocket(ws *websocket.Conn, config *Config, log *LogScope) {
 
 	log.Access("session", "CONNECT")
 	defer log.Access("session", "DISCONNECT")
-
-	urlInfo, err := parsePath(ws.Request().URL.Path, config)
-	if err != nil {
-		log.Access("session", "NOT FOUND: %s", err)
-		return
-	}
-	log.Debug("session", "URLInfo: %s", urlInfo)
 
 	env, err := createEnv(ws.Request(), config, urlInfo, id, log)
 	if err != nil {
