@@ -88,6 +88,7 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Dev console (if enabled)
 	if h.Config.DevConsole {
+		log.Access("http", "DEVCONSOLE")
 		content := ConsoleContent
 		content = strings.Replace(content, "{{license}}", License, -1)
 		content = strings.Replace(content, "{{addr}}", fmt.Sprintf("%s://%s%s", wsschema, req.Host, req.RequestURI), -1)
