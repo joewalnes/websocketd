@@ -16,6 +16,7 @@ import (
 
 var ScriptNotFoundError = errors.New("script not found")
 
+// URLInfo - structure carrying information about current request and it's mapping to filesystem
 type URLInfo struct {
 	ScriptPath string
 	PathInfo   string

@@ -7,7 +7,6 @@ package libwebsocketd
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,6 +17,13 @@ const (
 	gatewayInterface = "websocketd-CGI/0.1"
 )
 
+type requestInfo struct {
+	id     string
+	http   *http.Request
+	remote *RemoteInfo
+	url    *URLInfo
+}
+
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 var headerDashToUnderscore = strings.NewReplacer("-", "_")
 
@@ -25,51 +31,16 @@ func generateId() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }
 
-func remoteDetails(req *http.Request, config *Config) (string, string, string, error) {
-	remoteAddr, remotePort, err := net.SplitHostPort(req.RemoteAddr)
+func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error) {
+	headers := req.http.Header
+
+	url := req.http.URL
+
+	serverName, serverPort, err := tellHostPort(req.http.Host, config.Ssl)
 	if err != nil {
-		return "", "", "", err
-	}
-
-	var remoteHost string
-	if config.ReverseLookup {
-		remoteHosts, err := net.LookupAddr(remoteAddr)
-		if err != nil || len(remoteHosts) == 0 {
-			remoteHost = remoteAddr
-		} else {
-			remoteHost = remoteHosts[0]
-		}
-	} else {
-		remoteHost = remoteAddr
-	}
-
-	return remoteAddr, remoteHost, remotePort, nil
-}
-
-func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, log *LogScope) ([]string, error) {
-	headers := req.Header
-
-	url := req.URL
-
-	remoteAddr, remoteHost, remotePort, err := remoteDetails(req, config)
-	if err != nil {
-		return nil, err
-	}
-
-	serverName, serverPort, err := net.SplitHostPort(req.Host)
-	if err != nil {
-		// Without hijacking socket connection we cannot know port for sure.
-		if addrerr, ok := err.(*net.AddrError); ok && strings.Contains(addrerr.Err, "missing port") {
-			serverName = req.Host
-			if config.Ssl {
-				serverPort = "443"
-			} else {
-				serverPort = "80"
-			}
-		} else {
-			// this does mean that we cannot detect port from Host: header... Just keep going with ""
-			serverPort = ""
-		}
+		// This does mean that we cannot detect port from Host: header... Just keep going with "", guessing is bad.
+		log.Debug("env", "Host port detection error: %s", err)
+		serverPort = ""
 	}
 
 	standardEnvCount := 20
@@ -92,15 +63,15 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 
 	// Standard CGI specification headers.
 	// As defined in http://tools.ietf.org/html/rfc3875
-	env = appendEnv(env, "REMOTE_ADDR", remoteAddr)
-	env = appendEnv(env, "REMOTE_HOST", remoteHost)
+	env = appendEnv(env, "REMOTE_ADDR", req.remote.Addr)
+	env = appendEnv(env, "REMOTE_HOST", req.remote.Host)
 	env = appendEnv(env, "SERVER_NAME", serverName)
 	env = appendEnv(env, "SERVER_PORT", serverPort)
-	env = appendEnv(env, "SERVER_PROTOCOL", req.Proto)
+	env = appendEnv(env, "SERVER_PROTOCOL", req.http.Proto)
 	env = appendEnv(env, "GATEWAY_INTERFACE", gatewayInterface)
-	env = appendEnv(env, "REQUEST_METHOD", req.Method)
-	env = appendEnv(env, "SCRIPT_NAME", urlInfo.ScriptPath)
-	env = appendEnv(env, "PATH_INFO", urlInfo.PathInfo)
+	env = appendEnv(env, "REQUEST_METHOD", req.http.Method)
+	env = appendEnv(env, "SCRIPT_NAME", req.url.ScriptPath)
+	env = appendEnv(env, "PATH_INFO", req.url.PathInfo)
 	env = appendEnv(env, "PATH_TRANSLATED", url.Path)
 	env = appendEnv(env, "QUERY_STRING", url.RawQuery)
 
@@ -112,8 +83,8 @@ func createEnv(req *http.Request, config *Config, urlInfo *URLInfo, id string, l
 	env = appendEnv(env, "REMOTE_USER", "")
 
 	// Non standard, but commonly used headers.
-	env = appendEnv(env, "UNIQUE_ID", id) // Based on Apache mod_unique_id.
-	env = appendEnv(env, "REMOTE_PORT", remotePort)
+	env = appendEnv(env, "UNIQUE_ID", req.id) // Based on Apache mod_unique_id.
+	env = appendEnv(env, "REMOTE_PORT", req.remote.Port)
 	env = appendEnv(env, "REQUEST_URI", url.RequestURI()) // e.g. /foo/blah?a=b
 
 	// The following variables are part of the CGI specification, but are optional

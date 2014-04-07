@@ -81,6 +81,8 @@ func parseCommandLine() *Config {
 	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
 	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
 	passEnvFlag := flag.String("passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
+	sameOriginFlag := flag.Bool("sameorigin", false, "Restrict upgrades if origin and host headers differ")
+	allowOriginsFlag := flag.String("origin", "", "Restrict upgrades if origin does not match the list")
 
 	err := flag.CommandLine.Parse(os.Args[1:])
 	if err != nil {
@@ -175,6 +177,11 @@ func parseCommandLine() *Config {
 			}
 		}
 	}
+
+	if *allowOriginsFlag != "" {
+		config.AllowOrigins = strings.Split(*allowOriginsFlag, ",")
+	}
+	config.SameOrigin = *sameOriginFlag
 
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {

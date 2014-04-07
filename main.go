@@ -50,7 +50,8 @@ func main() {
 	}
 
 	os.Clearenv() // it's ok to wipe it clean, we already read env variables from passenv into config
-	http.Handle(config.BasePath, libwebsocketd.NewHandler(config.Config, log, config.MaxForks))
+	handler := libwebsocketd.NewHandler(config.Config, log, config.MaxForks)
+	http.Handle(config.BasePath, handler)
 
 	if config.UsingScriptDir {
 		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
@@ -65,14 +66,12 @@ func main() {
 	}
 
 	rejects := make(chan error, 1)
-	wsschema, httpschema := "ws", "http"
-	if config.Ssl {
-		wsschema, httpschema = "wss", "https"
-	}
 	for _, addrSingle := range config.Addr {
-		log.Info("server", "Starting WebSocket server   : %s://%s%s", wsschema, addrSingle, config.BasePath)
+		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, config.BasePath))
 		if config.DevConsole {
-			log.Info("server", "Developer console enabled : %s://%s/", httpschema, addrSingle)
+			log.Info("server", "Developer console enabled   : %s", handler.TellURL("http", addrSingle, "/"))
+		} else if config.StaticDir != "" || config.CgiDir != "" {
+			log.Info("server", "Serving CGI or static files : %s", handler.TellURL("http", addrSingle, "/"))
 		}
 		// ListenAndServe is blocking function. Let's run it in
 		// go routine, reporting result to control channel.
