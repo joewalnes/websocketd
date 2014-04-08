@@ -236,14 +236,16 @@ func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, lo
 			log.Access("session", "Origin hostname parsing error: %s", err)
 			return err
 		}
-		localServer, localPort, err := tellHostPort(req.Host, req.TLS != nil)
-		if err != nil {
-			log.Access("session", "Origin hostname parsing error: %s", err)
-			return err
-		}
-		if config.SameOrigin && (originServer != localServer || originPort != localPort) {
-			log.Access("session", "Same origin policy mismatch")
-			return fmt.Errorf("same origin policy violated")
+		if config.SameOrigin {
+			localServer, localPort, err := tellHostPort(req.Host, req.TLS != nil)
+			if err != nil {
+				log.Access("session", "Request hostname parsing error: %s", err)
+				return err
+			}
+			if originServer != localServer || originPort != localPort {
+				log.Access("session", "Same origin policy mismatch")
+				return fmt.Errorf("same origin policy violated")
+			}
 		}
 		if config.AllowOrigins != nil {
 			matchFound := false
@@ -265,10 +267,10 @@ func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, lo
 				}
 				if allowPort == "80" && allowed[len(allowed)-3:] != ":80" {
 					// any port is allowed, host names need to match
-					matchFound = allowServer == localServer
+					matchFound = allowServer == originServer
 				} else {
 					// exact match of host names and ports
-					matchFound = allowServer == localServer && allowPort == localPort
+					matchFound = allowServer == originServer && allowPort == originPort
 				}
 				if matchFound {
 					break
