@@ -102,16 +102,17 @@ More Features
 *   As well as serving websocket daemons it also includes a static file server and classic CGI server for convenience.
 *   Command line help available via `websocketd --help`.
 *   Includes [WebSocket developer console](https://github.com/joewalnes/websocketd/wiki/Developer-console) to make it easy to test your scripts before you've built a JavaScript frontend.
+*   [Examples in many programming languages](https://github.com/joewalnes/websocketd/tree/master/examples) are available to help you getting started.
 
 User Manual
 -----------
 
 **[More documentation in the user manual](https://github.com/joewalnes/websocketd/wiki)**
 
-Example Project
----------------
+Example Projects
+----------------
 
-*   [Plot real time Linux CPU/IO/Mem stats to a dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats) _(for Linux)_
+*   [Plot real time Linux CPU/IO/Mem stats to a HTML5 dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats) _(for Linux)_
 *   [Remote JScript & VBScript code execution tool based on websocketd](https://github.com/dab00/ws-console) _(for Windows)_
 
 Got more examples? Open a pull request.
