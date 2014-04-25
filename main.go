@@ -50,7 +50,7 @@ func main() {
 	}
 
 	os.Clearenv() // it's ok to wipe it clean, we already read env variables from passenv into config
-	handler := libwebsocketd.NewHandler(config.Config, log, config.MaxForks)
+	handler := libwebsocketd.NewWebsocketdServer(config.Config, log, config.MaxForks)
 	http.Handle(config.BasePath, handler)
 
 	if config.UsingScriptDir {

@@ -8,35 +8,22 @@ package libwebsocketd
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
 	gatewayInterface = "websocketd-CGI/0.1"
 )
 
-type requestInfo struct {
-	id     string
-	http   *http.Request
-	remote *RemoteInfo
-	url    *URLInfo
-}
-
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 var headerDashToUnderscore = strings.NewReplacer("-", "_")
 
-func generateId() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
-}
+func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []string {
+	headers := req.Header
 
-func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error) {
-	headers := req.http.Header
+	url := req.URL
 
-	url := req.http.URL
-
-	serverName, serverPort, err := tellHostPort(req.http.Host, config.Ssl)
+	serverName, serverPort, err := tellHostPort(req.Host, handler.server.Config.Ssl)
 	if err != nil {
 		// This does mean that we cannot detect port from Host: header... Just keep going with "", guessing is bad.
 		log.Debug("env", "Host port detection error: %s", err)
@@ -44,18 +31,18 @@ func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error
 	}
 
 	standardEnvCount := 20
-	if config.Ssl {
+	if handler.server.Config.Ssl {
 		standardEnvCount += 1
 	}
 
-	parentLen := len(config.ParentEnv)
-	env := make([]string, 0, len(headers)+standardEnvCount+parentLen+len(config.Env))
+	parentLen := len(handler.server.Config.ParentEnv)
+	env := make([]string, 0, len(headers)+standardEnvCount+parentLen+len(handler.server.Config.Env))
 
 	// This variable could be rewritten from outside
-	env = appendEnv(env, "SERVER_SOFTWARE", config.ServerSoftware)
+	env = appendEnv(env, "SERVER_SOFTWARE", handler.server.Config.ServerSoftware)
 
 	parentStarts := len(env)
-	for _, v := range config.ParentEnv {
+	for _, v := range handler.server.Config.ParentEnv {
 		env = append(env, v)
 	}
 
@@ -63,15 +50,15 @@ func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error
 
 	// Standard CGI specification headers.
 	// As defined in http://tools.ietf.org/html/rfc3875
-	env = appendEnv(env, "REMOTE_ADDR", req.remote.Addr)
-	env = appendEnv(env, "REMOTE_HOST", req.remote.Host)
+	env = appendEnv(env, "REMOTE_ADDR", handler.RemoteInfo.Addr)
+	env = appendEnv(env, "REMOTE_HOST", handler.RemoteInfo.Host)
 	env = appendEnv(env, "SERVER_NAME", serverName)
 	env = appendEnv(env, "SERVER_PORT", serverPort)
-	env = appendEnv(env, "SERVER_PROTOCOL", req.http.Proto)
+	env = appendEnv(env, "SERVER_PROTOCOL", req.Proto)
 	env = appendEnv(env, "GATEWAY_INTERFACE", gatewayInterface)
-	env = appendEnv(env, "REQUEST_METHOD", req.http.Method)
-	env = appendEnv(env, "SCRIPT_NAME", req.url.ScriptPath)
-	env = appendEnv(env, "PATH_INFO", req.url.PathInfo)
+	env = appendEnv(env, "REQUEST_METHOD", req.Method)
+	env = appendEnv(env, "SCRIPT_NAME", handler.URLInfo.ScriptPath)
+	env = appendEnv(env, "PATH_INFO", handler.URLInfo.PathInfo)
 	env = appendEnv(env, "PATH_TRANSLATED", url.Path)
 	env = appendEnv(env, "QUERY_STRING", url.RawQuery)
 
@@ -83,8 +70,8 @@ func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error
 	env = appendEnv(env, "REMOTE_USER", "")
 
 	// Non standard, but commonly used headers.
-	env = appendEnv(env, "UNIQUE_ID", req.id) // Based on Apache mod_unique_id.
-	env = appendEnv(env, "REMOTE_PORT", req.remote.Port)
+	env = appendEnv(env, "UNIQUE_ID", handler.Id) // Based on Apache mod_unique_id.
+	env = appendEnv(env, "REMOTE_PORT", handler.RemoteInfo.Port)
 	env = appendEnv(env, "REQUEST_URI", url.RequestURI()) // e.g. /foo/blah?a=b
 
 	// The following variables are part of the CGI specification, but are optional
@@ -99,7 +86,7 @@ func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error
 	//   SSL_*
 	//     -- SSL variables are not supported, HTTPS=on added for websocketd running with --ssl
 
-	if config.Ssl {
+	if handler.server.Config.Ssl {
 		env = appendEnv(env, "HTTPS", "on")
 	}
 
@@ -119,12 +106,12 @@ func createEnv(req *requestInfo, config *Config, log *LogScope) ([]string, error
 		log.Debug("env", "Header variable %s", env[len(env)-1])
 	}
 
-	for _, v := range config.Env {
+	for _, v := range handler.server.Config.Env {
 		env = append(env, v)
 		log.Debug("env", "External variable: %s", v)
 	}
 
-	return env, nil
+	return env
 }
 
 // Adapted from net/http/header.go

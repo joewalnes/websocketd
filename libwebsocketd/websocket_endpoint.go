@@ -40,7 +40,11 @@ func (we *WebSocketEndpoint) Send(msg string) bool {
 	return true
 }
 
-func (we *WebSocketEndpoint) ReadOutput(config *Config) {
+func (we *WebSocketEndpoint) StartReading() {
+	go we.read_client()
+}
+
+func (we *WebSocketEndpoint) read_client() {
 	for {
 		var msg string
 		err := websocket.Message.Receive(we.ws, &msg)

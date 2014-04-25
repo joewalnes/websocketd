@@ -34,7 +34,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	var err error
 
 	// simple url
-	res, err = parsePath("/foo/bar/baz.sh", config)
+	res, err = GetURLInfo("/foo/bar/baz.sh", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,14 +42,14 @@ func TestParsePathWithScriptDir(t *testing.T) {
 		t.Error("scriptPath")
 	}
 	if res.PathInfo != "" {
-		t.Error("pathInfo")
+		t.Error("GetURLInfo")
 	}
 	if res.FilePath != scriptPath {
 		t.Error("filePath")
 	}
 
 	// url with extra path info
-	res, err = parsePath("/foo/bar/baz.sh/some/extra/stuff", config)
+	res, err = GetURLInfo("/foo/bar/baz.sh/some/extra/stuff", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,14 +57,14 @@ func TestParsePathWithScriptDir(t *testing.T) {
 		t.Error("scriptPath")
 	}
 	if res.PathInfo != "/some/extra/stuff" {
-		t.Error("pathInfo")
+		t.Error("GetURLInfo")
 	}
 	if res.FilePath != scriptPath {
 		t.Error("filePath")
 	}
 
 	// non-existing file
-	_, err = parsePath("/foo/bar/bang.sh", config)
+	_, err = GetURLInfo("/foo/bar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
@@ -73,7 +73,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	}
 
 	// non-existing dir
-	_, err = parsePath("/hoohar/bang.sh", config)
+	_, err = GetURLInfo("/hoohar/bang.sh", config)
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
@@ -86,7 +86,7 @@ func TestParsePathExplicitScript(t *testing.T) {
 	config := new(Config)
 	config.UsingScriptDir = false
 
-	res, err := parsePath("/some/path", config)
+	res, err := GetURLInfo("/some/path", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -94,7 +94,7 @@ func TestParsePathExplicitScript(t *testing.T) {
 		t.Error("scriptPath")
 	}
 	if res.PathInfo != "/some/path" {
-		t.Error("pathInfo")
+		t.Error("GetURLInfo")
 	}
 	if res.FilePath != "" {
 		t.Error("filePath")

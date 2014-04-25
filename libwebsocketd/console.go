@@ -13,7 +13,7 @@ package libwebsocketd
 // We can get by without jQuery or Bootstrap for this one ;).
 
 const (
-	ConsoleContent = `
+	consoleContent = `
 
 <!--
 websocketd console

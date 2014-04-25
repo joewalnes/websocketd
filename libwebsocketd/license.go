@@ -6,7 +6,7 @@
 package libwebsocketd
 
 const (
-	License = `
+	license = `
 Copyright (c) 2013, Joe Walnes and the websocketd authors.
 All rights reserved.
 
@@ -31,3 +31,5 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 `
 )
+
+func License() string { return license }

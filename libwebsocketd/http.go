@@ -17,48 +17,21 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
 var ForkNotAllowedError = errors.New("too many forks active")
 
-// RemoteInfo holds information about remote http client
-type RemoteInfo struct {
-	Addr, Host, Port string
-}
-
-func RemoteDetails(remote string, doLookup bool) (*RemoteInfo, error) {
-	addr, port, err := net.SplitHostPort(remote)
-	if err != nil {
-		return nil, err
-	}
-
-	var host string
-	if doLookup {
-		hosts, err := net.LookupAddr(addr)
-		if err != nil || len(hosts) == 0 {
-			host = addr
-		} else {
-			host = hosts[0]
-		}
-	} else {
-		host = addr
-	}
-
-	return &RemoteInfo{Addr: addr, Host: host, Port: port}, nil
-}
-
-// HttpWsMuxHandler presents http.Handler interface for requests libwebsocketd is handling.
-type HttpWsMuxHandler struct {
+// WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
+type WebsocketdServer struct {
 	Config *Config
 	Log    *LogScope
 	forks  chan byte
 }
 
-// NewHandler creates libwebsocketd mux with given config, logscope and maxforks limit
-func NewHandler(config *Config, log *LogScope, maxforks int) *HttpWsMuxHandler {
-	mux := &HttpWsMuxHandler{
+// NewWebsocketdServer creates WebsocketdServer struct with pre-determined config, logscope and maxforks limit
+func NewWebsocketdServer(config *Config, log *LogScope, maxforks int) *WebsocketdServer {
+	mux := &WebsocketdServer{
 		Config: config,
 		Log:    log,
 	}
@@ -68,50 +41,44 @@ func NewHandler(config *Config, log *LogScope, maxforks int) *HttpWsMuxHandler {
 	return mux
 }
 
+// wshandshake returns closure to verify websocket origin header according to configured rules
+func (h *WebsocketdServer) wshandshake(log *LogScope) func(*websocket.Config, *http.Request) error {
+	return func(wsconf *websocket.Config, req *http.Request) error {
+		return checkOrigin(wsconf, req, h.Config, log)
+	}
+}
+
 // ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
-func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
 	log := h.Log.NewLevel(h.Log.LogFunc)
-
-	hdrs := req.Header
-
 	log.Associate("url", h.TellURL("http", req.Host, req.RequestURI))
 
-	remote, err := RemoteDetails(req.RemoteAddr, h.Config.ReverseLookup)
-	if err != nil {
-		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
-		return
-	}
-	log.Associate("remote", remote.Host)
-
-	upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
-
-	// WebSocket, limited to size of h.forks
-	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
-
-		if h.Config.CommandName != "" || h.Config.UsingScriptDir {
-			urlInfo, err := parsePath(req.URL.Path, h.Config)
-			if err != nil {
-				log.Access("session", "NOT FOUND: %s", err)
-				http.Error(w, "404 Not Found", 404)
-				return
-			}
-			log.Debug("session", "URLInfo: %s", urlInfo)
-
+	if h.Config.CommandName != "" || h.Config.UsingScriptDir {
+		hdrs := req.Header
+		upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
+		// WebSocket, limited to size of h.forks
+		if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
 			if h.noteForkCreated() == nil {
 				defer h.noteForkCompled()
 
-				reqInfo := &requestInfo{id: generateId(), http: req, url: urlInfo, remote: remote}
-				log.Associate("id", reqInfo.id)
-
-				wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-					acceptWebSocket(reqInfo, ws, h.Config, log)
-				})
-
-				wsHandshake := func(wsconf *websocket.Config, req *http.Request) (err error) {
-					return checkOrigin(wsconf, req, h.Config, log)
+				handler, err := NewWebsocketdHandler(h, req, log)
+				if err != nil {
+					if err == ScriptNotFoundError {
+						log.Access("session", "NOT FOUND: %s", err)
+						http.Error(w, "404 Not Found", 404)
+					} else {
+						log.Access("session", "INTERNAL ERROR: %s", err)
+						http.Error(w, "500 Internal Server Error", 500)
+					}
+					return
 				}
 
-				wsServer := websocket.Server{Handler: wsHandler, Handshake: wsHandshake}
+				// Now we are ready for connection upgrade dance...
+				wsServer := &websocket.Server{
+					Handshake: h.wshandshake(log),
+					Handler:   handler.wshandler(log),
+				}
 				wsServer.ServeHTTP(w, req)
 			} else {
 				log.Error("http", "Max of possible forks already active, upgrade rejected")
@@ -124,8 +91,8 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Dev console (if enabled)
 	if h.Config.DevConsole {
 		log.Access("http", "DEVCONSOLE")
-		content := ConsoleContent
-		content = strings.Replace(content, "{{license}}", License, -1)
+		content := consoleContent
+		content = strings.Replace(content, "{{license}}", license, -1)
 		content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 		return
@@ -177,16 +144,16 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
-func (h *HttpWsMuxHandler) TellURL(scheme, host, path string) string {
+func (h *WebsocketdServer) TellURL(scheme, host, path string) string {
 	if h.Config.Ssl {
 		return scheme + "s://" + host + path
 	}
 	return scheme + "://" + host + path
 }
 
-func (h *HttpWsMuxHandler) noteForkCreated() error {
+func (h *WebsocketdServer) noteForkCreated() error {
 	// note that forks can be nil since the construct could've been created by
-	// someone who is not using NewHandler
+	// someone who is not using NewWebsocketdServer
 	if h.forks != nil {
 		select {
 		case h.forks <- 1:
@@ -199,7 +166,7 @@ func (h *HttpWsMuxHandler) noteForkCreated() error {
 	}
 }
 
-func (h *HttpWsMuxHandler) noteForkCompled() {
+func (h *WebsocketdServer) noteForkCompled() {
 	if h.forks != nil { // see comment in noteForkCreated
 		select {
 		case <-h.forks:
@@ -218,6 +185,11 @@ func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, lo
 	// check for origin to be correct in future
 	// handshaker triggers answering with 403 if error was returned
 	// We keep behavior of original handshaker that populates this field
+	origin := req.Header.Get("Origin")
+	if origin == "" {
+		req.Header.Set("Origin", "file:")
+	}
+
 	wsconf.Origin, err = websocket.Origin(wsconf, req)
 	if err == nil && wsconf.Origin == nil {
 		log.Access("session", "rejected null origin")
@@ -283,70 +255,6 @@ func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, lo
 		}
 	}
 	return nil
-}
-
-func acceptWebSocket(request *requestInfo, ws *websocket.Conn, config *Config, log *LogScope) {
-	defer ws.Close()
-
-	log.Access("session", "CONNECT")
-	defer log.Access("session", "DISCONNECT")
-
-	env, err := createEnv(request, config, log)
-	if err != nil {
-		log.Error("process", "Could not create ENV: %s", err)
-		return
-	}
-
-	commandName := config.CommandName
-	if config.UsingScriptDir {
-		commandName = request.url.FilePath
-	}
-	log.Associate("command", commandName)
-
-	launched, err := launchCmd(commandName, config.CommandArgs, env)
-	if err != nil {
-		log.Error("process", "Could not launch process %s %s (%s)", commandName, strings.Join(config.CommandArgs, " "), err)
-		return
-	}
-
-	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
-
-	process := NewProcessEndpoint(launched, log)
-	wsEndpoint := NewWebSocketEndpoint(ws, log)
-
-	defer process.Terminate()
-
-	go process.ReadOutput(launched.stdout, config)
-	go wsEndpoint.ReadOutput(config)
-	go process.pipeStdErr(config)
-
-	pipeEndpoints(process, wsEndpoint, log)
-}
-
-func pipeEndpoints(process Endpoint, wsEndpoint *WebSocketEndpoint, log *LogScope) {
-	for {
-		select {
-		case msgFromProcess, ok := <-process.Output():
-			if ok {
-				log.Trace("send<-", "%s", msgFromProcess)
-				if !wsEndpoint.Send(msgFromProcess) {
-					return
-				}
-			} else {
-				// TODO: Log exit code. Mechanism differs on different platforms.
-				log.Trace("process", "Process terminated")
-				return
-			}
-		case msgFromSocket, ok := <-wsEndpoint.Output():
-			if ok {
-				log.Trace("recv->", "%s", msgFromSocket)
-				process.Send(msgFromSocket)
-			} else {
-				log.Trace("websocket", "WebSocket connection closed")
-				return
-			}
-		}
-	}
 }
 
 func tellHostPort(host string, ssl bool) (server, port string, err error) {

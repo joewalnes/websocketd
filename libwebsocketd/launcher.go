@@ -6,63 +6,9 @@
 package libwebsocketd
 
 import (
-	"errors"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 )
-
-var ScriptNotFoundError = errors.New("script not found")
-
-// URLInfo - structure carrying information about current request and it's mapping to filesystem
-type URLInfo struct {
-	ScriptPath string
-	PathInfo   string
-	FilePath   string
-}
-
-func parsePath(path string, config *Config) (*URLInfo, error) {
-	if !config.UsingScriptDir {
-		return &URLInfo{"/", path, ""}, nil
-	}
-
-	parts := strings.Split(path[1:], "/")
-	urlInfo := &URLInfo{}
-
-	for i, part := range parts {
-		urlInfo.ScriptPath = strings.Join([]string{urlInfo.ScriptPath, part}, "/")
-		urlInfo.FilePath = filepath.Join(config.ScriptDir, urlInfo.ScriptPath)
-		isLastPart := i == len(parts)-1
-		statInfo, err := os.Stat(urlInfo.FilePath)
-
-		// not a valid path
-		if err != nil {
-			return nil, ScriptNotFoundError
-		}
-
-		// at the end of url but is a dir
-		if isLastPart && statInfo.IsDir() {
-			return nil, ScriptNotFoundError
-		}
-
-		// we've hit a dir, carry on looking
-		if statInfo.IsDir() {
-			continue
-		}
-
-		// no extra args
-		if isLastPart {
-			return urlInfo, nil
-		}
-
-		// build path info from extra parts of url
-		urlInfo.PathInfo = "/" + strings.Join(parts[i+1:], "/")
-		return urlInfo, nil
-	}
-	panic("parsePath")
-}
 
 type LaunchedProcess struct {
 	cmd    *exec.Cmd
