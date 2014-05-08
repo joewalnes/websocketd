@@ -91,8 +91,8 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Dev console (if enabled)
 	if h.Config.DevConsole {
 		log.Access("http", "DEVCONSOLE")
-		content := consoleContent
-		content = strings.Replace(content, "{{license}}", license, -1)
+		content := ConsoleContent
+		content = strings.Replace(content, "{{license}}", License, -1)
 		content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 		return

@@ -142,7 +142,7 @@ func parseCommandLine() *Config {
 
 	if *licenseFlag {
 		fmt.Printf("%s %s\n", HelpProcessName(), Version())
-		fmt.Printf("%s\n", libwebsocketd.License())
+		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(2)
 	}
 
