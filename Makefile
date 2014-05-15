@@ -10,7 +10,7 @@
 # To manually invoke the locally installed Go, use ./go
 
 # Go installation config.
-GO_VERSION=1.1.2.linux-amd64
+GO_VERSION=1.2.1.linux-amd64
 GO_DOWNLOAD_URL=http://go.googlecode.com/files/go$(GO_VERSION).tar.gz
 
 # Build websocketd binary
@@ -25,8 +25,10 @@ go-workspace/src/github.com/joewalnes/websocketd:
 	ln -s ../../../../ go-workspace/src/github.com/joewalnes/websocketd
 
 # Setup ./go wrapper to use local GOPATH/GOROOT.
+# Need to set PATH for gofmt.
 go: go-v$(GO_VERSION)/.done
 	@echo '#!/bin/sh' > $@
+	@echo export PATH=$(abspath go-v$(GO_VERSION)/bin):$(PATH) >> $@
 	@echo mkdir -p $(abspath go-workspace) >> $@
 	@echo GOPATH=$(abspath go-workspace) GOROOT=$(abspath go-v$(GO_VERSION)) $(abspath go-v$(GO_VERSION)/bin/go) \$$@ >> $@
 	chmod +x $@
