@@ -16,7 +16,7 @@
     <div id="count"></div>
 
     <script>
-      var ws = new WebSocket('ws://localhost:8080/');
+      var ws = new WebSocket('ws://' + location.host);
       ws.onopen = function() {
         document.body.style.backgroundColor = '#cfc';
       };
