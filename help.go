@@ -36,6 +36,17 @@ Options:
                                  Use square brackets to specify IPv6 address. 
                                  Default: "" (all)
 
+  --sameorigin={true,false}      Restrict (HTTP 403) protocol upgrades if the
+                                 Origin header does not match to requested HTTP 
+                                 Host. Default: false.
+
+  --origin=host[:port][,host[:port]...]
+                                 Restrict (HTTP 403) protocol upgrades if the
+                                 Origin header does not match to one of the host
+                                 and port combinations listed. If the port is not
+                                 specified, any port number will match. 
+                                 Default: "" (allow any origin)
+
   --ssl                          Listen for HTTPS socket instead of HTTP.                     
   --sslcert=FILE                 All three options must be used or all of
   --sslkey=FILE                  them should be omitted. 

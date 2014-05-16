@@ -55,13 +55,18 @@ func (pe *ProcessEndpoint) Send(msg string) bool {
 	return true
 }
 
-func (pe *ProcessEndpoint) ReadOutput(input io.ReadCloser, config *Config) {
-	bufin := bufio.NewReader(input)
+func (pe *ProcessEndpoint) StartReading() {
+	go pe.log_stderr()
+	go pe.process_stdout()
+}
+
+func (pe *ProcessEndpoint) process_stdout() {
+	bufin := bufio.NewReader(pe.process.stdout)
 	for {
 		str, err := bufin.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				pe.log.Error("process", "Unexpected STDOUT read from process: %s", err)
+				pe.log.Error("process", "Unexpected error while reading STDOUT from process: %s", err)
 			} else {
 				pe.log.Debug("process", "Process STDOUT closed")
 			}
@@ -72,13 +77,13 @@ func (pe *ProcessEndpoint) ReadOutput(input io.ReadCloser, config *Config) {
 	close(pe.output)
 }
 
-func (pe *ProcessEndpoint) pipeStdErr(config *Config) {
+func (pe *ProcessEndpoint) log_stderr() {
 	bufstderr := bufio.NewReader(pe.process.stderr)
 	for {
 		str, err := bufstderr.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				pe.log.Error("process", "Unexpected STDERR read from process: %s", err)
+				pe.log.Error("process", "Unexpected error while reading STDERR from process: %s", err)
 			} else {
 				pe.log.Debug("process", "Process STDERR closed")
 			}
@@ -88,17 +93,14 @@ func (pe *ProcessEndpoint) pipeStdErr(config *Config) {
 	}
 }
 
+// trimEOL cuts unixy style \n and windowsy style \r\n suffix from the string
 func trimEOL(s string) string {
-	// Handles unixy style \n and windowsy style \r\n
-	trimCount := 0
-	if len(s) > 0 && s[len(s)-1] == '\n' {
-		trimCount = 1
-		if len(s) > 1 && s[len(s)-2] == '\r' {
-			trimCount = 2
+	lns := len(s)
+	if lns > 0 && s[lns-1] == '\n' {
+		lns--
+		if lns > 0 && s[lns-1] == '\r' {
+			lns--
 		}
 	}
-	if trimCount == 0 {
-		return s
-	}
-	return s[0 : len(s)-trimCount]
+	return s[0:lns]
 }

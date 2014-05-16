@@ -23,4 +23,6 @@ type Config struct {
 	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
 	Env            []string  // Additional environment variables to pass to process ("key=value").
 	ParentEnv      []string  // Variables kept from os.Environ() before sanitizing it for subprocess.
+	AllowOrigins   []string  // List of allowed origin addresses for websocket upgrade.
+	SameOrigin     bool      // If set, requires websocket upgrades to be performed from same origin only.
 }

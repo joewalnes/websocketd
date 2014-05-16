@@ -13,7 +13,7 @@ package libwebsocketd
 // We can get by without jQuery or Bootstrap for this one ;).
 
 const (
-	ConsoleContent = `
+	defaultConsoleContent = `
 
 <!--
 websocketd console
@@ -330,3 +330,5 @@ Full documentation at http://websocketd.com/
 
 `
 )
+
+var ConsoleContent = defaultConsoleContent

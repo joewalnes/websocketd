@@ -9,28 +9,29 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/cgi"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
 var ForkNotAllowedError = errors.New("too many forks active")
 
-// HttpWsMuxHandler presents http.Handler interface for requests libwebsocketd is handling.
-type HttpWsMuxHandler struct {
+// WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
+type WebsocketdServer struct {
 	Config *Config
 	Log    *LogScope
 	forks  chan byte
 }
 
-// NewHandler creates libwebsocketd mux with given config, logscope and maxforks limit
-func NewHandler(config *Config, log *LogScope, maxforks int) *HttpWsMuxHandler {
-	mux := &HttpWsMuxHandler{
+// NewWebsocketdServer creates WebsocketdServer struct with pre-determined config, logscope and maxforks limit
+func NewWebsocketdServer(config *Config, log *LogScope, maxforks int) *WebsocketdServer {
+	mux := &WebsocketdServer{
 		Config: config,
 		Log:    log,
 	}
@@ -40,63 +41,44 @@ func NewHandler(config *Config, log *LogScope, maxforks int) *HttpWsMuxHandler {
 	return mux
 }
 
+// wshandshake returns closure to verify websocket origin header according to configured rules
+func (h *WebsocketdServer) wshandshake(log *LogScope) func(*websocket.Config, *http.Request) error {
+	return func(wsconf *websocket.Config, req *http.Request) error {
+		return checkOrigin(wsconf, req, h.Config, log)
+	}
+}
+
 // ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
-func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
 	log := h.Log.NewLevel(h.Log.LogFunc)
+	log.Associate("url", h.TellURL("http", req.Host, req.RequestURI))
 
-	hdrs := req.Header
-
-	wsschema, httpschema := "ws", "http"
-	if h.Config.Ssl {
-		wsschema, httpschema = "wss", "https"
-	}
-	log.Associate("url", fmt.Sprintf("%s://%s%s", httpschema, req.Host, req.URL.RequestURI()))
-
-	_, remoteHost, _, err := remoteDetails(req, h.Config)
-	if err != nil {
-		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
-		return
-	}
-
-	log.Associate("remote", remoteHost)
-
-	upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
-
-	// WebSocket, limited to size of h.forks
-	if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
-		if hdrs.Get("Origin") == "null" {
-			// Fix up mismatch between how Chrome reports Origin
-			// when using file:// url (using the string "null"), and
-			// how the WebSocket library expects to see it.
-			hdrs.Set("Origin", "file:")
-		}
-
-		if h.Config.CommandName != "" || h.Config.UsingScriptDir {
-			urlInfo, err := parsePath(req.URL.Path, h.Config)
-			if err != nil {
-				log.Access("session", "NOT FOUND: %s", err)
-				http.Error(w, "404 Not Found", 404)
-				return
-			}
-			log.Debug("session", "URLInfo: %s", urlInfo)
-
+	if h.Config.CommandName != "" || h.Config.UsingScriptDir {
+		hdrs := req.Header
+		upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
+		// WebSocket, limited to size of h.forks
+		if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
 			if h.noteForkCreated() == nil {
 				defer h.noteForkCompled()
-				wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-					acceptWebSocket(urlInfo, ws, h.Config, log)
-				})
 
-				wsHandshake := func(config *websocket.Config, req *http.Request) error {
-					// check for origin to be correct in future
-					// handshaker triggers answering with 403 if error was returned we cannot serve 404 out of here
-					config.Origin, err = websocket.Origin(config, req)
-					if err == nil && config.Origin == nil {
-						return fmt.Errorf("null origin")
+				handler, err := NewWebsocketdHandler(h, req, log)
+				if err != nil {
+					if err == ScriptNotFoundError {
+						log.Access("session", "NOT FOUND: %s", err)
+						http.Error(w, "404 Not Found", 404)
+					} else {
+						log.Access("session", "INTERNAL ERROR: %s", err)
+						http.Error(w, "500 Internal Server Error", 500)
 					}
-					return err
+					return
 				}
 
-				wsServer := websocket.Server{Handler: wsHandler, Handshake: wsHandshake}
+				// Now we are ready for connection upgrade dance...
+				wsServer := &websocket.Server{
+					Handshake: h.wshandshake(log),
+					Handler:   handler.wshandler(log),
+				}
 				wsServer.ServeHTTP(w, req)
 			} else {
 				log.Error("http", "Max of possible forks already active, upgrade rejected")
@@ -111,7 +93,7 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		log.Access("http", "DEVCONSOLE")
 		content := ConsoleContent
 		content = strings.Replace(content, "{{license}}", License, -1)
-		content = strings.Replace(content, "{{addr}}", fmt.Sprintf("%s://%s%s", wsschema, req.Host, req.RequestURI), -1)
+		content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
 		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 		return
 	}
@@ -161,9 +143,17 @@ func (h *HttpWsMuxHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.NotFound(w, req)
 }
 
-func (h *HttpWsMuxHandler) noteForkCreated() error {
+// TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
+func (h *WebsocketdServer) TellURL(scheme, host, path string) string {
+	if h.Config.Ssl {
+		return scheme + "s://" + host + path
+	}
+	return scheme + "://" + host + path
+}
+
+func (h *WebsocketdServer) noteForkCreated() error {
 	// note that forks can be nil since the construct could've been created by
-	// someone who is not using NewHandler
+	// someone who is not using NewWebsocketdServer
 	if h.forks != nil {
 		select {
 		case h.forks <- 1:
@@ -176,7 +166,7 @@ func (h *HttpWsMuxHandler) noteForkCreated() error {
 	}
 }
 
-func (h *HttpWsMuxHandler) noteForkCompled() {
+func (h *WebsocketdServer) noteForkCompled() {
 	if h.forks != nil { // see comment in noteForkCreated
 		select {
 		case <-h.forks:
@@ -191,72 +181,94 @@ func (h *HttpWsMuxHandler) noteForkCompled() {
 	return
 }
 
-func acceptWebSocket(urlInfo *URLInfo, ws *websocket.Conn, config *Config, log *LogScope) {
-	defer ws.Close()
+func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, log *LogScope) (err error) {
+	// check for origin to be correct in future
+	// handshaker triggers answering with 403 if error was returned
+	// We keep behavior of original handshaker that populates this field
+	origin := req.Header.Get("Origin")
+	if origin == "" {
+		req.Header.Set("Origin", "file:")
+	}
 
-	req := ws.Request()
-	id := generateId()
-
-	log.Associate("id", id)
-	log.Associate("origin", req.Header.Get("Origin"))
-
-	log.Access("session", "CONNECT")
-	defer log.Access("session", "DISCONNECT")
-
-	env, err := createEnv(ws.Request(), config, urlInfo, id, log)
+	wsconf.Origin, err = websocket.Origin(wsconf, req)
+	if err == nil && wsconf.Origin == nil {
+		log.Access("session", "rejected null origin")
+		return fmt.Errorf("null origin not allowed")
+	}
 	if err != nil {
-		log.Error("process", "Could not create ENV: %s", err)
-		return
+		log.Access("session", "Origin parsing error: %s", err)
+		return err
 	}
+	log.Associate("origin", wsconf.Origin.String())
 
-	commandName := config.CommandName
-	if config.UsingScriptDir {
-		commandName = urlInfo.FilePath
-	}
-	log.Associate("command", commandName)
-
-	launched, err := launchCmd(commandName, config.CommandArgs, env)
-	if err != nil {
-		log.Error("process", "Could not launch process %s %s (%s)", commandName, strings.Join(config.CommandArgs, " "), err)
-		return
-	}
-
-	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
-
-	process := NewProcessEndpoint(launched, log)
-	wsEndpoint := NewWebSocketEndpoint(ws, log)
-
-	defer process.Terminate()
-
-	go process.ReadOutput(launched.stdout, config)
-	go wsEndpoint.ReadOutput(config)
-	go process.pipeStdErr(config)
-
-	pipeEndpoints(process, wsEndpoint, log)
-}
-
-func pipeEndpoints(process Endpoint, wsEndpoint *WebSocketEndpoint, log *LogScope) {
-	for {
-		select {
-		case msgFromProcess, ok := <-process.Output():
-			if ok {
-				log.Trace("send<-", "%s", msgFromProcess)
-				if !wsEndpoint.Send(msgFromProcess) {
-					return
-				}
-			} else {
-				// TODO: Log exit code. Mechanism differs on different platforms.
-				log.Trace("process", "Process terminated")
-				return
+	// If some origin restrictions are present:
+	if config.SameOrigin || config.AllowOrigins != nil {
+		originServer, originPort, err := tellHostPort(wsconf.Origin.Host, wsconf.Origin.Scheme == "https")
+		if err != nil {
+			log.Access("session", "Origin hostname parsing error: %s", err)
+			return err
+		}
+		if config.SameOrigin {
+			localServer, localPort, err := tellHostPort(req.Host, req.TLS != nil)
+			if err != nil {
+				log.Access("session", "Request hostname parsing error: %s", err)
+				return err
 			}
-		case msgFromSocket, ok := <-wsEndpoint.Output():
-			if ok {
-				log.Trace("recv->", "%s", msgFromSocket)
-				process.Send(msgFromSocket)
-			} else {
-				log.Trace("websocket", "WebSocket connection closed")
-				return
+			if originServer != localServer || originPort != localPort {
+				log.Access("session", "Same origin policy mismatch")
+				return fmt.Errorf("same origin policy violated")
+			}
+		}
+		if config.AllowOrigins != nil {
+			matchFound := false
+			for _, allowed := range config.AllowOrigins {
+				if pos := strings.Index(allowed, "://"); pos > 0 {
+					// allowed schema has to match
+					allowedURL, err := url.Parse(allowed)
+					if err != nil {
+						continue // pass bad URLs in origin list
+					}
+					if allowedURL.Scheme != wsconf.Origin.Scheme {
+						continue // mismatch
+					}
+					allowed = allowed[pos+3:]
+				}
+				allowServer, allowPort, err := tellHostPort(allowed, false)
+				if err != nil {
+					continue // unparseable
+				}
+				if allowPort == "80" && allowed[len(allowed)-3:] != ":80" {
+					// any port is allowed, host names need to match
+					matchFound = allowServer == originServer
+				} else {
+					// exact match of host names and ports
+					matchFound = allowServer == originServer && allowPort == originPort
+				}
+				if matchFound {
+					break
+				}
+			}
+			if !matchFound {
+				log.Access("session", "Origin is not listed in allowed list")
+				return fmt.Errorf("origin list matches were not found")
 			}
 		}
 	}
+	return nil
+}
+
+func tellHostPort(host string, ssl bool) (server, port string, err error) {
+	server, port, err = net.SplitHostPort(host)
+	if err != nil {
+		if addrerr, ok := err.(*net.AddrError); ok && strings.Contains(addrerr.Err, "missing port") {
+			server = host
+			if ssl {
+				port = "443"
+			} else {
+				port = "80"
+			}
+			err = nil
+		}
+	}
+	return server, port, err
 }
