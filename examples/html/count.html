@@ -24,7 +24,7 @@
         document.body.style.backgroundColor = null;
       };
       ws.onmessage = function(event) {
-        document.getElementById('count').innerText = event.data;
+        document.getElementById('count').textContent = event.data;
       };
     </script>
 
