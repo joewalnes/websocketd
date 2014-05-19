@@ -75,7 +75,7 @@ __count.html__:
 <script>
   // helper function: log message to screen
   function log(msg) {
-    document.getElementById('log').innerText += msg + '\n';
+    document.getElementById('log').textContent += msg + '\n';
   }
 
   // setup websocket with callbacks
