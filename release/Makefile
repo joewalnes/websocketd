@@ -15,13 +15,14 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 		| sed -e 's/^.*\.//' \
 		| sort -n \
 		| tail -n 1)
-VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION) + 1),0)
+#VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION) + 1),0)
+VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.1.2
-PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 windows_386 windows_amd64
+GO_VERSION=1.2.2
+PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 darwin_386 freebsd_amd64 freebsd_386 windows_386 windows_amd64
 
-GO_SRC_URL=https://go.googlecode.com/files/go$(GO_VERSION).src.tar.gz
+GO_SRC_URL=https://storage.googleapis.com/golang/go$(GO_VERSION).src.tar.gz
 GO_DOWNLOAD=go-local/$(GO_VERSION).tgz
 GO_DIR=go-local/$(GO_VERSION)
 GO_UNPACKED=$(GO_DIR)/.unpacked
@@ -35,6 +36,9 @@ FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
 FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
+FLAGS_darwin_386    = $(FLAGS_all) GOOS=darwin  GOARCH=386   CGO_ENABLED=0
+FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
+FLAGS_freebsd_386    = $(FLAGS_all) GOOS=freebsd  GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_386   = $(FLAGS_all) GOOS=windows GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_amd64 = $(FLAGS_all) GOOS=windows GOARCH=amd64 CGO_ENABLED=0
 
@@ -92,7 +96,11 @@ out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) g
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
-build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built)
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
+	rm -f $@
+	zip -j $@ out/$(RELEASE_VERSION)/$*/.built out/$(RELEASE_VERSION)/$*/* INSTALL ../README.md ../LICENSE
+
+build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built) $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-$(PLATFORM).zip)
 .PHONY: build
 
 
