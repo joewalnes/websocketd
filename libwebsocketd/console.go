@@ -169,7 +169,9 @@ Full documentation at http://websocketd.com/
 
 		select('.url').focus();
 		select('.url').addEventListener('keydown', function(ev) {
-			if (ev.keyIdentifier == 'Enter') {
+			var code = ev.which || ev.keyCode;
+			// Enter key pressed
+			if (code  == 13) { 			
 				updatePageUrl();
 				connect(select('.url').value);
 			}
@@ -177,15 +179,19 @@ Full documentation at http://websocketd.com/
 		select('.url').addEventListener('change', updatePageUrl);
 
 		select('.send-input').addEventListener('keydown', function(ev) {
-			if (ev.keyIdentifier == 'Enter') {
+			var code = ev.which || ev.keyCode;
+			// Enter key pressed
+			if (code == 13) { 
 				var msg = select('.send-input').value;
 				select('.send-input').value = '';
 				send(msg);
 			}
-			if (ev.keyIdentifier == 'Up') {
+			// Up key pressed
+			if (code == 38) {
 				moveThroughSendHistory(1);
 			}
-			if (ev.keyIdentifier == 'Down') {
+			// Down key pressed
+			if (code == 40) {
 				moveThroughSendHistory(-1);
 			}
 		});
