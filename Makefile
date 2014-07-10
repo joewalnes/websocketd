@@ -10,8 +10,9 @@
 # To manually invoke the locally installed Go, use ./go
 
 # Go installation config.
-GO_VERSION=1.2.1.linux-amd64
-GO_DOWNLOAD_URL=http://go.googlecode.com/files/go$(GO_VERSION).tar.gz
+#GO_VERSION=1.2.1.linux-amd64
+GO_VERSION=1.3.darwin-386-osx10.8
+GO_DOWNLOAD_URL=http://golang.org/dl/go$(GO_VERSION).tar.gz
 
 # Build websocketd binary
 websocketd: go $(wildcard *.go) $(wildcard libwebsocketd/*.go) go-workspace/src/github.com/joewalnes/websocketd
@@ -39,7 +40,7 @@ go-v$(GO_VERSION)/.done:
 	mkdir -p $(dir $@)
 	rm -f $@
 	@echo Downloading and unpacking Go $(GO_VERSION) to $(dir $@)
-	curl --silent --fail $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(dir $@)
+	wget -q -O - $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(dir $@)
 	touch $@
 
 # Clean up binary
