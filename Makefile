@@ -11,7 +11,11 @@
 
 # Go installation config.
 #GO_VERSION=1.2.1.linux-amd64
-GO_VERSION=1.3.darwin-386-osx10.8
+GO_VER=1.3
+SYSTEM_NAME:=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+SYSTEM_ARCH:=$(shell uname -m)
+GO_ARCH:=$(if $(filter x86_64, $(SYSTEM_ARCH)),amd64,386)
+GO_VERSION:=$(GO_VER).$(SYSTEM_NAME)-$(GO_ARCH)$(if $(filter darwin,$(SYSTEM_NAME)),-osx10.8)
 GO_DOWNLOAD_URL=http://golang.org/dl/go$(GO_VERSION).tar.gz
 
 # Build websocketd binary
