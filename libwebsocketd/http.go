@@ -186,7 +186,9 @@ func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, lo
 	// handshaker triggers answering with 403 if error was returned
 	// We keep behavior of original handshaker that populates this field
 	origin := req.Header.Get("Origin")
-	if origin == "" {
+	if origin == "" || (origin == "null" && config.AllowOrigins == nil) {
+		// we don't want to trust string "null" if there is any
+		// enforcements are active
 		req.Header.Set("Origin", "file:")
 	}
 
