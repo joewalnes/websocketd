@@ -313,3 +313,8 @@ pre[class*="language-"] {
     font-size: 12px;
     padding: 3px 6px;
 }
+.icon-feature {
+    width: 100px;
+    height: 100px;
+    opacity: 0.3;
+}
