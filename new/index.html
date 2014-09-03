@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>websocketd</title>
+        <!-- https://www.google.com/fonts#UsePlace:use/Collection:Lato:100,300,300italic -->
+        <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:100,300,300italic">
+        <link rel="stylesheet" href="//oss.maxcdn.com/normalize/3.0.1/normalize.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="prism.css">
+        <link rel="stylesheet" href="home.css">
+        <script src="//oss.maxcdn.com/jquery/2.1.1/jquery.min.js"></script>
+        <script src="prism.js"></script>
+        <script src="home.js"></script>
+    </head>
+    <body>
+        
+        <header class="header">
+            <div class="header-logo" href="#">websocket<strong>d</strong></div>
+            <ul class="header-links">
+                <li><a href="#"><i class="fa fa-home"></i>About</a></li>
+                <li><a href="#tutorial"><i class="fa fa-play"></i> Tutorial</a></li>
+                <li><a href="https://github.com/joewalnes/websocketd/wiki"><i class="fa fa-book"></i> Docs</a></li>
+                <li><a href="https://github.com/joewalnes/websocketd" target="_blank"><i class="fa fa-github"></i> GitHub</a></li>
+                <li><a href="#download"><i class="fa fa-download"></i> Download</a></li>
+            </ul>
+        </header>
+        
+        <section class="section section-hero">
+            <div class="container">
+                <h1>WebSockets<br>the UNIX way</h1>
+                <h2>Full duplex messaging between web browsers and servers</h2>
+            </div>
+        </section>
+
+        <section class="section section-summary">
+            <div class="container">
+                <h3>websocketd is the WebSocket daemon</h3>
+                <p>It takes care of handling the WebSocket connections,<br>
+                launching your programs to handle the WebSockets,<br>
+                and passing messages between programs and web-browser.</p>
+                <h3><em>It's like CGI, but for WebSockets.</em></h3>
+                <p><iframe allowtransparency="true" 
+                        frameborder="0" 
+                        height="30" 
+                        scrolling="0"
+                        src="//ghbtns.com/github-btn.html?user=joewalnes&amp;repo=websocketd&amp;type=watch&amp;count=true&amp;size=large" 
+                        width="150"></iframe></p>        
+            </div>
+        </section>
+
+        <section class="section section-benefits">
+            <div class="container">
+                <div class="cols-3">
+                    <div>
+                        <div class="placeholder" style="width: 200px; height: 200px;">
+                            <!-- List some langs -->
+                        </div>
+                        <h3>Language agnostic</h3>
+                        <p>If you can run your program from the command line,
+                            you can write WebSocket endpoints.</p>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 200px; height: 200px;">
+                            <!-- No libraries -->
+                        </div>
+                        <h3>No libraries required</h3>
+                        <p>Just read from incoming text from <strong>stdin</strong> and write
+                            outgoing text to <strong>stdout</strong>. Messaging is simple.</p>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 200px; height: 200px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>Avoid threading headaches</h3>
+                        <p>Each inbound WebSocket connection runs your program in 
+                            a dedicated process. Connections are isolated by process.</p>
+                    </div>
+                </div>
+                <div class="summary">
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-philosophy">
+            <div class="container">
+                <h3>Built for the UNIX philosophy</h3>
+                <blockquote>
+                    <i class="fa fa-quote-left"></i>
+                    Write programs that do one thing and do it well.<br>
+                    Write programs to work together.<br>
+                    Write programs to handle text streams,<br>
+                    because that is a universal interface.
+                    <i class="fa fa-quote-right"></i>
+                </blockquote>
+                <p>If you dig that, you'll dig websocketd.</p> 
+            </div>
+        </section>
+   
+        <a class="xref" name="tutorial"></a>
+        <section class="section section-tutorial">
+            <div class="container">
+                <h1>10 second tutorial</h1>             
+                <p>Let's create a tiny WebSocket server that counts to ten, pausing between each
+                    iteration.</p>
+                <p>Create a program in your favorite language:</p>
+
+                <div class="tab-box language">
+                    <ul class="tabs">
+                        <li data-content="content-bash">Bash</li>
+                        <li data-content="content-python">Python</li>
+                        <li data-content="content-ruby">Ruby</li>
+                        <li data-content="content-php">PHP</li>
+                        <li data-content="content-perl">Perl</li>
+                        <li data-content="content-c">C</li>
+                        <li data-content="content-csharp">C#</li>
+                        <li data-content="content-swift">Swift</li>
+                        <li data-content="content-anything">In fact... anything!</li>
+                    </ul>
+                    <div class="content">
+<pre class="code content-bash"><code class="language-bash">#!/bin/bash
+
+# Count from 1 to 10 with a sleep
+for COUNT in $(seq 1 10); do
+  echo $COUNT
+  sleep 0.5
+done</code></pre>
+<pre class="code content-python"><code class="language-python">#!/usr/bin/python
+from time import sleep
+
+# Count from 1 to 10 with a sleep
+for count in range(0, 10):
+  print count + 1
+  sleep(0.5)</code></pre>
+                
+<pre class="code content-ruby"><code class="language-ruby">#!/usr/bin/ruby
+
+# Count from 1 to 10 with a sleep
+(1..10).each do |count| 
+	puts count
+	sleep(0.5)
+end</code></pre>
+                
+<pre class="code content-php"><code class="language-php">#!/usr/bin/php
+&lt;?
+
+# Count from 1 to 10 with a sleep
+for ($count = 1; $count &lt;= 10; $count++) {
+	echo $count . "\n";
+	usleep(500000);
+}
+?&gt;</code></pre>
+                
+<pre class="code content-perl"><code class="language-clike">#!/usr/bin/perl
+use Time::HiRes qw(sleep);
+
+# Count from 1 to 10 with a sleep
+for my $count (1 .. 10) {
+	print "$count\n";
+	sleep 0.5;
+}</code></pre>
+                        
+<pre class="code content-c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main() {
+    int i;
+
+    // Disable output buffering.
+    setbuf(stdout, NULL);
+
+    for (i = 1; i &lt;= 10; i++) {
+        printf("%d\n", i);
+        usleep(500000);
+    }
+    
+    return 0;
+}</code></pre>
+
+<pre class="code content-csharp"><code class="language-csharp">using System;
+using System.Threading;
+
+class Counter
+{
+  static void Main()
+  {
+    for (int i = 1; i &lt;= 10; i++)
+    {
+      Console.WriteLine(i);
+      Thread.Sleep(500);
+    }
+  }
+}</code></pre>
+
+<pre class="code content-swift"><code class="language-swift">#!/usr/bin/env xcrun swift
+import AppKit
+
+for index in 1...10 {
+  println(index)
+  NSThread.sleepForTimeInterval(0.5)
+}</code></pre>
+
+<pre class="code content-anything"><code class="language-bash">You get the idea!
+
+If you can write a program that can be launched from
+the command line, you can build a WebSocket server.
+
+Read inbound messages from STDIN.
+Write outbound messages to STDOUT.
+
+Read HTTP and connection details from environment vars.
+Use line breaks as message delimiters.
+</code></pre>
+
+
+                    </div>
+                </div>
+
+                <p>Start websocketd and tell it about your program:</p>
+<pre class="code"><code class="language-bash"><span class="light">$</span> websocketd --port=8080 <em>my-program</em></code></pre>
+                <p>Now connect to your program from JavaScript in a web-page using a WebSocket:</p>
+<pre class="code"><code class="language-javascript">var ws = new WebSocket('ws://localhost:8080/');
+
+ws.onmessage = function(event) {
+  console.log('Count is: ' + event.data);
+};</code></pre>
+                <p>See... WebSocket servers are simple! Want to learn more?</p>
+                <p>
+                    <a href="#" class="button-large">Full user guide <i class="fa fa-book"></i></a>
+                </p>
+            </div>
+        </section>
+ 
+        <section class="section section-languages">
+            <div class="container">
+                <h2>Pick your language</h2>
+                
+                <h1>I <i class="fa fa-heart"></i> <span class="language-ticker"></span></h1>
+                
+                <ul class="language-options">
+                    <li>Bash</li>
+                    <li>Perl</li>
+                    <li>PHP</li>
+                    <li>Python</li>
+                    <li>Ruby</li>
+                    <li>C</li>
+                    <li>C++</li>
+                    <li>C#</li>
+                    <li>VB.Net</li>
+                    <li>F#</li>
+                    <li>Swift</li>
+                    <li>Objective-C</li>
+                    <li>R</li>
+                    <li>VBScript</li>
+                    <li>Lua</li>
+                    <li>Awk</li>
+                    <li>Expect</li>
+                    <li>AppleScript</li>
+                    <li>Haskell</li>
+                    <li>Go</li>
+                    <li>D</li>
+                    <li>Pascal</li>
+                    <li>Assembly</li>
+                    <li>ML</li>
+                    <li>ZSH</li>
+                    <li>Fortran</li>
+                    <li>Tcl</li>
+                    <li>Ocaml</li>
+                </ul>
+                <p><small>A confession: websocketd is not suitable for Java and JVM based languages</small></p>
+            </div>
+        </section>
+
+        <section class="section section-features">
+            <div class="container">
+                <h2>Oh, and...</h2>
+                <div class="cols-3">
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>HTTP Server</h3>
+                        <p>Serves your static HTML, JavaScript, etc</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>Program routing</h3>
+                        <p>Route different URLs to different programs</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>CGI Server</h3>
+                        <p>Dynamic generate content over HTTP too</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                </div>
+                <div class="cols-3">
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>SSL</h3>
+                        <p>Out-of-the-box support for serving content using HTTPS and WSS</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- ??? -->
+                        </div>
+                        <h3>Origin checking</h3>
+                        <p>Restrict which pages can make WebSocket connections</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                    <div>
+                        <div class="placeholder" style="width: 100px; height: 100px;">
+                            <!-- screenshot -->
+                        </div>
+                        <h3>Development console</h3>
+                        <p>Interact with your WebSocket programs before you've
+                            built your frontend</p>
+                        <a href="#" class="button-small">Learn More <i class="fa fa-angle-double-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <a class="xref" name="download"></a>
+        <section class="section section-install">
+            <div class="container">
+                <h1>Get it</h1>
+                <h3>Available for Linux, OSX, Windows and FreeBSD</h3>
+                
+                <h2>Install using a package manager</h2>
+                <div class="tab-box pkgmgr">
+                    <ul class="tabs">
+                        <li data-content="content-osx">OS X</li>
+                        <li data-content="content-linux-apt">Linux (apt-get)</li>
+                        <li data-content="content-linux-yum">Linux (yum)</li>
+                        <li data-content="content-windows">Windows (chocolatey)</li>
+                        <li data-content="content-other">Other</li>
+                    </ul>
+                    <div class="content">
+<pre class="code content-osx"><code class="language-bash">$ brew install websocketd</code></pre>
+<pre class="code content-linux-apt"><code class="language-bash">$ sudo apt-get install websocketd</code></pre>
+<pre class="code content-linux-yum"><code class="language-bash">$ sudo yum install websocketd</code></pre>
+<pre class="code content-windows"><code class="language-bash">PS:\&gt; cinst websocketd</code></pre>
+<pre class="code content-other"><code class="language-bash">See below to download the binary</code></pre>
+                    </div>
+                </div>
+                
+                <h1>...or...</h1>
+                <h2>Download the binary</h2>
+                
+                <div class="cols-4 download">
+                    <div>
+                        <div class="download-platform-icon"><i class="fa fa-apple"></i></div>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-darwin_amd64.zip" class="button-small">OS X 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-darwin_386.zip" class="button-small">OS X 32-bit <i class="fa fa-download"></i></a></p>
+                    </div>
+                    <div>
+                        <div class="download-platform-icon"><i class="fa fa-linux"></i></div>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-linux_amd64.zip" class="button-small">Linux 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-linux_386.zip" class="button-small">Linux 32-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-linux_arm.zip" class="button-small">Linux ARM <i class="fa fa-download"></i></a></p>
+                    </div>
+                    <div>
+                        <div class="download-platform-icon"><i class="fa fa-windows"></i></div>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-windows_amd64.zip" class="button-small">Windows 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-windows_386.zip" class="button-small">Windows 32-bit <i class="fa fa-download"></i></a></p>
+                    </div>
+                    <div>
+                        <svg width="100px" height="100px" viewBox="0 0 100 100" style="display:none">    
+                            <defs>
+                                <g id="icon-freebsd" transform="translate(-44,-596)" style="fill:currentColor">
+                                    <path d="M125.322,599.258c4.276,4.274-7.578,23.062-9.582,25.066c-2.004,2.001-7.094,0.16-11.369-4.115
+                                             c-4.276-4.274-6.118-9.365-4.114-11.369C102.261,606.835,121.047,594.982,125.322,599.258z"/>
+                                    <path d="M65.36,603.78c-6.528-3.704-15.816-7.824-18.771-4.869c-2.995,2.993,1.277,12.491,5.019,19.031
+                                             C54.938,612.151,59.677,607.276,65.36,603.78z"/>
+                                    <path d="M118.801,622.85c0.601,2.039,0.492,3.724-0.482,4.696c-2.278,2.278-8.429-0.146-13.973-5.424
+                                             c-0.388-0.347-0.771-0.707-1.148-1.085c-2.004-2.006-3.565-4.142-4.562-6.107c-1.942-3.483-2.428-6.561-0.96-8.028
+                                             c0.8-0.8,2.08-1.018,3.641-0.736c1.019-0.643,2.22-1.361,3.538-2.096c-5.359-2.795-11.451-4.374-17.915-4.374
+                                             c-21.436,0-38.815,17.376-38.815,38.815c0,21.435,17.379,38.813,38.815,38.813c21.437,0,38.816-17.378,38.816-38.813
+                                             c0-6.923-1.817-13.415-4.992-19.043C120.077,620.719,119.41,621.866,118.801,622.85z"/>
+                                </g>
+                            </defs>
+                        </svg>
+                        <div class="download-platform-icon">
+                            <svg viewBox="0 0 100 100" width="95" height="95" style="position: relative; top: 20px"><use xlink:href="#icon-freebsd"></use></svg>
+                        </div>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-freebsd_amd64.zip" class="button-small">FreeBSD 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-freebsd_386.zip" class="button-small">FrreBSD 32-bit <i class="fa fa-download"></i></a></p>
+                    </div>
+                </div>
+
+                <p>Current version: 0.2.9</p>
+
+            </div>
+        </section>
+
+        <section class="section section-subscribe">
+            <div class="container">
+                <h2>Announcements, new features, security advisories</h2>
+                <form>
+                    <input type="email" placeholder="me@example.com"><input type="button" value="Subscribe">
+                </form>
+                <p>We won't share your email address with anyone else. Pinky swear.</p>
+            </div>
+        </section>
+
+        <section class="section section-footer">
+            <div class="container">
+                <p>
+                    Created by <a href="https://twitter.com/joewalnes">Joe Walnes</a>
+                    -
+                    Project lead: <a href="https://twitter.com/alexsergeyev">Alex Sergeyev</a>
+                </p>
+                <p>
+                    Written in <a href="http://golang.org/">Go</a>
+                    -
+                    Forky forky on <i class="fa fa-github"></i> <a href="https://github.com/joewalnes/">GitHub</a>
+                </p>
+            </div>
+        </section>
+        
+    </body>
+</html>
