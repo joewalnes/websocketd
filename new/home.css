@@ -223,16 +223,16 @@ h3 {
     background-color: #ecf0f1;
     color: #333;
 }
-.section-subscribe input[type=button] {
+.section-subscribe input[type=submit] {
     border: 0;
     background-color: #e67e22;
     color: #fff;
     padding: 5px 20px;
 }
-.section-subscribe input[type=button]:hover {
+.section-subscribe input[type=submit]:hover {
     background-color: #d35400;
 }
-.section-subscribe input[type=button]:focus {
+.section-subscribe input[type=submit]:focus {
     outline: none;
     background-color: #7f8c8d;
 }
