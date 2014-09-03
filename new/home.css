@@ -202,6 +202,10 @@ h3 {
     color: #95a5a6;
 }
 .section-benefits {
+    padding-bottom: 60px;
+}
+.section-benefits h3 {
+    margin-bottom: 50px;
 }
 .section-summary {
     background-color: #ecf0f1;
