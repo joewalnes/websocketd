@@ -19,7 +19,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.2.2
+GO_VERSION=1.3.1
 PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 darwin_386 freebsd_amd64 freebsd_386 windows_386 windows_amd64
 
 GO_SRC_URL=https://storage.googleapis.com/golang/go$(GO_VERSION).src.tar.gz
@@ -98,10 +98,33 @@ out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) g
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
 	rm -f $@
-	zip -j $@ out/$(RELEASE_VERSION)/$*/.built out/$(RELEASE_VERSION)/$*/* INSTALL ../README.md ../LICENSE
+	zip -j $@ out/$(RELEASE_VERSION)/$*/.built out/$(RELEASE_VERSION)/$*/* ../{INSTALL,README.md,LICENSE}
 
 build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built) $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-$(PLATFORM).zip)
 .PHONY: build
+
+
+BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license MIT  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com" --pre-install debscripts/preinst --post-install debscripts/postinst --before-remove debscripts/prerm --after-remove debscripts/postrm
+
+DEBFPM=--deb-default debscripts/websocketd --deb-upstart debscripts/websocketd.conf"
+
+
+deb: out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb
+
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: out/$(RELEASE_VERSION)/linux_386/.built
+	mkdir -p out/$(RELEASE_VERSION)/deb32/{usr/bin,etc/default,etc/init,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION)}
+	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
+	cp debscripts/run-websocketd out/$(RELEASE_VERSION)/deb32/usr/libexec/
+	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	fpm -f -s dir -t deb -a 386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/ etc/
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  out/$(RELEASE_VERSION)/linux_amd64/.built
+	mkdir -p out/$(RELEASE_VERSION)/deb64/{usr/bin,etc/default,etc/init,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION)}
+	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/deb64/usr/bin/
+	cp debscripts/run-websocketd out/$(RELEASE_VERSION)/deb64/usr/libexec/
+	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	fpm -f -s dir -t deb -a amd_64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/ etc/
 
 
 # release to http://download.websocketd.com/

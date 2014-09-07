@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Verifying websocketd is stopped..."
+initctl --quiet stop websocketd 2>/dev/null || true
+pkill -9 -x websocketd  || true

@@ -1,0 +1,47 @@
+#!/bin/bash
+
+. /etc/default/websocketd
+
+if [[ -n "$WEBSOCKETD_ADDRESS" ]]; then
+	ADDRESS=$(echo $WEBSOCKETD_ADDRESS | xargs -n1 echo | xargs  -I'*' echo "--address=*")
+fi
+
+if [[ -n "$WEBSOCKETD_PORT" ]]; then
+	PORT="--port=$WEBSOCKETD_PORT"
+fi
+
+if [[ -n "$WEBSOCKETD_LOGLEVEL" ]]; then
+	LOGLEVEL="--loglevel=$WEBSOCKETD_LOGLEVEL"
+fi
+
+if [[ -n "$WEBSOCKETD_STATIC" ]]; then
+	STATIC="--staticdir=$WEBSOCKETD_STATIC"
+fi
+
+if [[ -n "$WEBSOCKETD_CGI" ]]; then
+	CGI="--cgidir=$WEBSOCKETD_CGI"
+fi
+
+if [[ -n "$WEBSOCKETD_SCRIPTS" ]]; then
+	SCRIPTS="--dir=$WEBSOCKETD_SCRIPTS"
+fi
+
+if [[ -n "$WEBSOCKETD_LOOKUP" ]]; then
+	LOOKUP="--reverselookup=$WEBSOCKETD_LOOKUP"
+fi
+
+if [[ -n "$WEBSOCKETD_SSLCERT" ]]; then
+	SSL="--ssl --sslcert=$WEBSOCKETD_SSLCERT --sslkey=$WEBSOCKETD_SSLKEY"
+fi
+
+
+OPTS="$ADDRESS $PORT $LOGLEVEL $STATIC $CGI $SCRIPTS $LOOKUP $SSL"
+
+
+CMD="/usr/bin/websocketd $OPTS"
+if [[ -z "$WEBSOCKETD_USER" ]]; then
+    exec $CMD
+fi
+
+exec su -s /bin/bash -c "exec $CMD" $WEBSOCKETD_USER
+
