@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "Stopping websocketd..."
-initctl --quiet stop websocketd || true

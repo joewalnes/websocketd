@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "Cleanup for websocketd..."
-pkill -9 -x websocketd  || true

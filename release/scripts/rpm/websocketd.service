@@ -1,0 +1,9 @@
+[Unit]
+Description=websocketd daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/run-websocketd
+
+[Install]
+WantedBy=multi-user.target

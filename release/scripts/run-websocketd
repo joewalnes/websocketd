@@ -41,7 +41,7 @@ OPTS="$ADDRESS $PORT $LOGLEVEL $STATIC $CGI $SCRIPTS $LOOKUP $SSL"
 CMD="/usr/bin/websocketd $OPTS"
 if [[ -z "$WEBSOCKETD_USER" ]]; then
     exec $CMD
+else
+    exec su -s /bin/bash -c "exec $CMD" $WEBSOCKETD_USER
 fi
-
-exec su -s /bin/bash -c "exec $CMD" $WEBSOCKETD_USER
 

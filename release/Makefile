@@ -15,7 +15,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 		| sed -e 's/^.*\.//' \
 		| sort -n \
 		| tail -n 1)
-#VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION) + 1),0)
+
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
@@ -47,7 +47,7 @@ EXTENSION_windows_amd64=.exe
 
 msg=@/bin/echo -e "\x1b[33;01m>>> $1\x1b[0m"
 
-all: release
+all: build deb rpm
 .PHONY: all
 
 go-path/src/github.com/joewalnes/websocketd:
@@ -79,8 +79,7 @@ go-unpack: $(GO_UNPACKED)
 # Cross-compile Go package for target platform
 $(GO_DIR)/go/pkg/%/.built: $(GO_UNPACKED)
 	$(call msg,"Building Go for $*")
-	rm -f $@
-	cd $(GO_DIR)/go/src && $(FLAGS_$*) ./make.bash --no-clean
+	cd $(GO_DIR)/go/src && $(FLAGS_$*) ./make.bash --no-clean >/dev/null 2>&1
 	touch $@
 
 go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
@@ -88,7 +87,7 @@ go-compile: $(foreach PLATFORM,$(PLATFORMS),$(GO_DIR)/go/pkg/$(PLATFORM)/.built)
 
 
 # Cross-compile final applications
-out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
+out/$(RELEASE_VERSION)/%/websocketd: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
 	$(call msg,"Compiling release for $*")
 	rm -f $@
 	mkdir -p $(dir $@)
@@ -96,54 +95,62 @@ out/$(RELEASE_VERSION)/%/.built: $(GO_DIR)/go/pkg/%/.built $(wildcard ../*.go) g
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version $(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/.built $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
 	rm -f $@
-	zip -j $@ out/$(RELEASE_VERSION)/$*/.built out/$(RELEASE_VERSION)/$*/* ../{INSTALL,README.md,LICENSE}
+	zip -j $@ out/$(RELEASE_VERSION)/$*/* ../{INSTALL,README.md,LICENSE}
 
-build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.built) $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-$(PLATFORM).zip)
+
+build: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/websocketd) $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-$(PLATFORM).zip)
 .PHONY: build
 
 
-BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license MIT  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com" --pre-install debscripts/preinst --post-install debscripts/postinst --before-remove debscripts/prerm --after-remove debscripts/postrm
+BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license MIT  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com" --pre-install scripts/preinst --post-install scripts/postinst
 
-DEBFPM=--deb-default debscripts/websocketd --deb-upstart debscripts/websocketd.conf"
-
+DEBFPM=--deb-default scripts/websocketd --deb-upstart scripts/deb/websocketd.conf"
+RPMFPM=--rpm-os linux
 
 deb: out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb
 
+rpm: out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION).i386.rpm out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION).x86_64.rpm
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: out/$(RELEASE_VERSION)/linux_386/.built
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: $(GO_DIR)/go/pkg/linux_386/.built out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb32/{usr/bin,etc/default,etc/init,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
-	cp debscripts/run-websocketd out/$(RELEASE_VERSION)/deb32/usr/libexec/
+	cp scripts/run-websocketd out/$(RELEASE_VERSION)/deb32/usr/libexec/
 	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	fpm -f -s dir -t deb -a 386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/ etc/
+	rm -rf out/$(RELEASE_VERSION)/deb32/
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  out/$(RELEASE_VERSION)/linux_amd64/.built
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_DIR)/go/pkg/linux_amd64/.built out/$(RELEASE_VERSION)/linux_amd64/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb64/{usr/bin,etc/default,etc/init,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/deb64/usr/bin/
-	cp debscripts/run-websocketd out/$(RELEASE_VERSION)/deb64/usr/libexec/
+	cp scripts/run-websocketd out/$(RELEASE_VERSION)/deb64/usr/libexec/
 	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
-	fpm -f -s dir -t deb -a amd_64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/ etc/
+	fpm -f -s dir -t deb -a amd64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/ etc/
+	rm -rf out/$(RELEASE_VERSION)/deb64/
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION).x86_64.rpm: $(GO_DIR)/go/pkg/linux_amd64/.built out/$(RELEASE_VERSION)/linux_amd64/websocketd
+	mkdir -p out/$(RELEASE_VERSION)/rpm64/{usr/bin,etc/default,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
+	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/rpm64/usr/bin/
+	cp scripts/run-websocketd out/$(RELEASE_VERSION)/rpm64/usr/libexec/
+	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/rpm64/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp scripts/rpm/websocketd.service out/$(RELEASE_VERSION)/rpm64/usr/lib/systemd/system
+	cp scripts/websocketd out/$(RELEASE_VERSION)/rpm64/etc/default/websocketd
+	fpm -f -s dir -t rpm -a x86_64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm64/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) usr/ etc/
+	rm -rf out/$(RELEASE_VERSION)/rpm64/
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION).i386.rpm: $(GO_DIR)/go/pkg/linux_386/.built out/$(RELEASE_VERSION)/linux_386/websocketd
+	mkdir -p out/$(RELEASE_VERSION)/rpm32/{usr/bin,etc/default,usr/libexec,usr/share/websocketd,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
+	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/rpm32/usr/bin/
+	cp scripts/run-websocketd out/$(RELEASE_VERSION)/rpm32/usr/libexec/
+	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/rpm32/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp scripts/rpm/websocketd.service out/$(RELEASE_VERSION)/rpm32/usr/lib/systemd/system
+	cp scripts/websocketd out/$(RELEASE_VERSION)/rpm32/etc/default/websocketd
+	fpm -f -s dir -t rpm -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm32/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) usr/ etc/
+	rm -rf out/$(RELEASE_VERSION)/rpm32/
 
 
-# release to http://download.websocketd.com/
-out/$(RELEASE_VERSION)/%/.released: out/$(RELEASE_VERSION)/%/.built
-	$(call msg,"Uploading $(RELEASE_VERSION) $*")
-	rm -f $@
-	s3cmd put --acl-public --mime-type=application/octet-stream out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) s3://download.websocketd.com/releases/websocketd/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*)
-	touch $@
-
-release: $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/.released) tag
-.PHONY: release 
-
-
-# Create remote Git tag
-tag:
-	$(call msg,"Git tagging $(RELEASE_VERSION)")
-	git tag -a v$(RELEASE_VERSION) -m 'Tagged $(RELEASE_VERSION)'
-	git push git@github.com:joewalnes/websocketd.git --tags
-.PHONY: tag
 
 
 # Clean up

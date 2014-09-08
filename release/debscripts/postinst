@@ -1,6 +1,0 @@
-#!/bin/bash
-
-initctl reload-configuration
-echo "Starting websocketd..."
-initctl --quiet start websocketd
-
