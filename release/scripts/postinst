@@ -1,8 +1,0 @@
-#!/bin/bash
-
-
-echo "Starting websocketd..."
-
-if [ -f /sbin/initctl ]; then
-    initctl reload-configuration
-fi

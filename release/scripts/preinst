@@ -1,3 +1,0 @@
-#!/bin/bash
-
-adduser --system websocketd -p "!!" --no-create-home  --home "/usr/share/websocketd" || true
