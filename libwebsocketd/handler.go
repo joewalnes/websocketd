@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var ScriptNotFoundError = errors.New("script not found")
+var ScriptNotFoundError = errors.New("Script not found")
 
 // WebsocketdHandler is a single request information and processing structure, it handles WS requests out of all that daemon can handle (static, cgi, devconsole)
 type WebsocketdHandler struct {

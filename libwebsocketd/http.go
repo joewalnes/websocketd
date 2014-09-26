@@ -14,28 +14,27 @@ import (
 	"net/http/cgi"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-var ForkNotAllowedError = errors.New("too many forks active")
+var ForkNotAllowedError = errors.New("Too many forks active")
 
 // WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
 type WebsocketdServer struct {
-	Config   *Config
-	Log      *LogScope
-	forks    chan byte
-	procPool *processPool
+	Config *Config
+	Log    *LogScope
+	forks  chan byte
 }
 
 // NewWebsocketdServer creates WebsocketdServer struct with pre-determined config, logscope and maxforks limit
 func NewWebsocketdServer(config *Config, log *LogScope, maxforks int) *WebsocketdServer {
 	mux := &WebsocketdServer{
-		Config:   config,
-		Log:      log,
-		procPool: NewProcessPool(0),
+		Config: config,
+		Log:    log,
 	}
 	if maxforks > 0 {
 		mux.forks = make(chan byte, maxforks)
@@ -184,7 +183,11 @@ func (h *WebsocketdServer) noteForkCompled() {
 }
 
 func (h *WebsocketdServer) launchServerProcess(command string, env []string, log *LogScope) (*ExternalProcess, <-chan string, error) {
-	return h.procPool.LaunchProcess(command, h.Config.CommandArgs, env, log)
+	cmd := exec.Command(command, h.Config.CommandArgs...)
+	cmd.Env = env
+
+	log.Debug("process", "Starting %s", command)
+	return LaunchProcess(cmd, log)
 }
 
 func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, log *LogScope) (err error) {

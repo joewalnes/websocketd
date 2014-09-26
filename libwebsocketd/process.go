@@ -20,7 +20,8 @@ var ErrNoConsumers = errors.New("All consumers are gone")
 var ErrProcessFinished = errors.New("Process already finished")
 var ErrUnknownConsumer = errors.New("No consumer to unsubscribe")
 
-// RcvrTimeout is a very short duration to determine if subscriber is unable to process data quickly enough
+// RcvrTimeout is a very short duration to determine if subscriber is unable to process data quickly enough.
+// Zero is not practical because it would cause packet receiving to block while OS passes data via Pipe to process.
 var RcvrTimeout = time.Millisecond
 
 // ExternalProcess holds info about running process and sends info to subscribers using channels
@@ -39,7 +40,7 @@ type ExternalProcess struct {
 
 // LaunchProcess initializes ExternalProcess struct fields
 func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan string, error) {
-	// TODO: Investigate alternative approaches. exec.Cmd uses real OS pipes which spen a filehandler each.
+	// TODO: Investigate alternative approaches. exec.Cmd uses real OS pipes which spends new filehandler each.
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Debug("process", "Unable to create p")
@@ -299,64 +300,4 @@ func trimEOL(s string) string {
 		}
 	}
 	return s[0:lns]
-}
-
-type processPool struct {
-	d         time.Duration
-	stopReuse chan interface{}
-	pool      map[string]*ExternalProcess
-	poolmx    *sync.Mutex
-}
-
-func NewProcessPool(sec int) *processPool {
-	d := time.Duration(sec) * time.Second
-	pp := &processPool{d, make(chan interface{}), make(map[string]*ExternalProcess), &sync.Mutex{}}
-	go func() {
-		for delcmd := range pp.stopReuse {
-			x := delcmd.(struct {
-				name string
-				pid  int
-			})
-			pp.poolmx.Lock()
-			if pp.pool[x.name].Pid() == x.pid {
-				// otherwise the program was already ended and re-started
-				delete(pp.pool, x.name)
-			}
-			pp.poolmx.Unlock()
-		}
-	}()
-	return pp
-}
-
-func (pp *processPool) LaunchProcess(name string, args []string, env []string, log *LogScope) (*ExternalProcess, <-chan string, error) {
-	pp.poolmx.Lock()
-	defer pp.poolmx.Unlock()
-	if m, ok := pp.pool[name]; ok {
-		o, e := m.Subscribe()
-		// only if Subscribe worked the process is still out there...
-		if e == nil {
-			log.Debug("ddb", "Reusing for %s", name)
-			return m, o, nil
-		}
-	}
-	cmd := exec.Command(name, args...)
-	cmd.Env = env
-
-	log.Debug("ddb", "Starting %s %d", name, pp.d)
-	p, o, e := LaunchProcess(cmd, log)
-	if e == nil {
-		pp.pool[name] = p
-
-		if pp.d > 0 {
-			go func(pid int) {
-				time.Sleep(pp.d)
-				log.Debug("ddb", "no more reuse for %v", name)
-				pp.stopReuse <- struct {
-					name string
-					pid  int
-				}{name, pid}
-			}(p.Pid())
-		}
-	}
-	return p, o, e
 }
