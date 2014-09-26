@@ -112,6 +112,7 @@ func parseCommandLine() *Config {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
 	mainConfig.MaxForks = *maxForksFlag
+
 	mainConfig.BasePath = *basePathFlag
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
 	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
