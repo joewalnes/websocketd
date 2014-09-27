@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -31,11 +32,27 @@ type ExternalProcess struct {
 	consumers []chan string
 	cmux      *sync.Mutex
 
-	in        io.Writer
-	term_once func()
-	inmux     *sync.Mutex
+	in    io.WriteCloser
+	inmux *sync.Mutex
+
+	terminating int32
 
 	log *LogScope
+}
+
+func (p *ExternalProcess) wait() {
+	atomic.StoreInt32(&p.terminating, 1)
+	p.cmd.Wait()
+
+	if l := len(p.consumers); l > 0 {
+		p.log.Trace("process", "Closing %d consumer channels", l)
+		for _, x := range p.consumers {
+			close(x)
+		}
+	}
+	p.consumers = nil
+
+	p.log.Debug("process", "Process completed, status: %s", p.cmd.ProcessState.String())
 }
 
 // LaunchProcess initializes ExternalProcess struct fields
@@ -63,38 +80,16 @@ func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan strin
 
 	firstconsumer := make(chan string)
 	p := &ExternalProcess{
-		cmd:       cmd,
-		consumers: []chan string{firstconsumer},
-		cmux:      &sync.Mutex{},
-		in:        stdin,
-		inmux:     &sync.Mutex{},
-		log:       log,
+		cmd:         cmd,
+		consumers:   []chan string{firstconsumer},
+		cmux:        new(sync.Mutex),
+		in:          stdin,
+		inmux:       new(sync.Mutex),
+		terminating: 0,
+		log:         log,
 	}
 	log.Associate("pid", strconv.Itoa(p.Pid()))
 	p.log.Trace("process", "Command started, first consumer channel created")
-
-	p.term_once = func() {
-		p.term_once = func() {}
-
-		// wait for program to end
-		p.cmd.Wait()
-
-		// close channels
-		if l := len(p.consumers); l > 0 {
-			p.log.Trace("process", "Closing %d consumer channels", l)
-			for _, x := range p.consumers {
-				close(x)
-			}
-		}
-		p.consumers = nil
-
-		// close pipes
-		stdin.Close()
-		stdout.Close()
-		stderr.Close()
-
-		p.log.Debug("process", "Process completed, status: %s", p.cmd.ProcessState.String())
-	}
 
 	// Run output listeners
 	go p.process_stdout(stdout)
@@ -109,8 +104,9 @@ func (p *ExternalProcess) Terminate() {
 	if p.cmd.ProcessState == nil {
 		p.log.Debug("process", "Sending SIGINT to %d", p.Pid())
 
+		// wait for process completion in background and report to channel
 		term := make(chan int)
-		go func() { p.term_once(); close(term) }()
+		go func() { p.wait(); close(term) }()
 
 		err := p.cmd.Process.Signal(os.Interrupt)
 		if err != nil {
@@ -255,6 +251,7 @@ func (p *ExternalProcess) process_stdout(r io.ReadCloser) {
 	buf := bufio.NewReader(r)
 	for {
 		str, err := buf.ReadString('\n')
+
 		str = trimEOL(str)
 		if str != "" {
 			snderr := p.demux_content(str)
@@ -267,11 +264,10 @@ func (p *ExternalProcess) process_stdout(r io.ReadCloser) {
 			break
 		}
 	}
-	p.cmux.Lock()
-	defer p.cmux.Unlock()
-
-	// reuse reading thread for waiting for process to finish
-	p.term_once()
+	r.Close()
+	if p.terminating == 0 {
+		p.wait()
+	}
 }
 
 // process_stderr is a function to log process output to STDERR
@@ -288,6 +284,7 @@ func (p *ExternalProcess) process_stderr(r io.ReadCloser) {
 			break
 		}
 	}
+	r.Close()
 }
 
 // trimEOL cuts unixy style \n and windowsy style \r\n suffix from the string

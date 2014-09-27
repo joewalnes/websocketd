@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-var ForkNotAllowedError = errors.New("Too many forks active")
+var ErrForkNotAllowed = errors.New("Too many forks active")
 
 // WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
 type WebsocketdServer struct {
@@ -160,7 +160,7 @@ func (h *WebsocketdServer) noteForkCreated() error {
 		case h.forks <- 1:
 			return nil
 		default:
-			return ForkNotAllowedError
+			return ErrForkNotAllowed
 		}
 	} else {
 		return nil
