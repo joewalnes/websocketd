@@ -55,7 +55,7 @@ func (p *ExternalProcess) wait() {
 	p.log.Debug("process", "Process completed, status: %s", p.cmd.ProcessState.String())
 }
 
-// LaunchProcess initializes ExternalProcess struct fields
+// LaunchProcess initializes ExternalProcess struct fields. Command pipes for standard input/output are established and first consumer channel is returned.
 func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan string, error) {
 	// TODO: Investigate alternative approaches. exec.Cmd uses real OS pipes which spends new filehandler each.
 	stdout, err := cmd.StdoutPipe()
@@ -134,7 +134,7 @@ func (e *ExternalProcess) Pid() int {
 	return e.cmd.Process.Pid
 }
 
-// Subscribe allows someone to open process's
+// Subscribe allows someone to open channel that contains process's stdout messages.
 func (p *ExternalProcess) Subscribe() (<-chan string, error) {
 	p.cmux.Lock()
 	defer p.cmux.Unlock()

@@ -65,7 +65,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 				handler, err := NewWebsocketdHandler(h, req, log)
 				if err != nil {
-					if err == ScriptNotFoundError {
+					if err == ErrScriptNotFound {
 						log.Access("session", "NOT FOUND: %s", err)
 						http.Error(w, "404 Not Found", 404)
 					} else {

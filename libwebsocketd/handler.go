@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var ScriptNotFoundError = errors.New("Script not found")
+var ErrScriptNotFound = errors.New("Script not found")
 
 // WebsocketdHandler is a single request information and processing structure, it handles WS requests out of all that daemon can handle (static, cgi, devconsole)
 type WebsocketdHandler struct {
@@ -27,7 +27,7 @@ type WebsocketdHandler struct {
 	command string
 }
 
-// NewWebsocketdHandler constructs the struct and parses all required things in it...
+// NewWebsocketdHandler constructs the handler struct. It also prepares *Info elements and generates process environment.
 func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope) (wsh *WebsocketdHandler, err error) {
 	wsh = &WebsocketdHandler{server: s, Id: generateId()}
 	log.Associate("id", wsh.Id)
@@ -178,12 +178,12 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 
 		// not a valid path
 		if err != nil {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// at the end of url but is a dir
 		if isLastPart && statInfo.IsDir() {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// we've hit a dir, carry on looking
