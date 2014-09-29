@@ -68,7 +68,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
-	if err != ScriptNotFoundError {
+	if err != ErrScriptNotFound {
 		t.Error("should fail with script not found")
 	}
 
@@ -77,7 +77,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
-	if err != ScriptNotFoundError {
+	if err != ErrScriptNotFound {
 		t.Error("should fail with script not found")
 	}
 }

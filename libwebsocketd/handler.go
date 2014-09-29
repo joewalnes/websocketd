@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var ScriptNotFoundError = errors.New("script not found")
+var ErrScriptNotFound = errors.New("Script not found")
 
 // WebsocketdHandler is a single request information and processing structure, it handles WS requests out of all that daemon can handle (static, cgi, devconsole)
 type WebsocketdHandler struct {
@@ -27,7 +27,7 @@ type WebsocketdHandler struct {
 	command string
 }
 
-// NewWebsocketdHandler constructs the struct and parses all required things in it...
+// NewWebsocketdHandler constructs the handler struct. It also prepares *Info elements and generates process environment.
 func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope) (wsh *WebsocketdHandler, err error) {
 	wsh = &WebsocketdHandler{server: s, Id: generateId()}
 	log.Associate("id", wsh.Id)
@@ -49,6 +49,7 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 	if s.Config.UsingScriptDir {
 		wsh.command = wsh.URLInfo.FilePath
 	}
+
 	log.Associate("command", wsh.command)
 
 	wsh.Env = createEnv(wsh, req, log)
@@ -63,24 +64,67 @@ func (wsh *WebsocketdHandler) wshandler(log *LogScope) websocket.Handler {
 	})
 }
 
+// accept connects process and websocket.
 func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 	defer ws.Close()
 
-	log.Access("session", "CONNECT")
-	defer log.Access("session", "DISCONNECT")
+	log.Access("handler", "CONNECT")
+	defer log.Access("handler", "DISCONNECT")
 
-	launched, err := launchCmd(wsh.command, wsh.server.Config.CommandArgs, wsh.Env)
+	p, output, err := wsh.server.launchServerProcess(wsh.command, wsh.Env, log)
 	if err != nil {
-		log.Error("process", "Could not launch process %s %s (%s)", wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "), err)
+		log.Error("handler", "Could not launch process %s %s (%s)", wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "), err)
 		return
 	}
 
-	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
+	/// we need to unsubscribe as soon as we done.
+	defer p.Unsubscribe(output)
 
-	process := NewProcessEndpoint(launched, log)
-	wsEndpoint := NewWebSocketEndpoint(ws, log)
+	// send websocket data to process
+	input := make(chan string)
+	go func() {
+		for {
+			var msg string
+			err := websocket.Message.Receive(ws, &msg)
+			if err != nil {
+				close(input)
+				return
+			}
+			input <- msg
+		}
+	}()
 
-	PipeEndpoints(process, wsEndpoint)
+	for {
+		select {
+		case msg, ok := <-input:
+			if ok {
+				err = p.PassInput(msg)
+				if err != nil {
+					log.Info("handler", "Dropping input message, process input returned %s", err)
+				}
+			} else {
+				log.Info("handler", "Websocket client closed connection....")
+				return
+			}
+		case str, ok := <-output:
+			if !ok {
+				// we might still be able to pass input from websocket to process
+				log.Trace("handler", "Process stopped producing results")
+				return
+			}
+			err = websocket.Message.Send(ws, str)
+			if err != nil {
+				log.Trace("handler", "Process data cannot be passed to websocket due to %s", err)
+				return
+			}
+		case <-time.After(time.Millisecond * 100):
+			// check every 100ms if process has been finished
+			if p.cmd.ProcessState != nil {
+				log.Trace("handler", "Process ended")
+				return
+			}
+		}
+	}
 }
 
 // RemoteInfo holds information about remote http client
@@ -134,12 +178,12 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 
 		// not a valid path
 		if err != nil {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// at the end of url but is a dir
 		if isLastPart && statInfo.IsDir() {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// we've hit a dir, carry on looking
