@@ -107,14 +107,14 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 				return
 			}
 		case str, ok := <-output:
-			if !ok {
-				// we might still be able to pass input from websocket to process
-				log.Trace("handler", "Process stopped producing results")
-				return
-			}
 			err = websocket.Message.Send(ws, str)
 			if err != nil {
 				log.Trace("handler", "Process data cannot be passed to websocket due to %s", err)
+				return
+			}
+			if !ok {
+				// we might still be able to pass input from websocket to process
+				log.Trace("handler", "Process stopped producing results")
 				return
 			}
 		case <-time.After(time.Millisecond * 100):

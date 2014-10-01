@@ -21,9 +21,8 @@ var ErrNoConsumers = errors.New("All consumers are gone")
 var ErrProcessFinished = errors.New("Process already finished")
 var ErrUnknownConsumer = errors.New("No consumer to unsubscribe")
 
-// RcvrTimeout is a very short duration to determine if subscriber is unable to process data quickly enough.
-// Zero is not practical because it would cause packet receiving to block while OS passes data via Pipe to process.
-var RcvrTimeout = time.Millisecond
+// RcvrTimeout is a short duration to determine if subscriber is unable to process data.
+var RcvrTimeout = time.Second
 
 // ExternalProcess holds info about running process and sends info to subscribers using channels
 type ExternalProcess struct {
@@ -201,7 +200,7 @@ func (p *ExternalProcess) demux_content(s string) error {
 		go func(i int) {
 			select {
 			case p.consumers[i] <- s:
-				p.log.Trace("process", "Sent process output %#v to %v", s, i)
+				p.log.Trace("process", "Sent process output (%d bytes) to %v", len(s), i)
 				alive[i] = true
 			case <-time.After(RcvrTimeout):
 				// consumer cannot receive data, removing it (note, sometimes it's ok to have small delay)
