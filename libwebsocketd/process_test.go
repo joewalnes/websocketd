@@ -95,38 +95,6 @@ func TestSimpleCat(t *testing.T) {
 	}
 }
 
-func TestSlowCat(t *testing.T) {
-	ep, c := launchHelper(t, "cat")
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		var check string
-		for i := 0; i < 3; i++ {
-			s, ok := <-c
-			if ok {
-				check += s + "\n"
-			}
-		}
-		if check != "foo bar\nfoo baz\nfoo bam\n" {
-			t.Errorf("Invalid cat result %#v", check)
-		}
-	}()
-
-	ep.PassInput("foo bar\nfoo baz\nfoo bam")
-
-	wg.Wait()
-
-	ep.Terminate() // this forces termination... Other way to finish is calling ep.Unsuscribe(c)
-
-	time.Sleep(10 * time.Millisecond)
-	if ep.cmd.ProcessState == nil {
-		t.Error("Cat did not stop after termination")
-	}
-}
-
 // ---
 //
 // following is copied from standard lib see  http://golang.org/src/pkg/os/exec/exec_test.go
