@@ -56,6 +56,8 @@ func TestSimpleEcho(t *testing.T) {
 	}
 
 	time.Sleep(10 * time.Millisecond)
+	ep.inmux.Lock()
+	defer ep.inmux.Unlock()
 	if ep.cmd.ProcessState == nil {
 		t.Error("Echo did not stop after sending the line")
 	}

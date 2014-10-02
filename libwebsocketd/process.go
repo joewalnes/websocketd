@@ -21,43 +21,26 @@ var ErrNoConsumers = errors.New("All consumers are gone")
 var ErrProcessFinished = errors.New("Process already finished")
 var ErrUnknownConsumer = errors.New("No consumer to unsubscribe")
 
-// RcvrTimeout is a very short duration to determine if subscriber is unable to process data quickly enough.
-// Zero is not practical because it would cause packet receiving to block while OS passes data via Pipe to process.
-var RcvrTimeout = time.Second * 10
-
-// StdoutBufSize is a size to limit max amount of data read from process and stored inside of Websocketd process
-var StdoutBufSize = 10 * 1024 * 1024
+var RcvrTimeout = time.Second * 5
+var StdoutBufSize int64 = 1024 * 1024
+var StdoutBufLines int64 = 10000
 
 // ExternalProcess holds info about running process and sends info to subscribers using channels
 type ExternalProcess struct {
-	cmd *exec.Cmd
-
-	in    io.WriteCloser
-	inmux *sync.Mutex
-
-	terminating int32
-
-	log *LogScope
+	cmd         *exec.Cmd
+	in          io.WriteCloser
+	mux         *sync.Mutex
+	terminating chan int
+	log         *LogScope
 }
 
 func (p *ExternalProcess) wait() {
-	atomic.StoreInt32(&p.terminating, 1)
 	p.cmd.Wait()
-
-	// if l := len(p.consumers); l > 0 {
-	// 	p.log.Trace("process", "Closing %d consumer channels", l)
-	// 	for _, x := range p.consumers {
-	// 		close(x)
-	// 	}
-	// }
-	// p.consumers = nil
-
 	p.log.Debug("process", "Process completed, status: %s", p.cmd.ProcessState.String())
 }
 
 // LaunchProcess initializes ExternalProcess struct fields. Command pipes for standard input/output are established and first consumer channel is returned.
 func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan string, error) {
-	// TODO: Investigate alternative approaches. exec.Cmd uses real OS pipes which spends new filehandler each.
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Debug("process", "Unable to create p")
@@ -81,8 +64,8 @@ func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan strin
 	p := &ExternalProcess{
 		cmd:         cmd,
 		in:          stdin,
-		inmux:       new(sync.Mutex),
-		terminating: 0,
+		mux:         new(sync.Mutex),
+		terminating: make(chan int),
 		log:         log,
 	}
 	log.Associate("pid", strconv.Itoa(p.Pid()))
@@ -100,20 +83,27 @@ func LaunchProcess(cmd *exec.Cmd, log *LogScope) (*ExternalProcess, <-chan strin
 // Terminate tries to stop process forcefully using interrupt and kill signals with a second of waiting time between them. If the kill is unsuccessful, it might be repeated
 // again and again while system accepts those attempts.
 func (p *ExternalProcess) Terminate() {
+	// prevent double entrance to this subroutine...
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
 	if p.cmd.ProcessState == nil {
-		p.log.Debug("process", "Sending SIGINT to %d", p.Pid())
+		go func() { p.wait(); close(p.terminating) }()
 
-		// wait for process completion in background and report to channel
-		term := make(chan int)
-		go func() { p.wait(); close(term) }()
-
-		err := p.cmd.Process.Signal(os.Interrupt)
-		if err != nil {
-			p.log.Error("process", "could not send SIGINT %s", err)
+		select {
+		case <-p.terminating:
+			return
+		case <-time.After(time.Millisecond * 10):
+			p.log.Debug("process", "Sending SIGINT to %d", p.Pid())
+			err := p.cmd.Process.Signal(os.Interrupt)
+			if err != nil {
+				p.log.Error("process", "could not send SIGINT %s", err)
+			}
 		}
+
 		for {
 			select {
-			case <-term:
+			case <-p.terminating:
 				return
 			case <-time.After(time.Second):
 				p.log.Error("process", "process did not react to SIGINT, sending SIGKILL")
@@ -124,7 +114,6 @@ func (p *ExternalProcess) Terminate() {
 				}
 			}
 		}
-
 	}
 }
 
@@ -133,21 +122,13 @@ func (e *ExternalProcess) Pid() int {
 	return e.cmd.Process.Pid
 }
 
-// Unubscribe signals back from the consumer and helps to finish process if output is quiet and all subscribers disconnected
-func (p *ExternalProcess) Unsubscribe() (err error) {
-	p.log.Debug("process", "Receiver finished listening to process")
-	p.Terminate()
-
-	return err
-}
-
 // PassInput delivers particular string to the process, involves locking input channel
 func (p *ExternalProcess) PassInput(s string) error {
 	if p.cmd.ProcessState != nil {
 		return ErrProcessFinished
 	}
-	p.inmux.Lock()
-	defer p.inmux.Unlock()
+	p.mux.Lock()
+	defer p.mux.Unlock()
 	_, err := io.WriteString(p.in, s+"\n")
 	if err != nil {
 		p.log.Info("process", "Unable to write string to a process: %s", err)
@@ -159,19 +140,26 @@ func (p *ExternalProcess) PassInput(s string) error {
 
 // process_stdout is a background function that reads from process and muxes output to all subscribed channels
 func (p *ExternalProcess) process_stdout(r io.ReadCloser, c chan string) {
-	bsize, backlog := int64(0), make(chan string, StdoutBufSize/100)
+	bsize, backlog := int64(0), make(chan string, StdoutBufLines)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
+	LOOP:
 		for s := range backlog {
 			select {
 			case c <- s:
-				atomic.AddInt64(&bsize, int64(-len(s)))
+				l := len(s)
+				p.log.Trace("process", "Sent %d bytes to websocket handler", l)
+				atomic.AddInt64(&bsize, int64(-l))
+			case <-p.terminating:
+				p.log.Trace("process", "Websocket handler connection was terminated...")
+				break LOOP
 			case <-time.After(RcvrTimeout):
-				p.Terminate()
-				break
+				p.log.Trace("process", "Websocket handler timed out with %d messages in queue (%d bytes), terminating...", len(backlog), bsize)
+				r.Close()
+				break LOOP
 			}
 		}
 		close(c)
@@ -184,7 +172,10 @@ func (p *ExternalProcess) process_stdout(r io.ReadCloser, c chan string) {
 		if str != "" {
 			str = trimEOL(str)
 			backlog <- str
-			atomic.AddInt64(&bsize, int64(len(str)))
+			if sz := atomic.AddInt64(&bsize, int64(len(str))); sz > StdoutBufSize {
+				p.log.Trace("process", "Websocket handler did not process %d messages (%d bytes), terminating...", len(backlog), bsize)
+				break
+			}
 		}
 		if err != nil {
 			p.log.Debug("process", "STDOUT stream ended: %s", err)
@@ -192,12 +183,8 @@ func (p *ExternalProcess) process_stdout(r io.ReadCloser, c chan string) {
 		}
 	}
 	close(backlog)
-	r.Close()
 	wg.Wait()
-
-	if p.terminating == 0 {
-		p.wait()
-	}
+	p.Terminate()
 }
 
 // process_stderr is a function to log process output to STDERR
@@ -214,7 +201,6 @@ func (p *ExternalProcess) process_stderr(r io.ReadCloser) {
 			break
 		}
 	}
-	r.Close()
 }
 
 // trimEOL cuts unixy style \n and windowsy style \r\n suffix from the string

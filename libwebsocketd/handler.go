@@ -78,7 +78,7 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 	}
 
 	/// we need to unsubscribe as soon as we done.
-	defer p.Unsubscribe()
+	defer p.Terminate()
 
 	// send websocket data to process
 	input := make(chan string)
