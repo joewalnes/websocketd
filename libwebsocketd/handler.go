@@ -60,12 +60,29 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 // wshandler returns function that executes code with given log context
 func (wsh *WebsocketdHandler) wshandler(log *LogScope) websocket.Handler {
 	return websocket.Handler(func(ws *websocket.Conn) {
-		wsh.accept(ws, log)
+		wsh.accept(&WebsocketWrapper{ws}, log)
 	})
 }
 
+type wsConn interface {
+	Close() error
+	Receive(*string) error
+	Send(string) error
+}
+
+type WebsocketWrapper struct {
+	*websocket.Conn
+}
+
+func (ww *WebsocketWrapper) Receive(ptr *string) error {
+	return websocket.Message.Receive(ww.Conn, ptr)
+}
+func (ww *WebsocketWrapper) Send(s string) error {
+	return websocket.Message.Send(ww.Conn, s)
+}
+
 // accept connects process and websocket.
-func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
+func (wsh *WebsocketdHandler) accept(ws wsConn, log *LogScope) {
 	defer ws.Close()
 
 	log.Access("handler", "CONNECT")
@@ -78,14 +95,14 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 	}
 
 	/// we need to unsubscribe as soon as we done.
-	defer p.Unsubscribe(output)
+	defer p.Terminate()
 
 	// send websocket data to process
 	input := make(chan string)
 	go func() {
 		for {
 			var msg string
-			err := websocket.Message.Receive(ws, &msg)
+			err := ws.Receive(&msg)
 			if err != nil {
 				close(input)
 				return
@@ -112,7 +129,7 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 				log.Trace("handler", "Process stopped producing results")
 				return
 			}
-			err = websocket.Message.Send(ws, str)
+			err = ws.Send(str)
 			if err != nil {
 				log.Trace("handler", "Process data cannot be passed to websocket due to %s", err)
 				return

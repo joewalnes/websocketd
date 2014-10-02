@@ -100,3 +100,15 @@ func TestParsePathExplicitScript(t *testing.T) {
 		t.Error("filePath")
 	}
 }
+
+func TestHandlerBasics(t *testing.T) {
+	wh := WebsocketdHandler{
+		server:     nil,
+		Id:         "",
+		RemoteInfo: &RemoteInfo{"", "", ""},
+		URLInfo:    &URLInfo{"", "", ""},
+		Env:        []string{},
+		command:    "/bin/echo",
+	}
+	logger_helper(t.Log)
+}
