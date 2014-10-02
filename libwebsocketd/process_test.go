@@ -28,18 +28,6 @@ func launchHelper(t *testing.T, args ...string) (*ExternalProcess, <-chan string
 	return ep, ch
 }
 
-func launchHelpers(t *testing.T, args ...string) (*ExternalProcess, <-chan string, <-chan string) {
-	ep, c1 := launchHelper(t, args...)
-	if ep != nil {
-		c2, err := ep.Subscribe()
-		if err == nil {
-			return ep, c1, c2
-		}
-		t.Fatal("Cannot join second subscriber")
-	}
-	return nil, nil, nil
-}
-
 func TestEarlyTerminate(t *testing.T) {
 	ep, _ := launchHelper(t, "cat")
 	ep.Terminate()
@@ -70,56 +58,6 @@ func TestSimpleEcho(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	if ep.cmd.ProcessState == nil {
 		t.Error("Echo did not stop after sending the line")
-	}
-}
-
-func TestTwoReceiversEcho(t *testing.T) {
-	ep, c1, c2 := launchHelpers(t, "echo", "foo bar", "baz")
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	comp := func(c <-chan string) {
-		if s := chanEq(c, "foo bar baz"); s != nil {
-			t.Errorf("Invalid echo result in one of the two receivers %s", s)
-		}
-		wg.Done()
-	}
-	go comp(c1)
-	go comp(c2)
-	wg.Wait()
-
-	time.Sleep(10 * time.Millisecond)
-	if ep.cmd.ProcessState == nil {
-		t.Error("Echo did not stop after sending the line")
-	}
-}
-
-func TestTwoReceiversOneStoppedEcho(t *testing.T) {
-	ep, c1, c2 := launchHelpers(t, "echo", "foo bar", "baz")
-
-	ep.Unsubscribe(c1)
-
-	if s := chanEq(c2, "foo bar baz"); s != nil {
-		t.Errorf("Invalid echo result in one of the two receivers %s", s)
-	}
-
-	time.Sleep(10 * time.Millisecond)
-	if ep.cmd.ProcessState == nil {
-		t.Error("Echo did not stop after sending the line")
-	}
-
-}
-
-func TestTwoReceiversBothStoppedEcho(t *testing.T) {
-	ep, c1, c2 := launchHelpers(t, "echo", "foo bar", "baz")
-
-	ep.Unsubscribe(c1)
-	ep.Unsubscribe(c2)
-
-	time.Sleep(10 * time.Millisecond)
-	if ep.cmd.ProcessState == nil {
-		t.Error("Echo did not stop after both receivers unsubscribed")
 	}
 }
 
@@ -155,34 +93,27 @@ func TestSimpleCat(t *testing.T) {
 	}
 }
 
-func TestConcurrentCat(t *testing.T) {
-	ep, c1 := launchHelper(t, "cat")
+func TestSlowCat(t *testing.T) {
+	ep, c := launchHelper(t, "cat")
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
+
 	go func() {
-		if s := chanEq(c1, "foo bar", "foo baz", "foo bam"); s != nil {
-			t.Errorf("Invalid cat result in one of the two receivers %s", s)
+		defer wg.Done()
+		var check string
+		for i := 0; i < 3; i++ {
+			s, ok := <-c
+			if ok {
+				check += s + "\n"
+			}
 		}
-		wg.Done()
+		if check != "foo bar\nfoo baz\nfoo bam\n" {
+			t.Errorf("Invalid cat result %#v", check)
+		}
 	}()
 
-	ep.PassInput("foo bar")
-	time.Sleep(10 * time.Millisecond)
-
-	c2, err := ep.Subscribe()
-	if err != nil {
-		t.Fatal("Cannot join second subscriber to cat")
-	}
-	go func() {
-		if s := chanEq(c2, "foo baz", "foo bam"); s != nil {
-			t.Errorf("Invalid cat result in one of the two receivers %s", s)
-		}
-		wg.Done()
-	}()
-
-	go ep.PassInput("foo baz")
-	go ep.PassInput("foo bam")
+	ep.PassInput("foo bar\nfoo baz\nfoo bam")
 
 	wg.Wait()
 
