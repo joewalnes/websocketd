@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/joewalnes/websocketd/libwebsocketd"
 )
@@ -30,7 +29,7 @@ func log(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName stri
 	}
 
 	l.Mutex.Lock()
-	fmt.Printf("%s | %-6s | %-10s | %s | %s\n", time.Now().Format(time.RFC1123Z), levelName, category, assocDump, fullMsg)
+	fmt.Printf("%s | %-6s | %-10s | %s | %s\n", libwebsocketd.Timestamp(), levelName, category, assocDump, fullMsg)
 	l.Mutex.Unlock()
 }
 

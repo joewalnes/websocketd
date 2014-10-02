@@ -91,7 +91,9 @@ Sec-WebSocket-Version: 13
 			t.Fatal("request", err)
 		}
 
-		log := logger_helper(t.Log)
+		log := new(LogScope)
+		log.LogFunc = func(*LogScope, LogLevel, string, string, string, ...interface{}) {}
+
 		wsconf := &websocket.Config{Version: websocket.ProtocolVersionHybi13}
 		config := new(Config)
 

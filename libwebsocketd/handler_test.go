@@ -68,7 +68,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
-	if err != ErrScriptNotFound {
+	if err != ScriptNotFoundError {
 		t.Error("should fail with script not found")
 	}
 
@@ -77,7 +77,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
-	if err != ErrScriptNotFound {
+	if err != ScriptNotFoundError {
 		t.Error("should fail with script not found")
 	}
 }
@@ -99,16 +99,4 @@ func TestParsePathExplicitScript(t *testing.T) {
 	if res.FilePath != "" {
 		t.Error("filePath")
 	}
-}
-
-func TestHandlerBasics(t *testing.T) {
-	wh := WebsocketdHandler{
-		server:     nil,
-		Id:         "",
-		RemoteInfo: &RemoteInfo{"", "", ""},
-		URLInfo:    &URLInfo{"", "", ""},
-		Env:        []string{},
-		command:    "/bin/echo",
-	}
-	logger_helper(t.Log)
 }

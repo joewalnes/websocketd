@@ -7,6 +7,7 @@ package libwebsocketd
 
 import (
 	"sync"
+	"time"
 )
 
 type LogLevel int
@@ -29,17 +30,17 @@ type LogScope struct {
 	Parent     *LogScope   // Parent scope
 	MinLevel   LogLevel    // Minimum log level to write out.
 	Mutex      *sync.Mutex // Should be shared across all LogScopes that write to the same destination.
-	Associated []assocPair // Additional data associated with scope
+	Associated []AssocPair // Additional data associated with scope
 	LogFunc    LogFunc
 }
 
-type assocPair struct {
+type AssocPair struct {
 	Key   string
 	Value string
 }
 
 func (l *LogScope) Associate(key string, value string) {
-	l.Associated = append(l.Associated, assocPair{key, value})
+	l.Associated = append(l.Associated, AssocPair{key, value})
 }
 
 func (l *LogScope) Debug(category string, msg string, args ...interface{}) {
@@ -71,7 +72,7 @@ func (parent *LogScope) NewLevel(logFunc LogFunc) *LogScope {
 		Parent:     parent,
 		MinLevel:   parent.MinLevel,
 		Mutex:      parent.Mutex,
-		Associated: make([]assocPair, 0),
+		Associated: make([]AssocPair, 0),
 		LogFunc:    logFunc}
 }
 
@@ -80,8 +81,12 @@ func RootLogScope(minLevel LogLevel, logFunc LogFunc) *LogScope {
 		Parent:     nil,
 		MinLevel:   minLevel,
 		Mutex:      &sync.Mutex{},
-		Associated: make([]assocPair, 0),
+		Associated: make([]AssocPair, 0),
 		LogFunc:    logFunc}
+}
+
+func Timestamp() string {
+	return time.Now().Format(time.RFC1123Z)
 }
 
 func LevelFromString(s string) LogLevel {

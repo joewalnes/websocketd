@@ -14,14 +14,13 @@ import (
 	"net/http/cgi"
 	"net/url"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-var ErrForkNotAllowed = errors.New("Too many forks active")
+var ForkNotAllowedError = errors.New("too many forks active")
 
 // WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
 type WebsocketdServer struct {
@@ -65,7 +64,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 				handler, err := NewWebsocketdHandler(h, req, log)
 				if err != nil {
-					if err == ErrScriptNotFound {
+					if err == ScriptNotFoundError {
 						log.Access("session", "NOT FOUND: %s", err)
 						http.Error(w, "404 Not Found", 404)
 					} else {
@@ -160,7 +159,7 @@ func (h *WebsocketdServer) noteForkCreated() error {
 		case h.forks <- 1:
 			return nil
 		default:
-			return ErrForkNotAllowed
+			return ForkNotAllowedError
 		}
 	} else {
 		return nil
@@ -180,14 +179,6 @@ func (h *WebsocketdServer) noteForkCompled() {
 		}
 	}
 	return
-}
-
-func (h *WebsocketdServer) launchServerProcess(command string, env []string, log *LogScope) (*ExternalProcess, <-chan string, error) {
-	cmd := exec.Command(command, h.Config.CommandArgs...)
-	cmd.Env = env
-
-	log.Debug("process", "Starting %s", command)
-	return LaunchProcess(cmd, log)
 }
 
 func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, log *LogScope) (err error) {
