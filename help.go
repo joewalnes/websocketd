@@ -54,9 +54,6 @@ Options:
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
                                  passed to executed scripts.
 
-  --basepath=PATH                Base path in URLs to serve from. 
-                                 Default: / (root of domain)
-
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: true
 

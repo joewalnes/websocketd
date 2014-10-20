@@ -19,7 +19,6 @@ import (
 )
 
 type Config struct {
-	BasePath          string   // Base URL path. e.g. "/"
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
@@ -74,7 +73,6 @@ func parseCommandLine() *Config {
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 
 	// lib config options
-	basePathFlag := flag.String("basepath", "/", "Base URL path (e.g /)")
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
@@ -112,7 +110,6 @@ func parseCommandLine() *Config {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
 	mainConfig.MaxForks = *maxForksFlag
-	mainConfig.BasePath = *basePathFlag
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
 	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
 		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
