@@ -1,0 +1,102 @@
+.\" Manpage for websocketd.
+.\" Contact abc@alexsergeyev.com to correct errors or typos.
+.TH man 8 "28 Sep 2014" "0.0" "websocketd man page"
+.SH NAME
+websocketd \- turns any program that uses STDIN/STDOUT into a WebSocket server.
+.SH SYNOPSIS
+websocketd [options] COMMAND [command args]
+
+or
+
+websocketd [options] --dir=SOMEDIR
+.SH DESCRIPTION
+websocketd is a command line tool that will allow any executable program
+that accepts input on stdin and produces output on stdout to be turned into
+a WebSocket server.
+.SH OPTIONS
+.PP
+\-\-port=PORT
+.RS 4
+HTTP port to listen on.
+.RE
+.PP
+\-\-address=ADDRESS
+.RS 4
+Address to bind to (multiple options allowed). Use square brackets to specify IPv6 address. Default: "" (all)
+.RE
+.PP
+\-\-sameorigin={true,false}
+.RS 4
+Restrict (HTTP 403) protocol upgrades if the Origin header does not match to requested HTTP Host. Default: false.
+.RE
+.PP
+--origin=host[:port][,host[:port]...]
+.RS 4
+Restrict (HTTP 403) protocol upgrades if the Origin header does not match to one of the host and port combinations listed. If the port is not specified, any port number will match.  Default: "" (allow any origin)
+.RE
+.PP
+\-\-ssl \-\-sslcert=FILE \-\-sslkey=FILE
+.RS 4
+Listen for HTTPS socket instead of HTTP. All three options must be used or all of them should be omitted.
+.RE
+.PP
+\-\-passenv VAR[,VAR...]
+.RS 4
+Lists environment variables allowed to be passed to executed scripts.
+.RE
+.PP
+\-\-basepath=PATH
+.RS 4
+Base path in URLs to serve from.  Default: / (root of domain)
+.RE
+.PP
+\-\-reverselookup={true,false}
+.RS 4
+Perform DNS reverse lookups on remote clients. Default: true
+.RE
+.PP
+\-\-dir=DIR
+.RS 4
+Allow all scripts in the local directory to be accessed as WebSockets. If using this, option, then the standard program and args options should not be specified.
+.RE
+.PP
+\-\-staticdir=DIR
+.RS 4
+Serve static files in this directory over HTTP.
+.RE
+.PP
+\-\-cgidir=DIR
+.RS 4
+Serve CGI scripts in this directory over HTTP.
+.RE
+.PP
+\-\-help
+.RS 4
+Print help and exit.
+.RE
+.PP
+\-\-version
+.RS 4
+Print version and exit.
+.RE
+.PP
+\-\-license
+.RS 4
+Print license and exit.
+.RE
+.PP
+\-\-devconsole
+.RS 4
+Enable interactive development console. This enables you to access the websocketd server with a web-browser and use a user interface to quickly test WebSocket endpoints. For example, to test an endpoint at ws://[host]/foo, you can visit http://[host]/foo in your browser. This flag cannot be used in conjunction with \-\-staticdir or \-\-cgidir.
+.RE
+.PP
+\-\-loglevel=LEVEL
+.RS 4
+Log level to use (default access). From most to least verbose: debug, trace, access, info, error, fatal
+.RE
+.SH SEE ALSO
+Full documentation at http://websocketd.com/
+.SH AUTHOR
+Copyright 2013-2014 Joe Walnes and the websocketd team. All rights reserved.
+
+BSD license: Run 'websocketd \-\-license' for details.
