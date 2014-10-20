@@ -10,10 +10,14 @@ or
 
 websocketd [options] --dir=SOMEDIR
 .SH DESCRIPTION
-websocketd is a command line tool that will allow any executable program
+\fBwebsocketd\fR is a command line tool that will allow any executable program
 that accepts input on stdin and produces output on stdout to be turned into
 a WebSocket server.
+
+To learn more about websocketd visit \fIhttp://websocketd.com\fR and project WIKI
+on GitHub!
 .SH OPTIONS
+A summary of the options supported by websocketd is included below.
 .PP
 \-\-port=PORT
 .RS 4
@@ -43,11 +47,6 @@ Listen for HTTPS socket instead of HTTP. All three options must be used or all o
 \-\-passenv VAR[,VAR...]
 .RS 4
 Lists environment variables allowed to be passed to executed scripts.
-.RE
-.PP
-\-\-basepath=PATH
-.RS 4
-Base path in URLs to serve from.  Default: / (root of domain)
 .RE
 .PP
 \-\-reverselookup={true,false}
@@ -95,7 +94,20 @@ Enable interactive development console. This enables you to access the websocket
 Log level to use (default access). From most to least verbose: debug, trace, access, info, error, fatal
 .RE
 .SH SEE ALSO
-Full documentation at http://websocketd.com/
+.RS 2
+* full documentation at \fIhttp://websocketd.com\fR
+.RE
+.RS 2
+* project source at \fIhttps://github.com/joewalnes/websocketd\fR
+.RE
+.SH BUGS
+The only known condition so far is that certain applications in programming languages that enforce implicit STDOUT buffering (Perl, Python, etc.) would be producing unexpected data passing
+delays when run under \fBwebsocketd\fR. Such issues could be solved by editing the source code of those applications (prohibiting buffering) or modifying their environment to trick them
+into autoflush mode (e.g. pseudo-terminal wrapper "unbuffer").
+
+Active issues in development are discussed on GitHub: \fIhttps://github.com/joewalnes/websocketd/issues\fR.
+
+Please use that page to share your concerns and ideas about \fBwebsocketd\fR, authors would greatly appreciate your help!
 .SH AUTHOR
 Copyright 2013-2014 Joe Walnes and the websocketd team. All rights reserved.
 
