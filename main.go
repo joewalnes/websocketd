@@ -67,7 +67,7 @@ func main() {
 
 	rejects := make(chan error, 1)
 	for _, addrSingle := range config.Addr {
-		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, config.BasePath))
+		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, "/"))
 		if config.DevConsole {
 			log.Info("server", "Developer console enabled   : %s", handler.TellURL("http", addrSingle, "/"))
 		} else if config.StaticDir != "" || config.CgiDir != "" {
