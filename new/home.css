@@ -178,11 +178,12 @@ h3 {
     }
 }
 .section {
-    padding: 50px;   
+    padding: 50px;
     text-align: center;
 }
 .section-hero {
-    background-color: #2980b9;
+    background-color: #3d566f;
+    background-image: url(bluebg.jpg);
     color: #fff;
 }
 .section-hero h1 {
@@ -212,7 +213,8 @@ h3 {
     color: #333;
 }
 .section-install {
-    background-color: #2980b9;
+    background-color: #3d566f;
+    background-image: url(bluebg.jpg);
     color: #fff;
 }
 .section-tutorial {
