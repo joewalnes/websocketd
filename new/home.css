@@ -25,7 +25,7 @@ h1 {
 @media only screen and (min-width: 1000px) {
     h1 {
         font-size: 70px;
-        font-weight: 100;
+        font-weight: 200;
     }
 }
 h2 {
@@ -126,7 +126,7 @@ h3 {
     line-height: 55px;
     margin: auto;
     font-size: 50px;
-    font-weight: 100;
+    font-weight: 200;
     color: #95a5a6;
 }
 .header-logo strong {
