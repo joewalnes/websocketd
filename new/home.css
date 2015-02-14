@@ -41,7 +41,7 @@ h3 {
     margin: auto;
 }
 /* Ensure that #hash links are offset so navbar doesn't obscure them. */
-.xref {  
+.xref {
     display: block;
     position: relative;
     top: -100px;
@@ -77,7 +77,7 @@ h3 {
         margin: 0;
         box-sizing: border-box;
         -webkit-box-sizing: border-box;
-        -moz-box-sizing: border-box;   
+        -moz-box-sizing: border-box;
     }
     .cols-3 > div {
         width: 33.3333333%;
