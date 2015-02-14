@@ -13,7 +13,7 @@
         <script src="home.js"></script>
     </head>
     <body>
-        
+
         <header class="header">
             <div class="header-logo" href="#">websocket<strong>d</strong></div>
             <ul class="header-links">
@@ -24,7 +24,7 @@
                 <li><a href="#download"><i class="fa fa-download"></i> Download</a></li>
             </ul>
         </header>
-        
+
         <a class="xref" name="home"></a>
         <section class="section section-hero">
             <div class="container">
@@ -40,12 +40,12 @@
                 launching your programs to handle the WebSockets,<br>
                 and passing messages between programs and web-browser.</p>
                 <h3><em>It's like <a href="http://en.wikipedia.org/wiki/Common_Gateway_Interface" target="_blank">CGI</a>, twenty years later, for WebSockets</em></h3>
-                <p><iframe allowtransparency="true" 
-                        frameborder="0" 
-                        height="30" 
+                <p><iframe allowtransparency="true"
+                        frameborder="0"
+                        height="30"
                         scrolling="0"
-                        src="//ghbtns.com/github-btn.html?user=joewalnes&amp;repo=websocketd&amp;type=watch&amp;count=true&amp;size=large" 
-                        width="150"></iframe></p>        
+                        src="//ghbtns.com/github-btn.html?user=joewalnes&amp;repo=websocketd&amp;type=watch&amp;count=true&amp;size=large"
+                        width="150"></iframe></p>
             </div>
         </section>
 
@@ -65,7 +65,7 @@
                     </div>
                     <div>
                         <h3>Avoid threading headaches</h3>
-                        <p>Each inbound WebSocket connection runs your program in 
+                        <p>Each inbound WebSocket connection runs your program in
                             a dedicated process.<br>Connections are isolated by process.</p>
                     </div>
                 </div>
@@ -85,14 +85,14 @@
                     because that is a universal interface.
                     <i class="fa fa-quote-right"></i>
                 </blockquote>
-                <p>If you dig that, you'll dig websocketd.</p> 
+                <p>If you dig that, you'll dig websocketd.</p>
             </div>
         </section>
-   
+
         <a class="xref" name="tutorial"></a>
         <section class="section section-tutorial">
             <div class="container">
-                <h1>10 second tutorial</h1>             
+                <h1>10 second tutorial</h1>
                 <p>Let's create a tiny WebSocket server that counts to ten, pausing between each
                     iteration.</p>
                 <p>Create a program in your favorite language:</p>
@@ -124,15 +124,15 @@ from time import sleep
 for count in range(0, 10):
   print count + 1
   sleep(0.5)</code></pre>
-                
+
 <pre class="code content-ruby"><code class="language-ruby">#!/usr/bin/ruby
 
 # Count from 1 to 10 with a sleep
-(1..10).each do |count| 
+(1..10).each do |count|
 	puts count
 	sleep(0.5)
 end</code></pre>
-                
+
 <pre class="code content-php"><code class="language-php">#!/usr/bin/php
 &lt;?
 
@@ -142,7 +142,7 @@ for ($count = 1; $count &lt;= 10; $count++) {
 	usleep(500000);
 }
 ?&gt;</code></pre>
-                
+
 <pre class="code content-perl"><code class="language-clike">#!/usr/bin/perl
 use Time::HiRes qw(sleep);
 
@@ -151,7 +151,7 @@ for my $count (1 .. 10) {
 	print "$count\n";
 	sleep 0.5;
 }</code></pre>
-                        
+
 <pre class="code content-c"><code class="language-c">#include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
 
@@ -165,7 +165,7 @@ int main() {
         printf("%d\n", i);
         usleep(500000);
     }
-    
+
     return 0;
 }</code></pre>
 
@@ -222,13 +222,13 @@ ws.onmessage = function(event) {
                 </p>
             </div>
         </section>
- 
+
         <section class="section section-languages">
             <div class="container">
                 <h2>Whichever way inclined you are</h2>
-                
+
                 <h1>I <i class="fa fa-heart"></i> <span class="language-ticker"></span></h1>
-                
+
                 <ul class="language-options">
                     <li>Bash</li>
                     <li>Perl</li>
@@ -319,7 +319,7 @@ ws.onmessage = function(event) {
             <div class="container">
                 <h1>Get it</h1>
                 <h3>Available for Linux, OSX, Windows and FreeBSD</h3>
-                
+<!--
                 <h2>Install using a package manager</h2>
                 <div class="tab-box pkgmgr">
                     <ul class="tabs">
@@ -337,11 +337,12 @@ ws.onmessage = function(event) {
 <pre class="code content-other"><code class="language-bash">See below to download the binary</code></pre>
                     </div>
                 </div>
-                
+
                 <h1>...or...</h1>
                 <h2>Download the binary</h2>
+-->
                 <p>websocketd is a single executable program. Easy to copy to servers.</p>
-                
+
                 <div class="cols-4 download">
                     <div>
                         <div class="download-platform-icon"><i class="fa fa-apple"></i></div>
@@ -360,7 +361,7 @@ ws.onmessage = function(event) {
                         <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.2.9/websocketd-0.2.9-windows_386.zip" class="button-small">Windows 32-bit <i class="fa fa-download"></i></a></p>
                     </div>
                     <div>
-                        <svg width="100px" height="100px" viewBox="0 0 100 100" style="display:none">    
+                        <svg width="100px" height="100px" viewBox="0 0 100 100" style="display:none">
                             <defs>
                                 <g id="icon-freebsd" transform="translate(-44,-596)" style="fill:currentColor">
                                     <path d="M125.322,599.258c4.276,4.274-7.578,23.062-9.582,25.066c-2.004,2.001-7.094,0.16-11.369-4.115
@@ -413,7 +414,7 @@ ws.onmessage = function(event) {
             </div>
         </section>
 
-        
+
         <!-- Analytics -->
         <script type="text/javascript">
             // Gaug.es
