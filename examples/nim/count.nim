@@ -1,5 +1,6 @@
 import os
 
 for i in 1..10:
-  echo($i)
-  sleep(500)
+  echo i
+  flushFile stdout
+  sleep(200)
