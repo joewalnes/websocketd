@@ -98,7 +98,7 @@ out/$(RELEASE_VERSION)/%/websocketd out/$(RELEASE_VERSION)/%/websocketd.exe: $(G
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
 	rm -f $@
-	zip -j $@ out/$(RELEASE_VERSION)/$*/* ../{README.md,LICENSE}
+	zip -j $@ out/$(RELEASE_VERSION)/$*/* ../{README.md,LICENSE,CHANGES}
 
 
 BINARIES = $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/websocketd$(EXTENSION_$(PLATFORM)))
@@ -132,7 +132,7 @@ rpm: $(RPMS)
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: $(GO_DIR)/go/pkg/linux_386/.built out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb32/{usr/bin,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
-	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb32/usr/share/man/man1/websocket.1.gz
 	fpm -f -s dir -t deb -a 386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb32/
@@ -140,7 +140,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: $(GO_DIR)/go/pkg/l
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_DIR)/go/pkg/linux_amd64/.built out/$(RELEASE_VERSION)/linux_amd64/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb64/{usr/bin,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/deb64/usr/bin/
-	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb64/usr/share/man/man1/websocket.1.gz
 	fpm -f -s dir -t deb -a amd64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb64/
@@ -148,7 +148,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_DIR)/go/pk
 out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_DIR)/go/pkg/linux_amd64/.built out/$(RELEASE_VERSION)/linux_amd64/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/rpm64/{usr/bin,etc/default,usr/libexec,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/rpm64/usr/bin/
-	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/rpm64/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm64/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm64/usr/share/man/man1/websocket.1.gz
 	fpm -f -s dir -t rpm -a x86_64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm64/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) $(RPMFPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/rpm64/
@@ -156,7 +156,7 @@ out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_DIR)/go/pk
 out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: $(GO_DIR)/go/pkg/linux_386/.built out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/rpm32/{usr/bin,etc/default,usr/libexec,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/rpm32/usr/bin/
-	cp ../{LICENSE,AUTHORS,README.md} out/$(RELEASE_VERSION)/rpm32/usr/share/doc/websocketd-$(RELEASE_VERSION)
+	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm32/usr/share/man/man1/websocket.1.gz
 	fpm -f -s dir -t rpm -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm32/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) $(RPMFPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/rpm32/
