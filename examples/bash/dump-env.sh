@@ -33,7 +33,7 @@ NAMES="""
 
 for NAME in ${NAMES}
 do
-	echo ${NAME}=${!NAME:-<unset>}
+	echo "${NAME}=${!NAME:-<unset>}"
 done
 
 # Additional HTTP headers

@@ -36,7 +36,7 @@ __count.sh__:
 
 ```sh
 #!/bin/bash
-for COUNT in $(seq 1 10); do
+for ((COUNT = 1; COUNT <= 10; COUNT++)); do
   echo $COUNT
   sleep 1
 done
