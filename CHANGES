@@ -1,0 +1,21 @@
+Version 0.2.10  (Feb 16, 2015)
+
+* fixes for null-origin situations (#75, #96)
+* better bash examples (#103)
+* changelog and checksums for released files (#101, #105)
+
+
+Version 0.2.9  (May 19, 2014)
+
+* ability to listen multiple IP addresses (#40, #43)
+* proper support for TLS (#17)
+* resource limits enforcement (a.k.a. maxforks feature, #46)
+* passenv option to limit environment variables visible by running commands (#4)
+* fix for problem of closing upgraded websocket connection when script is not found (#29)
+* websocket origin restrictions via command line option (#20)
+* minor update for help flag behavior
+* minor fix for devconsole
+
+Version 0.2.8  (Jan 11, 2014)
+
+* ...

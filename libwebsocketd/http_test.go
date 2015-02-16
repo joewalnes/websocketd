@@ -72,6 +72,8 @@ var CheckOriginTests = []struct {
 	{"server.example.com", ReqHTTP, "http://example.com", OriginCouldDiffer, []string{"example.com:81"}, ReturnsError, "origin allowed port mismatch"},
 	{"server.example.com", ReqHTTP, "http://example.com", OriginCouldDiffer, []string{"example.com:81"}, ReturnsError, "origin allowed port mismatch"},
 	{"server.example.com", ReqHTTP, "http://example.com:81", OriginCouldDiffer, []string{"example.com:81"}, ReturnsPass, "origin allowed port 81 match"},
+	{"server.example.com", ReqHTTP, "null", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even null"},
+	{"server.example.com", ReqHTTP, "", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even empty"},
 }
 
 func TestCheckOrigin(t *testing.T) {

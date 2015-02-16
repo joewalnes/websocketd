@@ -1,39 +1,52 @@
 Release scripts for websocketd
 ==============================
 
-Perform a fully automated repeatable release of websocketd. Including:
+Perform a fully automated repeatable release of websocketd.
 
-*   Downloading the correct version of Go
-*   Cross-compiling Go for all required platforms
-*   Inferring the next websocketd release version
-*   Cross-compiling websocketd for all required platforms
-*   Uploading releases to http://download.websocketd.com/
-*   Git tagging the version
+This is three-stage process in normal release cycle that's performed by
+repository maintainers.
 
-The release process has been built and test on Ubuntu.
+* Tag
+* Build
+* Release
 
-Pre-reqs:
+Those that do not have permissions to push tags could still use this build
+chain to build their own customized versions or packages.
 
-    sudo apt-get install libc6-dev-i386 s3cmd git mercurial
-    s3cmd --configure  # Setup Amazon S3 credentials
+## Step 1: Tag
 
-The actual Go release will be downloaded and cross-compiled. All compilation
-occurs in an isolated environment to ensure there are no conflicts with any
-system install Go. The first build will be really slow (cross compiling Go core),
-but subsequent builds are incremental.
+Annotated tags require for release:
 
-To build the packages for all platforms:
+    git tag -a vx.x.x
 
-    make build
+To see currently tagged version run tag with -l option.
 
-To perform a release to http://download.websocketd.com/
-(version number will be automatically determined based on last git tag):
+## Step 2: Build
 
+release/Makefile contains all required to download pre-verified for build release of Go and cross-compile
+websocketd for all platforms that we release for.
+
+    cd release
     make
 
-To clean up:
+Is generally recommended but other build options are available:
 
-    make clean
+* go-compile: build cross-platform golang pakages
+* binaries: only create websocketd binaries, do not generate zip distributions
+* deb, rpm: only create particular kind of packages
+* clean-go: remove build files for go
+* clean-out: remove built binaries, zip and linux packages
+* clean: remove everything (go and release files)
+
+Building requires to have gcc and other build tools installed. Building rpm/deb files would fail without fpm ("gem install fpm" itself requires ruby devel tools).
+
+## Step 3: Release
+
+In order to make release official following steps required:
+
+    # push tags (assuming joewalnes repo is origin):
+    go push --tags origin master:master
+
+Upload files to github release (to be automated). Use these instructions for now: https://github.com/blog/1547-release-your-software
 
 
--Joe Walnes
