@@ -20,7 +20,7 @@ VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
 GO_VERSION=1.4.1
-PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 darwin_386 freebsd_amd64 freebsd_386 windows_386 windows_amd64
+PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 darwin_386 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 GO_SRC_URL=https://storage.googleapis.com/golang/go$(GO_VERSION).src.tar.gz
 GO_DOWNLOAD=go-local/$(GO_VERSION).tgz
@@ -41,6 +41,9 @@ FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
 FLAGS_freebsd_386    = $(FLAGS_all) GOOS=freebsd  GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_386   = $(FLAGS_all) GOOS=windows GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_amd64 = $(FLAGS_all) GOOS=windows GOARCH=amd64 CGO_ENABLED=0
+FLAGS_openbsd_386   = $(FLAGS_all) GOOS=openbsd GOARCH=386   CGO_ENABLED=0
+FLAGS_openbsd_amd64 = $(FLAGS_all) GOOS=openbsd GOARCH=amd64 CGO_ENABLED=0
+FLAGS_solaris_amd64 = $(FLAGS_all) GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
 
 EXTENSION_windows_386=.exe
 EXTENSION_windows_amd64=.exe
@@ -145,7 +148,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_DIR)/go/pk
 	rm -rf out/$(RELEASE_VERSION)/deb64/
 
 out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_DIR)/go/pkg/linux_amd64/.built out/$(RELEASE_VERSION)/linux_amd64/websocketd
-	mkdir -p out/$(RELEASE_VERSION)/rpm64/{usr/bin,etc/default,usr/libexec,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
+	mkdir -p out/$(RELEASE_VERSION)/rpm64/{usr/bin,etc/default,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/rpm64/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm64/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm64/usr/share/man/man1/websocket.1.gz
@@ -153,7 +156,7 @@ out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_DIR)/go/pk
 	rm -rf out/$(RELEASE_VERSION)/rpm64/
 
 out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: $(GO_DIR)/go/pkg/linux_386/.built out/$(RELEASE_VERSION)/linux_386/websocketd
-	mkdir -p out/$(RELEASE_VERSION)/rpm32/{usr/bin,etc/default,usr/libexec,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION),usr/lib/systemd/system}
+	mkdir -p out/$(RELEASE_VERSION)/rpm32/{usr/bin,etc/default,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/rpm32/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm32/usr/share/man/man1/websocket.1.gz
