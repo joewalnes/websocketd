@@ -1,6 +1,6 @@
 .\" Manpage for websocketd.
 .\" Contact abc@alexsergeyev.com to correct errors or typos.
-.TH man 8 "28 Sep 2014" "0.0" "websocketd man page"
+.TH websocketd 8 "28 Sep 2014" "0.0" "websocketd man page"
 .SH NAME
 websocketd \- turns any program that uses STDIN/STDOUT into a WebSocket server.
 .SH SYNOPSIS
