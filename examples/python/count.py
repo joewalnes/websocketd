@@ -10,6 +10,6 @@ from time import sleep
 
 # Simple example script that counts to 10 at ~2Hz, then stops.
 for count in range(0, 10):
-  print count + 1
-  sleep(0.5)
+  print(count + 1)
   stdout.flush() # Remember to flush
+  sleep(0.5)
