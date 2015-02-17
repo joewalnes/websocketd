@@ -34,11 +34,11 @@ var_names = [
   'HTTPS'
 ]
 for var_name in var_names:
-  print '%s=%s' % (var_name, os.environ.get(var_name, '<unset>'))
+  print('%s=%s' % (var_name, os.environ.get(var_name, '<unset>')))
   stdout.flush() # Remember to flush
 
 # Additional HTTP headers
 for var_name in os.environ:
   if var_name.startswith('HTTP_'):
-    print '%s=%s' % (var_name, os.environ[var_name])
+    print('%s=%s' % (var_name, os.environ[var_name]))
     stdout.flush() # Remember to flush
