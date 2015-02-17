@@ -147,7 +147,8 @@ for ($count = 1; $count &lt;= 10; $count++) {
 
 <pre class="code content-perl"><code class="language-clike">#!/usr/bin/perl
 use Time::HiRes qw(sleep);
-
+# Autoflush
+$|++;
 # Count from 1 to 10 with a sleep
 for my $count (1 .. 10) {
 	print "$count\n";
