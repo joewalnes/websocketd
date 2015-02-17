@@ -118,11 +118,13 @@ for ((COUNT = 1; COUNT <= 10; COUNT++)); do
   sleep 0.5
 done</code></pre>
 <pre class="code content-python"><code class="language-python">#!/usr/bin/python
+from sys import stdout
 from time import sleep
 
 # Count from 1 to 10 with a sleep
 for count in range(0, 10):
-  print count + 1
+  print(count + 1)
+  stdout.flush()
   sleep(0.5)</code></pre>
 
 <pre class="code content-ruby"><code class="language-ruby">#!/usr/bin/ruby
