@@ -1,14 +1,5 @@
 ## Swift examples
 
-### Permissions
-
-Before running the examples, you have to add execute permissions.
-
-```
-$ chmod +x count.swift
-$ chmod +x greeter.swift
-```
-
 ### Count
 
 Run the following line and open "html/count.html" from the websocketd examples directory.
