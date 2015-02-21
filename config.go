@@ -86,10 +86,11 @@ func parseCommandLine() *Config {
 	if err != nil {
 		if err == flag.ErrHelp {
 			PrintHelp()
+			os.Exit(0)
 		} else {
 			ShortHelp()
+			os.Exit(2)
 		}
-		os.Exit(2)
 	}
 
 	port := *portFlag
@@ -134,13 +135,13 @@ func parseCommandLine() *Config {
 
 	if *versionFlag {
 		fmt.Printf("%s %s\n", HelpProcessName(), Version())
-		os.Exit(2)
+		os.Exit(0)
 	}
 
 	if *licenseFlag {
 		fmt.Printf("%s %s\n", HelpProcessName(), Version())
 		fmt.Printf("%s\n", libwebsocketd.License)
-		os.Exit(2)
+		os.Exit(0)
 	}
 
 	// Reading SSL options
