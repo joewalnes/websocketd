@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"os"
 )
 
 const (
@@ -43,7 +44,7 @@ func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []s
 
 	parentStarts := len(env)
 	for _, v := range handler.server.Config.ParentEnv {
-		env = append(env, v)
+		env = appendEnv(env, v, os.Getenv(v))
 	}
 
 	// IMPORTANT ---> Adding a header? Make sure standardHeaderCount (above) is up to date.
