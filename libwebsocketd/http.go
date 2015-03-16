@@ -6,9 +6,9 @@
 package libwebsocketd
 
 import (
-	"golang.org/x/net/websocket"
 	"errors"
 	"fmt"
+	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
 	"net/http/cgi"
