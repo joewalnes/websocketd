@@ -195,8 +195,8 @@ Full documentation at http://websocketd.com/
 				moveThroughSendHistory(-1);
 			}
 		});
-
 		window.addEventListener('popstate', updateWebSocketUrl);
+		updateWebSocketUrl();
 	}
 
 	function updatePageUrl() {
