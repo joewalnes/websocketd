@@ -39,14 +39,14 @@ func (al *AddrList) Set(value string) error {
 
 // Borrowed from net/http/cgi
 var defaultPassEnv = map[string]string{
-	"darwin":  "DYLD_LIBRARY_PATH",
-	"freebsd": "LD_LIBRARY_PATH",
-	"hpux":    "LD_LIBRARY_PATH,SHLIB_PATH",
-	"irix":    "LD_LIBRARY_PATH,LD_LIBRARYN32_PATH,LD_LIBRARY64_PATH",
-	"linux":   "LD_LIBRARY_PATH",
-	"openbsd": "LD_LIBRARY_PATH",
-	"solaris": "LD_LIBRARY_PATH,LD_LIBRARY_PATH_32,LD_LIBRARY_PATH_64",
-	"windows": "SystemRoot,COMSPEC,PATHEXT,WINDIR",
+	"darwin":  "PATH,DYLD_LIBRARY_PATH",
+	"freebsd": "PATH,LD_LIBRARY_PATH",
+	"hpux":    "PATH,LD_LIBRARY_PATH,SHLIB_PATH",
+	"irix":    "PATH,LD_LIBRARY_PATH,LD_LIBRARYN32_PATH,LD_LIBRARY64_PATH",
+	"linux":   "PATH,LD_LIBRARY_PATH",
+	"openbsd": "PATH,LD_LIBRARY_PATH",
+	"solaris": "PATH,LD_LIBRARY_PATH,LD_LIBRARY_PATH_32,LD_LIBRARY_PATH_64",
+	"windows": "PATH,SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
 func parseCommandLine() *Config {

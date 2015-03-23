@@ -143,8 +143,20 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.NotFound(w, req)
 }
 
+var canonicalHostname string
+
 // TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
 func (h *WebsocketdServer) TellURL(scheme, host, path string) string {
+	if host[0] == ':' {
+		if canonicalHostname == "" {
+			var err error
+			canonicalHostname, err = os.Hostname()
+			if err != nil {
+				canonicalHostname = "UNKNOWN"
+			}
+		}
+		host = canonicalHostname + host
+	}
 	if h.Config.Ssl {
 		return scheme + "s://" + host + path
 	}
