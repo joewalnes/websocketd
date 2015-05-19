@@ -25,6 +25,7 @@ Full documentation at http://websocketd.com/
 
 <!DOCTYPE html>
 <meta charset="utf8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>websocketd console</title>
 
 <style>
