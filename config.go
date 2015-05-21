@@ -26,13 +26,13 @@ type Config struct {
 	*libwebsocketd.Config
 }
 
-type AddrList []string
+type Arglist []string
 
-func (al *AddrList) String() string {
+func (al *Arglist) String() string {
 	return fmt.Sprintf("%v", []string(*al))
 }
 
-func (al *AddrList) Set(value string) error {
+func (al *Arglist) Set(value string) error {
 	*al = append(*al, value)
 	return nil
 }
@@ -59,7 +59,7 @@ func parseCommandLine() *Config {
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
-	addrlist := AddrList(make([]string, 0, 1)) // pre-reserve for 1 address
+	addrlist := Arglist(make([]string, 0, 1)) // pre-reserve for 1 address
 	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
 
 	// server config options
@@ -81,6 +81,13 @@ func parseCommandLine() *Config {
 	passEnvFlag := flag.String("passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
 	sameOriginFlag := flag.Bool("sameorigin", false, "Restrict upgrades if origin and host headers differ")
 	allowOriginsFlag := flag.String("origin", "", "Restrict upgrades if origin does not match the list")
+
+	headers := Arglist(make([]string, 0))
+	headersWs := Arglist(make([]string, 0))
+	headersHttp := Arglist(make([]string, 0))
+	flag.Var(&headers, "header", "Custom headers for any response.")
+	flag.Var(&headersWs, "header-ws", "Custom headers for successful WebSocket upgrade responses.")
+	flag.Var(&headersHttp, "header-http", "Custom headers for all but WebSocket upgrade HTTP responses.")
 
 	err := flag.CommandLine.Parse(os.Args[1:])
 	if err != nil {
@@ -117,6 +124,10 @@ func parseCommandLine() *Config {
 		ShortHelp()
 		os.Exit(1)
 	}
+
+	config.Headers = []string(headers)
+	config.HeadersWs = []string(headersWs)
+	config.HeadersHTTP = []string(headersHttp)
 
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag

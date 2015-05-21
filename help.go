@@ -66,6 +66,17 @@ Options:
 
   --cgidir=DIR                   Serve CGI scripts in this directory over HTTP.
 
+  --header="HEADER: VALUE"       Set custom HTTP header to each answer.
+
+  --header-ws="...."             Same as --header, just applies to only those
+                                 responses that indicate upgrade of TCP connection
+                                 to a WebSockets protocol.
+
+  --header-http="...."           Same as --header, just applies to only to plain
+                                 HTTP responses that do not indicate WebSockets
+                                 upgrade
+
+
   --help                         Print help and exit.
 
   --version                      Print version and exit.
