@@ -66,7 +66,8 @@ Options:
 
   --cgidir=DIR                   Serve CGI scripts in this directory over HTTP.
 
-  --header="HEADER: VALUE"       Set custom HTTP header to each answer.
+  --header="..."                 Set custom HTTP header to each answer. For
+                                 example: --header="Server: someserver/0.0.1"
 
   --header-ws="...."             Same as --header, just applies to only those
                                  responses that indicate upgrade of TCP connection
