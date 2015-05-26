@@ -2,9 +2,9 @@ package libwebsocketd
 
 import (
 	"bufio"
-	"golang.org/x/net/websocket"
 	"crypto/tls"
 	"fmt"
+	"golang.org/x/net/websocket"
 	"net/http"
 	"strings"
 	"testing"
@@ -115,6 +115,20 @@ Sec-WebSocket-Version: 13
 			t.Errorf("Test case %#v did not get an error", testcase.name)
 		} else if testcase.getsErr == ReturnsPass && err != nil {
 			t.Errorf("Test case %#v got error while should've", testcase.name)
+		}
+	}
+}
+
+var mimetest = [][3]string{
+	{"Content-type: text/plain", "Content-type", "text/plain"},
+	{"Content-type:    ", "Content-type", ""},
+}
+
+func TestSplitMimeHeader(t *testing.T) {
+	for _, tst := range mimetest {
+		s, v := splitMimeHeader(tst[0])
+		if tst[1] != s || tst[2] != v {
+			t.Errorf("%v and %v  are not same as expexted %v and %v", s, v, tst[1], tst[2])
 		}
 	}
 }
