@@ -122,10 +122,8 @@ done</code></pre>
 <pre class="code content-java"><code class="language-java">import java.io.IOException;
 import java.lang.InterruptedException;
 
-class Counter
-{
-   public static void main (String [] args) throws java.io.IOException, InterruptedException
-   {
+class Counter {
+   public static void main (String [] args) throws java.io.IOException, InterruptedException {
      for (int i=0; i<10; i++) {
        System.out.println(i);
        Thread.sleep(500);
