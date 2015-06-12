@@ -1,4 +1,4 @@
-/* http://prismjs.com/download.html?themes=prism-twilight&languages=clike+javascript+php+bash+c+python+ruby+csharp+go+swift */
+/* http://prismjs.com/download.html?themes=prism-twilight&languages=clike+javascript+bash+c+csharp+go+java+php+python+ruby+swift */
 /**
  * prism.js Twilight theme
  * Based (more or less) on the Twilight theme originally of Textmate fame.
@@ -126,8 +126,12 @@ code[class*="language-"]::selection, code[class*="language-"] ::selection {
 	color: hsl(42, 75%, 65%); /* #E9C062 */
 }
 
-.token.important {
+.token.important,
+.token.bold {
 	font-weight: bold;
+}
+.token.italic {
+	font-style: italic;
 }
 
 .token.entity {
