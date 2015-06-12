@@ -100,6 +100,7 @@
                 <div class="tab-box language">
                     <ul class="tabs">
                         <li data-content="content-bash">Bash</li>
+                        <li data-content="content-java">Java</li>
                         <li data-content="content-python">Python</li>
                         <li data-content="content-ruby">Ruby</li>
                         <li data-content="content-php">PHP</li>
@@ -117,6 +118,20 @@ for ((COUNT = 1; COUNT <= 10; COUNT++)); do
   echo $COUNT
   sleep 0.5
 done</code></pre>
+
+<pre class="code content-java"><code class="language-java">import java.io.IOException;
+import java.lang.InterruptedException;
+
+class Counter {
+   public static void main (String [] args) throws java.io.IOException, InterruptedException {
+     for (int i=0; i<10; i++) {
+       System.out.println(i);
+       Thread.sleep(500);
+     }
+   }
+}
+</code></pre>
+
 <pre class="code content-python"><code class="language-python">#!/usr/bin/python
 from sys import stdout
 from time import sleep
