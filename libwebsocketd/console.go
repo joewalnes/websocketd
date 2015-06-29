@@ -93,6 +93,7 @@ Full documentation at http://websocketd.com/
 		margin-left: 90px;
 		display: block;
 		word-wrap: break-word;
+		white-space: pre;
 	}
 	.type-input,
 	.type-send {
