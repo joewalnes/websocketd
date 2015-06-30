@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"io"
 	"syscall"
+	"time"
 )
 
 type ProcessEndpoint struct {
@@ -27,21 +28,61 @@ func NewProcessEndpoint(process *LaunchedProcess, log *LogScope) *ProcessEndpoin
 }
 
 func (pe *ProcessEndpoint) Terminate() {
+
+	terminated := make(chan struct{})
+	go func() { pe.process.cmd.Wait(); terminated <- struct{}{} }()
+
+	// for some processes this is enough to finish them...
 	pe.process.stdin.Close()
+
+	// a bit verbose to create good debugging trail
+	select {
+	case <-terminated:
+		pe.log.Debug("process", "Process %v terminated after stdin was closed", pe.process.cmd.Process.Pid)
+		return // means process finished
+	case <-time.After(100 * time.Millisecond):
+	}
 
 	err := pe.process.cmd.Process.Signal(syscall.SIGINT)
 	if err != nil {
-		pe.log.Debug("process", "Failed to Interrupt process %v: %s, attempting to kill", pe.process.cmd.Process.Pid, err)
-		err = pe.process.cmd.Process.Kill()
-		if err != nil {
-			pe.log.Debug("process", "Failed to Kill process %v: %s", pe.process.cmd.Process.Pid, err)
-		}
+		// process is done without this, great!
+		pe.log.Error("process", "SIGINT unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
 	}
 
-	pe.process.cmd.Wait()
-	if err != nil {
-		pe.log.Debug("process", "Failed to reap process %v: %s", pe.process.cmd.Process.Pid, err)
+	select {
+	case <-terminated:
+		pe.log.Debug("process", "Process %v terminated after SIGINT", pe.process.cmd.Process.Pid)
+		return // means process finished
+	case <-time.After(250 * time.Millisecond):
 	}
+
+	err = pe.process.cmd.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		// process is done without this, great!
+		pe.log.Error("process", "SIGTERM unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
+	}
+
+	select {
+	case <-terminated:
+		pe.log.Debug("process", "Process %v terminated after SIGTERM", pe.process.cmd.Process.Pid)
+		return // means process finished
+	case <-time.After(500 * time.Millisecond):
+	}
+
+	err = pe.process.cmd.Process.Kill()
+	if err != nil {
+		pe.log.Error("process", "SIGKILL unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
+		return
+	}
+
+	select {
+	case <-terminated:
+		pe.log.Debug("process", "Process %v terminated after SIGKILL", pe.process.cmd.Process.Pid)
+		return // means process finished
+	case <-time.After(1000 * time.Millisecond):
+	}
+
+	pe.log.Error("process", "SIGKILL did not terminate %v!", pe.process.cmd.Process.Pid)
 }
 
 func (pe *ProcessEndpoint) Output() chan string {
