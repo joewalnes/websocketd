@@ -179,7 +179,7 @@ var canonicalHostname string
 
 // TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
 func (h *WebsocketdServer) TellURL(scheme, host, path string) string {
-	if host[0] == ':' {
+	if len(host) > 0 && host[0] == ':' {
 		if canonicalHostname == "" {
 			var err error
 			canonicalHostname, err = os.Hostname()
