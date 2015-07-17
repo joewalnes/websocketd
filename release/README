@@ -6,14 +6,16 @@ Perform a fully automated repeatable release of websocketd.
 This is three-stage process in normal release cycle that's performed by
 repository maintainers.
 
-* Tag
+* Update CHANGES and Tag
 * Build
 * Release
 
 Those that do not have permissions to push tags could still use this build
 chain to build their own customized versions or packages.
 
-## Step 1: Tag
+## Step 1: Update CHANGES and Tag
+
+First edit and commit CHANGES file. List all significant updates between releases.
 
 Annotated tags require for release:
 
@@ -39,6 +41,13 @@ Is generally recommended but other build options are available:
 * clean: remove everything (go and release files)
 
 Building requires to have gcc and other build tools installed. Building rpm/deb files would fail without fpm ("gem install fpm" itself requires ruby devel tools).
+
+Create CHECKSUMS.asc file using gpg and key that other developers shared with you:
+
+    gpg -u KEYID --clearsign CHECKSUMS
+
+(key has to be installed in your gpg environment first)
+
 
 ## Step 3: Release
 
