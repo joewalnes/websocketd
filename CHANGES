@@ -1,3 +1,12 @@
+Version 0.2.11  (Jul 1, 2015)
+
+* PATH env variable is now passed to process by default
+* new --header* flags could generate custom HTTP headers for all websocketd-generated answers
+* fixed bug causing process to hang when WebSockets client disconnect is detected
+* minor changes for console app (default url building logic and tab char printing)
+* multiple changes of examples.
+
+
 Version 0.2.10  (Feb 16, 2015)
 
 * fixes for null-origin situations (#75, #96)
