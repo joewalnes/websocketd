@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright 2013 Joe Walnes and the websocketd team.
 # All rights reserved.
@@ -36,7 +36,8 @@ echo
 
 for NAME in ${NAMES}
 do
-	echo ${NAME}=${!NAME:-<unset>}
+	eval "value=\${${NAME}}"
+	env -i "${NAME}=${value:-<unset>}"
 done
 
 # Additional HTTP headers
