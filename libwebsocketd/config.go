@@ -17,6 +17,7 @@ type Config struct {
 	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
 
 	// settings
+	Binary         bool     // Use binary communication (send data in chunks they are read from process)
 	ReverseLookup  bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
 	Ssl            bool     // websocketd works with --ssl which means TLS is in use
 	ScriptDir      string   // Base directory for websocket scripts.

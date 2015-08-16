@@ -54,6 +54,11 @@ Options:
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
                                  passed to executed scripts.
 
+  --binary={true,false}          Switches communication to binary, process reads
+                                 send to browser as blobs and all reads from the
+                                 browser are immediately flushed to the process.
+                                 Default: true
+
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: true
 
