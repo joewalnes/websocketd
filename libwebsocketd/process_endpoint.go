@@ -106,7 +106,7 @@ func (pe *ProcessEndpoint) StartReading() {
 func (pe *ProcessEndpoint) process_txtout() {
 	bufin := bufio.NewReader(pe.process.stdout)
 	for {
-		buf, err := bufin.ReadSlice('\n')
+		buf, err := bufin.ReadBytes('\n')
 		if err != nil {
 			if err != io.EOF {
 				pe.log.Error("process", "Unexpected error while reading STDOUT from process: %s", err)
@@ -132,7 +132,7 @@ func (pe *ProcessEndpoint) process_binout() {
 			}
 			break
 		}
-		pe.output <- buf[:n]
+		pe.output <- append(make([]byte, n), buf[:n]...) // cloned buffer
 	}
 	close(pe.output)
 }

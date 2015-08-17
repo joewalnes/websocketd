@@ -156,7 +156,6 @@ Full documentation at http://websocketd.com/
 <script>
 
 	var ws = null;
-	var rd = null;
 
 	function ready() {
 		select('.connect').style.display = 'block';
@@ -235,7 +234,6 @@ Full documentation at http://websocketd.com/
 			appendMessage('open', url);
 			try {
 				ws = new WebSocket(url);
-				rd = new FileReader();
 			} catch (ex) {
 				appendMessage('exception', 'Cannot connect: ' + ex);
 				return;
@@ -244,9 +242,6 @@ Full documentation at http://websocketd.com/
 			select('.connect').style.display = 'none';
 			select('.disconnect').style.display = 'block';
 
-			rd.onload = function(ev){
-				appendMessage('onmessage', "BLOB: "+rd.result);
-  			};
 			ws.addEventListener('open', function(ev) {
 				appendMessage('onopen');
 			});
@@ -259,7 +254,11 @@ Full documentation at http://websocketd.com/
 			});
 			ws.addEventListener('message', function(ev) {
 				if (typeof(ev.data) == "object") { 
-					rd.readAsBinaryString(ev.data)
+					var rd = new FileReader();
+					rd.onload = function(ev){
+						appendMessage('onmessage', "BLOB: "+rd.result);
+					};
+					rd.readAsBinaryString(ev.data);
 				} else {
 					appendMessage('onmessage', ev.data);
 				}
