@@ -253,7 +253,15 @@ Full documentation at http://websocketd.com/
 				select('.url').focus();
 			});
 			ws.addEventListener('message', function(ev) {
-				appendMessage('onmessage', ev.data);
+				if (typeof(ev.data) == "object") { 
+					var rd = new FileReader();
+					rd.onload = function(ev){
+						appendMessage('onmessage', "BLOB: "+rd.result);
+					};
+					rd.readAsBinaryString(ev.data);
+				} else {
+					appendMessage('onmessage', ev.data);
+				}
 			});
 			ws.addEventListener('error', function(ev) {
 				appendMessage('onerror');

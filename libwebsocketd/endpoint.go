@@ -8,8 +8,8 @@ package libwebsocketd
 type Endpoint interface {
 	StartReading()
 	Terminate()
-	Output() chan string
-	Send(string) bool
+	Output() chan []byte
+	Send([]byte) bool
 }
 
 func PipeEndpoints(e1, e2 Endpoint) {

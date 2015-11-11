@@ -73,6 +73,7 @@ func parseCommandLine() *Config {
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 
 	// lib config options
+	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
 	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
@@ -129,6 +130,7 @@ func parseCommandLine() *Config {
 	config.HeadersWs = []string(headersWs)
 	config.HeadersHTTP = []string(headersHttp)
 
+	config.Binary = *binaryFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag
 	config.ScriptDir = *scriptDirFlag

@@ -13,26 +13,35 @@ import (
 
 type WebSocketEndpoint struct {
 	ws     *websocket.Conn
-	output chan string
+	output chan []byte
 	log    *LogScope
+	bin    bool
 }
 
-func NewWebSocketEndpoint(ws *websocket.Conn, log *LogScope) *WebSocketEndpoint {
+func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope) *WebSocketEndpoint {
 	return &WebSocketEndpoint{
 		ws:     ws,
-		output: make(chan string),
-		log:    log}
+		output: make(chan []byte),
+		log:    log,
+		bin:    bin,
+	}
 }
 
 func (we *WebSocketEndpoint) Terminate() {
+	we.log.Trace("websocket", "Terminated websocket connection")
 }
 
-func (we *WebSocketEndpoint) Output() chan string {
+func (we *WebSocketEndpoint) Output() chan []byte {
 	return we.output
 }
 
-func (we *WebSocketEndpoint) Send(msg string) bool {
-	err := websocket.Message.Send(we.ws, msg)
+func (we *WebSocketEndpoint) Send(msg []byte) bool {
+	var err error
+	if we.bin {
+		err = websocket.Message.Send(we.ws, msg)
+	} else {
+		err = websocket.Message.Send(we.ws, string(msg))
+	}
 	if err != nil {
 		we.log.Trace("websocket", "Cannot send: %s", err)
 		return false
@@ -41,12 +50,31 @@ func (we *WebSocketEndpoint) Send(msg string) bool {
 }
 
 func (we *WebSocketEndpoint) StartReading() {
-	go we.read_client()
+	if we.bin {
+		go we.read_binary_frames()
+	} else {
+		go we.read_text_frames()
+	}
 }
 
-func (we *WebSocketEndpoint) read_client() {
+func (we *WebSocketEndpoint) read_text_frames() {
 	for {
 		var msg string
+		err := websocket.Message.Receive(we.ws, &msg)
+		if err != nil {
+			if err != io.EOF {
+				we.log.Debug("websocket", "Cannot receive: %s", err)
+			}
+			break
+		}
+		we.output <- append([]byte(msg), '\n')
+	}
+	close(we.output)
+}
+
+func (we *WebSocketEndpoint) read_binary_frames() {
+	for {
+		var msg []byte
 		err := websocket.Message.Receive(we.ws, &msg)
 		if err != nil {
 			if err != io.EOF {
