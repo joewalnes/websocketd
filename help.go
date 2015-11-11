@@ -57,7 +57,7 @@ Options:
   --binary={true,false}          Switches communication to binary, process reads
                                  send to browser as blobs and all reads from the
                                  browser are immediately flushed to the process.
-                                 Default: true
+                                 Default: false
 
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: true
