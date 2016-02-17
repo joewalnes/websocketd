@@ -1,3 +1,9 @@
+Version 0.2.12  (Feb 17, 2016)
+
+* Update of underlying go standard libraries change how SSL works. SSL3 is no longer supported.
+* Support of commands that do not provide text IO (using them as binary websocket frames)
+* Minor changes in examples and --help output 
+
 Version 0.2.11  (Jul 1, 2015)
 
 * PATH env variable is now passed to process by default
