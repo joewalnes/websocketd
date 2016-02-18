@@ -6,6 +6,6 @@ while(true){
   var stdin = NSFileHandle.fileHandleWithStandardInput().availableData
   var line  = NSString(data: stdin, encoding: NSUTF8StringEncoding)!
   var name  = line.stringByTrimmingCharactersInSet(NSCharacterSet.newlineCharacterSet())
-  println("Hello \(name)!")
+  print("Hello \(name)!")
   fflush(__stdoutp)
 }
