@@ -3,7 +3,7 @@
 import AppKit
 
 for index in 1...10 {
-  println(index)
+  print(index)
   
   // Flush output
   fflush(__stdoutp)
