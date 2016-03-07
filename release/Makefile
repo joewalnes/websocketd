@@ -20,7 +20,7 @@ VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
 GO_VERSION=1.6
-PLATFORMS=linux_amd64 linux_386 linux_arm darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
+PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 
 # Would NOT WORK on: ARM, WINDOWS
