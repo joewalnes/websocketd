@@ -84,7 +84,6 @@ func main() {
 			} else {
 				rejects <- http.ListenAndServe(addr, nil)
 			}
-			fmt.Println(config.RedirPort)
 		}(addrSingle)
 
 		if config.RedirPort != 0 {
