@@ -22,6 +22,7 @@ type Config struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
+	RedirPort         int
 	CertFile, KeyFile string
 	*libwebsocketd.Config
 }
@@ -71,6 +72,7 @@ func parseCommandLine() *Config {
 	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
+	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
 
 	// lib config options
 	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
@@ -119,6 +121,7 @@ func parseCommandLine() *Config {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
 	mainConfig.MaxForks = *maxForksFlag
+	mainConfig.RedirPort = *redirPortFlag
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
 	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
 		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)

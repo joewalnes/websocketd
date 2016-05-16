@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/joewalnes/websocketd/libwebsocketd"
@@ -76,13 +77,35 @@ func main() {
 		// ListenAndServe is blocking function. Let's run it in
 		// go routine, reporting result to control channel.
 		// Since it's blocking it'll never return non-error.
+
 		go func(addr string) {
 			if config.Ssl {
 				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
 			} else {
 				rejects <- http.ListenAndServe(addr, nil)
 			}
+			fmt.Println(config.RedirPort)
 		}(addrSingle)
+
+		if config.RedirPort != 0 {
+			go func(addr string) {
+				pos := strings.IndexByte(addr, ':')
+				rediraddr := addr[:pos] + ":" + strconv.Itoa(config.RedirPort) // it would be silly to optimize this one
+				redir := &http.Server{Addr: rediraddr, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					// redirect to same hostname as in request but different port and probably schema
+					uri := "https://"
+					if !config.Ssl {
+						uri = "http://"
+					}
+					uri += r.Host[:strings.IndexByte(r.Host, ':')] + addr[pos:] + "/"
+
+					http.Redirect(w, r, uri, http.StatusMovedPermanently)
+				})}
+				log.Info("server", "Starting redirect server   : http://%s/", rediraddr)
+				rejects <- redir.ListenAndServe()
+			}(addrSingle)
+		}
 	}
 	select {
 	case err := <-rejects:
