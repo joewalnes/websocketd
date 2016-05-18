@@ -51,6 +51,11 @@ Options:
   --sslcert=FILE                 All three options must be used or all of
   --sslkey=FILE                  them should be omitted. 
 
+  --redirport=PORT               Open alternative port and redirect HTTP traffic
+                                 from it to canonical address (mostly useful
+                                 for HTTPS-only configurations to redirect HTTP
+                                 traffic)
+
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
                                  passed to executed scripts.
 
