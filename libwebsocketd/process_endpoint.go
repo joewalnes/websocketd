@@ -132,7 +132,7 @@ func (pe *ProcessEndpoint) process_binout() {
 			}
 			break
 		}
-		pe.output <- append(make([]byte, n), buf[:n]...) // cloned buffer
+		pe.output <- append(make([]byte, 0, n), buf[:n]...) // cloned buffer
 	}
 	close(pe.output)
 }
