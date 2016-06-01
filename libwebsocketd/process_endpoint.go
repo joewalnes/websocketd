@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const DEFAULT_CLOSEMS = 100
-
 type ProcessEndpoint struct {
 	process   *LaunchedProcess
 	closetime time.Duration
