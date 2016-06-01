@@ -83,6 +83,11 @@ Options:
                                  another process (unlimited when 0 or negative).
                                  Default: 0
 
+  --closems=milliseconds         Specifies additional time process needs to gracefully
+                                 finish before websocketd will send termination signals 
+                                 to it. Default: 0 (signals sent after 100ms, 250ms, 
+                                 and 500ms of waiting)
+
   --header="..."                 Set custom HTTP header to each answer. For
                                  example: --header="Server: someserver/0.0.1"
 

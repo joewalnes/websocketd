@@ -72,6 +72,7 @@ func parseCommandLine() *Config {
 	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
+	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
 	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
 
 	// lib config options
@@ -133,6 +134,7 @@ func parseCommandLine() *Config {
 	config.HeadersWs = []string(headersWs)
 	config.HeadersHTTP = []string(headersHttp)
 
+	config.CloseMs = *closeMsFlag
 	config.Binary = *binaryFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag
