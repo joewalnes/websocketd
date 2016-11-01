@@ -65,7 +65,7 @@ Options:
                                  Default: false
 
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
-                                 Default: true
+                                 Default: false
 
   --dir=DIR                      Allow all scripts in the local directory
                                  to be accessed as WebSockets. If using this,
