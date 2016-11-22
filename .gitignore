@@ -4,3 +4,4 @@ websocketd
 go
 go-v*
 go-workspace
+examples/nim/nimcache
