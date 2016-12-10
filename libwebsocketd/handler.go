@@ -1,6 +1,7 @@
 package libwebsocketd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -78,12 +79,17 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 
 	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
 
-	binary := wsh.server.Config.Binary
-	process := NewProcessEndpoint(launched, binary, log)
+	bin := wsh.server.Config.Binary
+	process := NewProcessEndpoint(launched, bin, log)
 	if cms := wsh.server.Config.CloseMs; cms != 0 {
 		process.closetime += time.Duration(cms) * time.Millisecond
 	}
-	wsEndpoint := NewWebSocketEndpoint(ws, binary, log)
+	wsEndpoint := NewWebSocketEndpoint(ws, bin, log)
+
+	onconn := wsh.URLInfo.Config.OnConnectPush
+	if len(onconn) > 0 {
+		wsEndpoint.Send(onconn)
+	}
 
 	PipeEndpoints(process, wsEndpoint)
 }
@@ -120,12 +126,17 @@ type URLInfo struct {
 	ScriptPath string
 	PathInfo   string
 	FilePath   string
+	Config     *URLConfig
+}
+
+type URLConfig struct {
+	OnConnectPush []byte
 }
 
 // GetURLInfo is a function that parses path and provides URL info according to libwebsocketd.Config fields
 func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 	if !config.UsingScriptDir {
-		return &URLInfo{"/", path, ""}, nil
+		return &URLInfo{"/", path, "", &URLConfig{}}, nil
 	}
 
 	parts := strings.Split(path[1:], "/")
@@ -152,6 +163,8 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 			continue
 		}
 
+		urlInfo.Config = ReadURLConfig(urlInfo.FilePath)
+
 		// no extra args
 		if isLastPart {
 			return urlInfo, nil
@@ -162,6 +175,16 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 		return urlInfo, nil
 	}
 	panic(fmt.Sprintf("GetURLInfo cannot parse path %#v", path))
+}
+
+func ReadURLConfig(filepath string) *URLConfig {
+	c := &URLConfig{}
+	f, err := os.OpenFile(filepath+".config", os.O_RDONLY, 0)
+	if err != nil {
+		return c
+	}
+	json.NewDecoder(f).Decode(c)
+	return c
 }
 
 func generateId() string {
