@@ -45,6 +45,7 @@ func MuxedLaunchCmd(wsh *WebsocketdHandler, log *LogScope) *MuxedPipe {
 			wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "),
 			err,
 		)
+		delete(MuxedPipes, wsh.command)
 		return nil
 	}
 
