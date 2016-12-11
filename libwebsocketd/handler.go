@@ -61,8 +61,32 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 // wshandler returns function that executes code with given log context
 func (wsh *WebsocketdHandler) wshandler(log *LogScope) websocket.Handler {
 	return websocket.Handler(func(ws *websocket.Conn) {
+		config := wsh.URLInfo.Config
+		if config.Muxed {
+			wsh.maccept(ws, log)
+			return
+		}
 		wsh.accept(ws, log)
 	})
+}
+
+func (wsh *WebsocketdHandler) maccept(ws *websocket.Conn, log *LogScope) {
+	defer ws.Close()
+
+	log.Access("mux session", "CONNECT")
+	defer log.Access("mux session", "DISCONNECT")
+
+	config := wsh.URLInfo.Config
+	muxed := MuxedLaunchCmd(wsh, log)
+
+	bin := wsh.server.Config.Binary
+	wsEndpoint := NewWebSocketEndpoint(ws, bin, log)
+
+	if len(config.OnConnectPush) > 0 {
+		wsEndpoint.Send(config.OnConnectPush)
+	}
+
+	MuxedAttach(muxed, ws.Request().RemoteAddr, wsEndpoint)
 }
 
 func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
@@ -70,10 +94,14 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 
 	log.Access("session", "CONNECT")
 	defer log.Access("session", "DISCONNECT")
+	config := wsh.URLInfo.Config
 
 	launched, err := launchCmd(wsh.command, wsh.server.Config.CommandArgs, wsh.Env)
 	if err != nil {
-		log.Error("process", "Could not launch process %s %s (%s)", wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "), err)
+		log.Error("process", "Could not launch process %s %s (%s)",
+			wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "),
+			err,
+		)
 		return
 	}
 
@@ -86,9 +114,8 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 	}
 	wsEndpoint := NewWebSocketEndpoint(ws, bin, log)
 
-	onconn := wsh.URLInfo.Config.OnConnectPush
-	if len(onconn) > 0 {
-		wsEndpoint.Send(onconn)
+	if len(config.OnConnectPush) > 0 {
+		wsEndpoint.Send(config.OnConnectPush)
 	}
 
 	PipeEndpoints(process, wsEndpoint)
@@ -131,6 +158,7 @@ type URLInfo struct {
 
 type URLConfig struct {
 	OnConnectPush []byte
+	Muxed         bool
 }
 
 // GetURLInfo is a function that parses path and provides URL info according to libwebsocketd.Config fields
@@ -184,6 +212,7 @@ func ReadURLConfig(filepath string) *URLConfig {
 		return c
 	}
 	json.NewDecoder(f).Decode(c)
+	f.Close()
 	return c
 }
 
