@@ -159,6 +159,7 @@ type URLInfo struct {
 type URLConfig struct {
 	OnConnectPush []byte
 	Muxed         bool
+	BufferSize    int
 }
 
 // GetURLInfo is a function that parses path and provides URL info according to libwebsocketd.Config fields

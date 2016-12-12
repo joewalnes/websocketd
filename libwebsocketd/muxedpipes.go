@@ -6,6 +6,7 @@
 package libwebsocketd
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ type MuxedPipe struct {
 	bin     bool
 	wes     map[chan []byte]bool
 	process Endpoint
+	config  *URLConfig
 	sync.RWMutex
 }
 
@@ -33,11 +35,11 @@ func MuxedLaunchCmd(wsh *WebsocketdHandler, log *LogScope) *MuxedPipe {
 		return muxed
 	}
 	muxed = &MuxedPipe{
-		cmd: wsh.command,
-		log: log,
-		wes: make(map[chan []byte]bool),
+		cmd:    wsh.command,
+		log:    log,
+		config: wsh.URLInfo.Config,
+		wes:    make(map[chan []byte]bool),
 	}
-	MuxedPipes[wsh.command] = muxed
 
 	launched, err := launchCmd(wsh.command, wsh.server.Config.CommandArgs, wsh.Env)
 	if err != nil {
@@ -45,10 +47,9 @@ func MuxedLaunchCmd(wsh *WebsocketdHandler, log *LogScope) *MuxedPipe {
 			wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "),
 			err,
 		)
-		delete(MuxedPipes, wsh.command)
 		return nil
 	}
-
+	MuxedPipes[wsh.command] = muxed
 	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
 	bin := wsh.server.Config.Binary
 	process := NewProcessEndpoint(launched, bin, log)
@@ -91,7 +92,11 @@ func PipeMuxedEndpoints(muxed *MuxedPipe) {
 
 		muxed.RLock()
 		for c := range muxed.wes {
-			c <- msg
+			select {
+			case c <- msg:
+			default:
+				// drop
+			}
 		}
 		if len(muxed.wes) == 0 {
 			muxlock.Lock()
@@ -104,7 +109,8 @@ func PipeMuxedEndpoints(muxed *MuxedPipe) {
 }
 
 func MuxedAttach(muxed *MuxedPipe, key string, e Endpoint) {
-	c := make(chan []byte)
+	c := make(chan []byte, muxed.config.BufferSize)
+	fmt.Println(muxed.config.BufferSize)
 	muxed.Lock()
 	muxed.wes[c] = true
 	muxed.Unlock()
