@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Command via websocketd</title>
+    <style>
+       table { table-layout:fixed; }
+       
+
+      html, body {
+        height: 90%;
+       }
+      #outer {
+        height: 70%
+        }
+      #middle {
+        background-color:  white;
+        width: 95%;
+        height: 50%;
+        font-family: monospace;
+       }
+      #state {
+        font: 20px arial;
+        padding: 10px;
+        text-align: left;
+        position: absolute;
+        bottom: 0;
+        width: 95%;
+        height: 15px;
+        background-color:  white;
+      }
+    </style>
+ </head>
+
+     <body>
+      <nobr>
+      <!-- send command via a dropdown list            -->
+      <select name="ab" onclick="if (this.selectedIndex) send(this.value); blur();">
+      <option value="-1">Select </option>
+      <option value="cd ~">cd to home folder</option>
+      <option value="pwd">pwd</option>
+      </select>
+     
+      <!-- send commands via a onclick                -->
+     <button type = "button" onclick = send("ls+-l")>ls -l</button>
+     <button type = "button" onclick = send("xterm+-fn+10x20&")>xterm</button>
+     <button type = "button" onclick = send("uname+-a")>uname</button>
+     <button type = "button" onclick = {document.getElementById('middle').textContent="";}>clear screen</button>
+      
+
+      </nobr>
+      <nobr> 
+      <!-- send command via a href link                -->
+      &nbsp
+      <a href="#start an xterm" onclick = send("xterm+-fn+10x20&")>xterm -fn 10x20</a>
+
+      <!-- send command via a Textbox                  -->
+      String: <input type="text" onkeypress=handle_enter(event) size=26 id=outmsg>
+
+      </nobr> 
+
+       <BR><BR>
+       <div id="outer">
+             <textarea id='middle'readonly></textarea>
+             <div id="state"></div>
+       </div>
+       
+        
+
+    <script>
+      var ws = new WebSocket('ws://localhost:8080/');    // connect to websocket server on port 8080
+      ws.onopen = function() {
+        document.body.style.backgroundColor = '#cfc';    // green = connected
+        document.getElementById('state').textContent = "State: Connected";   // display in status bar
+      };
+      ws.onclose = function() {
+        document.body.style.backgroundColor = '#00FFFF'; // blue = disconnected 
+        document.getElementById('state').textContent = "State: Disconnected";  // display in status bar
+      };
+      ws.onmessage = function(event) {                   // got a message from websocket server
+        var rmessage=event.data;
+        var isstate = rmessage.indexOf("State");         // does it contain a state message
+          if (isstate == 0) {document.getElementById('state').textContent = event.data;}    // status bar 
+       
+        if (isstate != 0)    {                    // middle area                
+        document.getElementById('middle').textContent += rmessage;
+        document.getElementById('middle').textContent += "\r\n";
+        textarea=document.getElementById('middle');
+        moveCaretToEnd(textarea);
+         }
+        };
+      
+      function send(arg)    // replace "+" with a blank character and send to websocket server
+            {
+            arg = arg.replace(/\+/g," ");
+            ws.send(arg);
+            }
+
+      function handle_enter(e) {
+            if (e.keyCode === 13) {
+                   // alert("enter pressed");
+                   send(document.getElementById('outmsg').value); 
+                   }         
+            return false;
+            }   
+      
+
+      
+     window.onerror = function(msg, url, line, col, error) {
+     // Note that col & error are new to the HTML 5 spec and may not be
+     // supported in every browser.  It worked for me in Chrome.
+     var extra = !col ? '' : '\ncolumn: ' + col;
+     extra += !error ? '' : '\nerror: ' + error;
+
+     // You can view the information in an alert to see things working like this:
+     alert("Error: " + msg + "\nurl: " + url + "\nline: " + line + extra);
+
+     // TODO: Report this error via ajax so you can keep track
+     //       of what pages have JS issues
+
+     var suppressErrorAlert = true;
+     // If you return true, then error alerts (like in older versions of
+     // Internet Explorer) will be suppressed.
+     return suppressErrorAlert;
+     };
+    
+    function moveCaretToEnd(el) {    // go to the end of received text messages - scroll down
+    if (typeof el.selectionStart == "number") {
+        el.selectionStart = el.selectionEnd = el.value.length;
+    } else if (typeof el.createTextRange != "undefined") {
+        el.focus();
+        var range = el.createTextRange();
+        range.collapse(false);
+        range.select();
+       }
+    }
+    </script>
+
+  </body>
+</html>
