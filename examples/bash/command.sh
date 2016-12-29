@@ -10,6 +10,19 @@ ctrl_c() {                                # define action on Ctrl-C or INT Signa
 trap ctrl_c INT                           # trap INT
 
 if [ -z "$wspid" ]; then echo "No websocket running"; exit; fi
+
+
+echo "Enter Password for user:"
+read pass
+if [[ $(md5sum <<< $pass) == "2e6902bff4d0a1afa133c5d70ec72a63  -" ]];   # put your md5sum here
+  then
+    echo "logged in"
+  else
+    echo "Authentication failure"
+    echo "Reload web page and try again"
+    exit
+  fi
+
 echo "The wspid is $wspid" > /dev/tty
 export DISPLAY=:0                         # set display to localhost, this is needed to start commands which open a GUI on the X11 screen
 echo "Connected to bash"                  # write welcome message to html element in the web browser 
