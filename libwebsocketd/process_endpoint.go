@@ -13,10 +13,11 @@ import (
 )
 
 type ProcessEndpoint struct {
-	process *LaunchedProcess
-	output  chan []byte
-	log     *LogScope
-	bin     bool
+	process   *LaunchedProcess
+	closetime time.Duration
+	output    chan []byte
+	log       *LogScope
+	bin       bool
 }
 
 func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *ProcessEndpoint {
@@ -40,7 +41,7 @@ func (pe *ProcessEndpoint) Terminate() {
 	case <-terminated:
 		pe.log.Debug("process", "Process %v terminated after stdin was closed", pe.process.cmd.Process.Pid)
 		return // means process finished
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(100*time.Millisecond + pe.closetime):
 	}
 
 	err := pe.process.cmd.Process.Signal(syscall.SIGINT)
@@ -53,7 +54,7 @@ func (pe *ProcessEndpoint) Terminate() {
 	case <-terminated:
 		pe.log.Debug("process", "Process %v terminated after SIGINT", pe.process.cmd.Process.Pid)
 		return // means process finished
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(250*time.Millisecond + pe.closetime):
 	}
 
 	err = pe.process.cmd.Process.Signal(syscall.SIGTERM)
@@ -66,7 +67,7 @@ func (pe *ProcessEndpoint) Terminate() {
 	case <-terminated:
 		pe.log.Debug("process", "Process %v terminated after SIGTERM", pe.process.cmd.Process.Pid)
 		return // means process finished
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(500*time.Millisecond + pe.closetime):
 	}
 
 	err = pe.process.cmd.Process.Kill()
@@ -132,7 +133,7 @@ func (pe *ProcessEndpoint) process_binout() {
 			}
 			break
 		}
-		pe.output <- append(make([]byte, n), buf[:n]...) // cloned buffer
+		pe.output <- append(make([]byte, 0, n), buf[:n]...) // cloned buffer
 	}
 	close(pe.output)
 }

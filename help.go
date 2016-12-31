@@ -51,6 +51,11 @@ Options:
   --sslcert=FILE                 All three options must be used or all of
   --sslkey=FILE                  them should be omitted. 
 
+  --redirport=PORT               Open alternative port and redirect HTTP traffic
+                                 from it to canonical address (mostly useful
+                                 for HTTPS-only configurations to redirect HTTP
+                                 traffic)
+
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
                                  passed to executed scripts.
 
@@ -60,7 +65,7 @@ Options:
                                  Default: false
 
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
-                                 Default: true
+                                 Default: false
 
   --dir=DIR                      Allow all scripts in the local directory
                                  to be accessed as WebSockets. If using this,
@@ -77,6 +82,11 @@ Options:
                                  rejecting requests that require executing 
                                  another process (unlimited when 0 or negative).
                                  Default: 0
+
+  --closems=milliseconds         Specifies additional time process needs to gracefully
+                                 finish before websocketd will send termination signals 
+                                 to it. Default: 0 (signals sent after 100ms, 250ms, 
+                                 and 500ms of waiting)
 
   --header="..."                 Set custom HTTP header to each answer. For
                                  example: --header="Server: someserver/0.0.1"

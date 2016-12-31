@@ -19,7 +19,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.6
+GO_VERSION=1.6.2
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 
@@ -54,6 +54,7 @@ FLAGS_all = GOROOT=$(GOROOT) GOPATH=$(GOPATH)
 FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
+FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64
 FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
 FLAGS_darwin_386    = $(FLAGS_all) GOOS=darwin  GOARCH=386   CGO_ENABLED=0
 FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
@@ -113,7 +114,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSIO
 
 BINARIES = $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/websocketd$(EXTENSION_$(PLATFORM)))
 ZIPS = $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-$(PLATFORM).zip)
-DEBS = out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb
+DEBS = out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb
 RPMS = out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm
 
 binaries: $(BINARIES)
@@ -139,12 +140,12 @@ rpm: $(RPMS)
 .PHONY: rpm
 
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_386.deb: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_386/websocketd
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb32/{usr/bin,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb32/usr/share/man/man1/websocket.1.gz
-	fpm -f -s dir -t deb -a 386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
+	fpm -f -s dir -t deb -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb32/
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_amd64/websocketd

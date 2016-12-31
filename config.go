@@ -22,6 +22,7 @@ type Config struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
+	RedirPort         int
 	CertFile, KeyFile string
 	*libwebsocketd.Config
 }
@@ -71,10 +72,12 @@ func parseCommandLine() *Config {
 	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
+	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
+	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
 
 	// lib config options
 	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
-	reverseLookupFlag := flag.Bool("reverselookup", true, "Perform reverse DNS lookups on remote clients")
+	reverseLookupFlag := flag.Bool("reverselookup", false, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
 	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
@@ -119,6 +122,7 @@ func parseCommandLine() *Config {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
 	mainConfig.MaxForks = *maxForksFlag
+	mainConfig.RedirPort = *redirPortFlag
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
 	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
 		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
@@ -130,6 +134,7 @@ func parseCommandLine() *Config {
 	config.HeadersWs = []string(headersWs)
 	config.HeadersHTTP = []string(headersHttp)
 
+	config.CloseMs = *closeMsFlag
 	config.Binary = *binaryFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag

@@ -80,6 +80,9 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 
 	binary := wsh.server.Config.Binary
 	process := NewProcessEndpoint(launched, binary, log)
+	if cms := wsh.server.Config.CloseMs; cms != 0 {
+		process.closetime += time.Duration(cms) * time.Millisecond
+	}
 	wsEndpoint := NewWebSocketEndpoint(ws, binary, log)
 
 	PipeEndpoints(process, wsEndpoint)

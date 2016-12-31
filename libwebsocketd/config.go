@@ -15,6 +15,7 @@ type Config struct {
 	CommandName    string    // Command to execute.
 	CommandArgs    []string  // Additional args to pass to command.
 	ServerSoftware string    // Value to pass to SERVER_SOFTWARE environment variable (e.g. websocketd/1.2.3).
+	CloseMs        uint      // Milliseconds to start sending signals
 
 	// settings
 	Binary         bool     // Use binary communication (send data in chunks they are read from process)
