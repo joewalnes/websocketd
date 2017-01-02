@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocketd test</title>
+    <style>
+      #count {
+        font: bold 20px arial;
+        margin: auto;
+        padding: 10px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+
+    <p>
+This is a test for the perl script.  It's designed for one way communication from server to client only.  It's up to you to add bi-directional messaging.  To send a message to this client, on the server side, place a text file into /tmp/messages and set the file name to the phone number.
+    </p>
+
+    <p>
+This is a snippet of code I use with Perl on the server side and Cordova on the client side.  In Cordova, the phone number is provided to the URL when it's invoked.
+    </p>
+
+    <textarea id="test" rows="50" cols="80">
+
+    </textarea>
+
+    <script>
+      /**
+       * Get the value of a querystring
+       * @param  {String} field The field to get the value of
+       * @param  {String} url   The URL to get the value from (optional)
+       * @return {String}       The field value
+       */
+       var getQueryString = function ( field, url ) {
+         var href = url ? url : window.location.href;
+         var reg = new RegExp( '[?&]' + field + '=([^&#]*)', 'i' );
+         var string = reg.exec(href);
+         return string ? string[1] : null;
+       };
+
+
+       // Grab the phone number from the url
+       var phone = getQueryString('phone'); 
+
+       var ws = new WebSocket('ws://myserver.com:32080/ws_test.html?phone=' + phone );
+       ws.onopen = function() {
+         alert("Connection open");
+       };
+
+       ws.onclose = function() {
+         alert("Connection closed");
+       };
+
+       // append message to textarea 
+       ws.onmessage = function(event) {
+         var div = document.getElementById('test');
+         div.innerHTML = div.innerHTML + event.data + "\r";
+       };
+    </script>
+
+  </body>
+</html>
+
