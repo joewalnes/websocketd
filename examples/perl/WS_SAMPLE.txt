@@ -1,0 +1,24 @@
+
+This example is based on an application that I've built using Perl, Apache and Cordova on Android.  In my application, the communication is one way or push notification.  Once the application fires up, a connectionis made to the server and the devices phone number is provided.  On the server side, messages are placed into a directory, /tmp/messages, where the file name is the phone number.  So, whenever ws_perl.pl sees a file with it's phone number, it's transmitted to the client.  The actual application is more elaborate than what I have here.  However, you should get a good working example using the files listed below and following the instructions below.
+
+
+There are 3 files for this example:
+  - ws_startup.sh
+  - ws_perl.pl
+  - ws_test.html
+
+Step-by-step installation instructions:
+  1.  Make sure that the location of websocketd is added to your path
+  2.  Place the 3 files into /usr/local/websocketd.  
+  3.  Open the port 32080 on your server.
+  4.  Set your web server to server /usr/local/websocketd on port 32080
+  5.  Run ws_startup.sh
+  6.  Edit ws_test.html to point to your server
+  7.  Enter the path to ws_test.html?phone=1231 on your browser.  This will initiate the websocket session.
+  8.  Create the file /tmp/messages/1231.txt with some messages you want to transmit to the client
+  
+Once you navigate to ws_test.html, a perl script, ws_perl.pl, will start up and a websocket connection will be established between the server and browser.  This connection will remain open as long as the perl script is running.  And, of course, there will be an instance of ws_perl.pl running for each websocket connection.
+
+
+author: Hagop "Jack" Bilemjian <jck000@gmail.com>
+
