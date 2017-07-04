@@ -8,7 +8,6 @@ package libwebsocketd
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
 	"net/http/cgi"
@@ -19,6 +18,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/websocket"
 )
 
 var ForkNotAllowedError = errors.New("too many forks active")
@@ -79,7 +80,6 @@ func pushHeaders(h http.Header, hdrs []string) {
 
 // ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
 func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
 	log := h.Log.NewLevel(h.Log.LogFunc)
 	log.Associate("url", h.TellURL("http", req.Host, req.RequestURI))
 

@@ -1,6 +1,7 @@
 package libwebsocketd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -60,8 +61,32 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 // wshandler returns function that executes code with given log context
 func (wsh *WebsocketdHandler) wshandler(log *LogScope) websocket.Handler {
 	return websocket.Handler(func(ws *websocket.Conn) {
+		config := wsh.URLInfo.Config
+		if config.Muxed {
+			wsh.maccept(ws, log)
+			return
+		}
 		wsh.accept(ws, log)
 	})
+}
+
+func (wsh *WebsocketdHandler) maccept(ws *websocket.Conn, log *LogScope) {
+	defer ws.Close()
+
+	log.Access("mux session", "CONNECT")
+	defer log.Access("mux session", "DISCONNECT")
+
+	config := wsh.URLInfo.Config
+	muxed := MuxedLaunchCmd(wsh, log)
+
+	bin := wsh.server.Config.Binary
+	wsEndpoint := NewWebSocketEndpoint(ws, bin, log)
+
+	if len(config.OnConnectPush) > 0 {
+		wsEndpoint.Send(config.OnConnectPush)
+	}
+
+	MuxedAttach(muxed, ws.Request().RemoteAddr, wsEndpoint)
 }
 
 func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
@@ -69,21 +94,29 @@ func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {
 
 	log.Access("session", "CONNECT")
 	defer log.Access("session", "DISCONNECT")
+	config := wsh.URLInfo.Config
 
 	launched, err := launchCmd(wsh.command, wsh.server.Config.CommandArgs, wsh.Env)
 	if err != nil {
-		log.Error("process", "Could not launch process %s %s (%s)", wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "), err)
+		log.Error("process", "Could not launch process %s %s (%s)",
+			wsh.command, strings.Join(wsh.server.Config.CommandArgs, " "),
+			err,
+		)
 		return
 	}
 
 	log.Associate("pid", strconv.Itoa(launched.cmd.Process.Pid))
 
-	binary := wsh.server.Config.Binary
-	process := NewProcessEndpoint(launched, binary, log)
+	bin := wsh.server.Config.Binary
+	process := NewProcessEndpoint(launched, bin, log)
 	if cms := wsh.server.Config.CloseMs; cms != 0 {
 		process.closetime += time.Duration(cms) * time.Millisecond
 	}
-	wsEndpoint := NewWebSocketEndpoint(ws, binary, log)
+	wsEndpoint := NewWebSocketEndpoint(ws, bin, log)
+
+	if len(config.OnConnectPush) > 0 {
+		wsEndpoint.Send(config.OnConnectPush)
+	}
 
 	PipeEndpoints(process, wsEndpoint)
 }
@@ -120,12 +153,19 @@ type URLInfo struct {
 	ScriptPath string
 	PathInfo   string
 	FilePath   string
+	Config     *URLConfig
+}
+
+type URLConfig struct {
+	OnConnectPush []byte
+	Muxed         bool
+	BufferSize    int
 }
 
 // GetURLInfo is a function that parses path and provides URL info according to libwebsocketd.Config fields
 func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 	if !config.UsingScriptDir {
-		return &URLInfo{"/", path, ""}, nil
+		return &URLInfo{"/", path, "", &URLConfig{}}, nil
 	}
 
 	parts := strings.Split(path[1:], "/")
@@ -152,6 +192,8 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 			continue
 		}
 
+		urlInfo.Config = ReadURLConfig(urlInfo.FilePath)
+
 		// no extra args
 		if isLastPart {
 			return urlInfo, nil
@@ -162,6 +204,17 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 		return urlInfo, nil
 	}
 	panic(fmt.Sprintf("GetURLInfo cannot parse path %#v", path))
+}
+
+func ReadURLConfig(filepath string) *URLConfig {
+	c := &URLConfig{}
+	f, err := os.OpenFile(filepath+".config", os.O_RDONLY, 0)
+	if err != nil {
+		return c
+	}
+	json.NewDecoder(f).Decode(c)
+	f.Close()
+	return c
 }
 
 func generateId() string {
