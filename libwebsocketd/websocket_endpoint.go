@@ -11,6 +11,10 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// CONVERT GORILLA
+// This file should be altered to use gorilla's websocket connection type and proper
+// message dispatching methods
+
 type WebSocketEndpoint struct {
 	ws     *websocket.Conn
 	output chan []byte

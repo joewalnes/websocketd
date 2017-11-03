@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"strings"
 	"testing"
+
+	"golang.org/x/net/websocket"
 )
 
 var tellHostPortTests = []struct {
@@ -75,6 +76,10 @@ var CheckOriginTests = []struct {
 	{"server.example.com", ReqHTTP, "null", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even null"},
 	{"server.example.com", ReqHTTP, "", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even empty"},
 }
+
+// CONVERT GORILLA
+// as method for origin checking changes to handle things without websocket.Config the test
+// should be altered too
 
 func TestCheckOrigin(t *testing.T) {
 	for _, testcase := range CheckOriginTests {

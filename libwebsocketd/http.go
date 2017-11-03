@@ -8,7 +8,6 @@ package libwebsocketd
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
 	"net/http/cgi"
@@ -19,6 +18,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/websocket"
 )
 
 var ForkNotAllowedError = errors.New("too many forks active")
@@ -44,6 +45,10 @@ func NewWebsocketdServer(config *Config, log *LogScope, maxforks int) *Websocket
 
 // wshandshake returns closure to verify websocket origin header according to configured rules
 func (h *WebsocketdServer) wshandshake(log *LogScope) func(*websocket.Config, *http.Request) error {
+	// CONVERT GORILLA
+	// this is going away mostly, except that feature of passing pre-configured headers to client
+	// should be implemented before gorilla's upgrader takes the control
+
 	return func(wsconf *websocket.Config, req *http.Request) error {
 		if len(h.Config.Headers)+len(h.Config.HeadersWs) > 0 {
 			if wsconf.Header == nil {
@@ -79,6 +84,10 @@ func pushHeaders(h http.Header, hdrs []string) {
 
 // ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
 func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// CONVERT GORILLA
+	// this is main HTTP response handler it's core that initiates websocket connection upgrade
+	// and input/output handling needs to be replaced with gorilla-websocket read loop...
+	// connection should be passed to libwebsocketd handler (see handler.go file, wshandler method)
 
 	log := h.Log.NewLevel(h.Log.LogFunc)
 	log.Associate("url", h.TellURL("http", req.Host, req.RequestURI))
@@ -226,6 +235,12 @@ func (h *WebsocketdServer) noteForkCompled() {
 }
 
 func checkOrigin(wsconf *websocket.Config, req *http.Request, config *Config, log *LogScope) (err error) {
+	// CONVERT GORILLA:
+	// this is origin checking function, it's called from wshandshake which is from ServeHTTP main handler
+	// should be trivial to reuse in gorilla's upgrader.CheckOrigin function.
+	// Only difference is to parse request and fetching passed Origin header out of it instead of using
+	// pre-parsed wsconf.Origin
+
 	// check for origin to be correct in future
 	// handshaker triggers answering with 403 if error was returned
 	// We keep behavior of original handshaker that populates this field
