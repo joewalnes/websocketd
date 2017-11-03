@@ -19,8 +19,8 @@ var eol_answers = []string{
 
 func TestTrimEOL(t *testing.T) {
 	for n := 0; n < len(eol_tests); n++ {
-		answ := trimEOL(eol_tests[n])
-		if answ != eol_answers[n] {
+		answ := trimEOL([]byte(eol_tests[n]))
+		if string(answ) != eol_answers[n] {
 			t.Errorf("Answer '%s' did not match predicted '%s'", answ, eol_answers[n])
 		}
 	}
@@ -28,21 +28,21 @@ func TestTrimEOL(t *testing.T) {
 
 func BenchmarkTrimEOL(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		trimEOL(eol_tests[n%len(eol_tests)])
+		trimEOL([]byte(eol_tests[n%len(eol_tests)]))
 	}
 }
 
 type TestEndpoint struct {
 	limit  int
 	prefix string
-	c      chan string
+	c      chan []byte
 	result []string
 }
 
 func (e *TestEndpoint) StartReading() {
 	go func() {
 		for i := 0; i < e.limit; i++ {
-			e.c <- e.prefix + strconv.Itoa(i)
+			e.c <- []byte(e.prefix + strconv.Itoa(i))
 		}
 		time.Sleep(time.Millisecond) // should be enough for smaller channel to catch up with long one
 		close(e.c)
@@ -52,18 +52,18 @@ func (e *TestEndpoint) StartReading() {
 func (e *TestEndpoint) Terminate() {
 }
 
-func (e *TestEndpoint) Output() chan string {
+func (e *TestEndpoint) Output() chan []byte {
 	return e.c
 }
 
-func (e *TestEndpoint) Send(msg string) bool {
-	e.result = append(e.result, msg)
+func (e *TestEndpoint) Send(msg []byte) bool {
+	e.result = append(e.result, string(msg))
 	return true
 }
 
 func TestEndpointPipe(t *testing.T) {
-	one := &TestEndpoint{2, "one:", make(chan string), make([]string, 0)}
-	two := &TestEndpoint{4, "two:", make(chan string), make([]string, 0)}
+	one := &TestEndpoint{2, "one:", make(chan []byte), make([]string, 0)}
+	two := &TestEndpoint{4, "two:", make(chan []byte), make([]string, 0)}
 	PipeEndpoints(one, two)
 	if len(one.result) != 4 || len(two.result) != 2 {
 		t.Errorf("Invalid lengths, should be 4 and 2: %v %v", one.result, two.result)

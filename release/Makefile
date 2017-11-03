@@ -5,7 +5,7 @@
 
 # Uses Semantic Versioning scheme - http://semver.org/
 VERSION_MAJOR=0
-VERSION_MINOR=2
+VERSION_MINOR=3
 
 # Last part of version number (patch) is incremented automatically from Git tags
 LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
@@ -19,7 +19,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.6.2
+GO_VERSION=1.9.2
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 

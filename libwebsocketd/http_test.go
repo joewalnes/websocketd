@@ -120,8 +120,8 @@ Sec-WebSocket-Version: 13
 }
 
 var mimetest = [][3]string{
-	{"Content-type: text/plain", "Content-type", "text/plain"},
-	{"Content-type:    ", "Content-type", ""},
+	{"Content-Type: text/plain", "Content-Type", "text/plain"},
+	{"Content-Type:    ", "Content-Type", ""},
 }
 
 func TestSplitMimeHeader(t *testing.T) {
