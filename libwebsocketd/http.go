@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var ForkNotAllowedError = errors.New("too many forks active")
