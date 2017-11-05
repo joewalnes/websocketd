@@ -144,6 +144,7 @@ func parseCommandLine() *Config {
 	config.DevConsole = *devConsoleFlag
 	config.StartupTime = time.Now()
 	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
+	config.HandshakeTimeout = time.Millisecond * 1500 // only default for now
 
 	if len(os.Args) == 1 {
 		fmt.Printf("Command line arguments are missing.\n")
