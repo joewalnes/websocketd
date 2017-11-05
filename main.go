@@ -16,7 +16,7 @@ import (
 	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
-func log(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName string, category string, msg string, args ...interface{}) {
+func logfunc(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName string, category string, msg string, args ...interface{}) {
 	if level < l.MinLevel {
 		return
 	}
@@ -38,7 +38,7 @@ func log(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName stri
 func main() {
 	config := parseCommandLine()
 
-	log := libwebsocketd.RootLogScope(config.LogLevel, log)
+	log := libwebsocketd.RootLogScope(config.LogLevel, logfunc)
 
 	if config.DevConsole {
 		if config.StaticDir != "" {
