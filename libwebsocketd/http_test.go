@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"golang.org/x/net/websocket"
 )
 
 var tellHostPortTests = []struct {
@@ -101,7 +99,6 @@ Sec-WebSocket-Version: 13
 		log := new(LogScope)
 		log.LogFunc = func(*LogScope, LogLevel, string, string, string, ...interface{}) {}
 
-		wsconf := &websocket.Config{Version: websocket.ProtocolVersionHybi13}
 		config := new(Config)
 
 		if testcase.reqtls == ReqHTTPS { // Fake TLS
@@ -115,11 +112,11 @@ Sec-WebSocket-Version: 13
 			config.AllowOrigins = testcase.allowed
 		}
 
-		err = checkOrigin(wsconf, req, config, log)
+		err = checkOrigin(req, config, log)
 		if testcase.getsErr == ReturnsError && err == nil {
 			t.Errorf("Test case %#v did not get an error", testcase.name)
 		} else if testcase.getsErr == ReturnsPass && err != nil {
-			t.Errorf("Test case %#v got error while should've", testcase.name)
+			t.Errorf("Test case %#v got error while expected to pass", testcase.name)
 		}
 	}
 }

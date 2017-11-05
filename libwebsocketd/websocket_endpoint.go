@@ -47,7 +47,7 @@ func (we *WebSocketEndpoint) Output() chan []byte {
 func (we *WebSocketEndpoint) Send(msg []byte) bool {
 	w, err := we.ws.NextWriter(we.mtype)
 	if err == nil {
-		_, err := w.Write(msg)
+		_, err = w.Write(msg)
 	}
 	w.Close() // could need error handling
 
