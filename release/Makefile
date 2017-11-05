@@ -103,7 +103,7 @@ out/$(RELEASE_VERSION)/%/websocketd out/$(RELEASE_VERSION)/%/websocketd.exe: $(G
 	$(call msg,"Compiling release for $*")
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go get golang.org/x/net/websocket
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go get github.com/gorilla/websocket
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 
