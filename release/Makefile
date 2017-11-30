@@ -54,7 +54,7 @@ FLAGS_all = GOROOT=$(GOROOT) GOPATH=$(GOPATH)
 FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
-FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64 GOARM=5 # probably should be same for both ARM lines
+FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
 FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
 FLAGS_darwin_386    = $(FLAGS_all) GOOS=darwin  GOARCH=386   CGO_ENABLED=0
 FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
