@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -50,7 +51,9 @@ func main() {
 		}
 	}
 
-	os.Clearenv() // it's ok to wipe it clean, we already read env variables from passenv into config
+	if runtime.GOOS != "windows" { // windows relies on env variables to find its libs... e.g. socket stuff
+		os.Clearenv() // it's ok to wipe it clean, we already read env variables from passenv into config
+	}
 	handler := libwebsocketd.NewWebsocketdServer(config.Config, log, config.MaxForks)
 	http.Handle("/", handler)
 

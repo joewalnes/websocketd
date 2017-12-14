@@ -1,2 +1,2 @@
 @echo off
-cscript /nologo dump-env.vbs
+cscript /nologo %0\..\dump-env.vbs

@@ -1,2 +1,2 @@
 @echo off
-cscript /nologo greeter.js
+cscript /nologo %0\..\greeter.js
