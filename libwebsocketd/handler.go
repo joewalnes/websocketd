@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var ScriptNotFoundError = errors.New("script not found")
@@ -55,13 +55,6 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 	wsh.Env = createEnv(wsh, req, log)
 
 	return wsh, nil
-}
-
-// wshandler returns function that executes code with given log context
-func (wsh *WebsocketdHandler) wshandler(log *LogScope) websocket.Handler {
-	return websocket.Handler(func(ws *websocket.Conn) {
-		wsh.accept(ws, log)
-	})
 }
 
 func (wsh *WebsocketdHandler) accept(ws *websocket.Conn, log *LogScope) {

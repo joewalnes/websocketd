@@ -99,7 +99,7 @@ from disk using a `file://` URL.
 More Features
 -------------
 
-*   Very simple install. Just [download](https://github.com/joewalnes/websocketd/wiki/Download-and-install) the single executable for Linux, Mac or Windows and run it. No dependencies, no installers, no package managers, no external libraries. Suitable for development and production servers.
+*   Very simple install. Just [download](https://github.com/joewalnes/websocketd/wiki/Download-and-install) the single executable for Linux, Mac or Windows and run it. Minimal dependencies, no installers, no package managers, no external libraries. Suitable for development and production servers.
 *   Server side scripts can access details about the WebSocket HTTP request (e.g. remote host, query parameters, cookies, path, etc) via standard [CGI environment variables](https://github.com/joewalnes/websocketd/wiki/Environment-variables).
 *   As well as serving websocket daemons it also includes a static file server and classic CGI server for convenience.
 *   Command line help available via `websocketd --help`.
