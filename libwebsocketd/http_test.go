@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"strings"
 	"testing"
@@ -76,6 +75,10 @@ var CheckOriginTests = []struct {
 	{"server.example.com", ReqHTTP, "", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even empty"},
 }
 
+// CONVERT GORILLA
+// as method for origin checking changes to handle things without websocket.Config the test
+// should be altered too
+
 func TestCheckOrigin(t *testing.T) {
 	for _, testcase := range CheckOriginTests {
 		br := bufio.NewReader(strings.NewReader(fmt.Sprintf(`GET /chat HTTP/1.1
@@ -96,7 +99,6 @@ Sec-WebSocket-Version: 13
 		log := new(LogScope)
 		log.LogFunc = func(*LogScope, LogLevel, string, string, string, ...interface{}) {}
 
-		wsconf := &websocket.Config{Version: websocket.ProtocolVersionHybi13}
 		config := new(Config)
 
 		if testcase.reqtls == ReqHTTPS { // Fake TLS
@@ -110,18 +112,18 @@ Sec-WebSocket-Version: 13
 			config.AllowOrigins = testcase.allowed
 		}
 
-		err = checkOrigin(wsconf, req, config, log)
+		err = checkOrigin(req, config, log)
 		if testcase.getsErr == ReturnsError && err == nil {
 			t.Errorf("Test case %#v did not get an error", testcase.name)
 		} else if testcase.getsErr == ReturnsPass && err != nil {
-			t.Errorf("Test case %#v got error while should've", testcase.name)
+			t.Errorf("Test case %#v got error while expected to pass", testcase.name)
 		}
 	}
 }
 
 var mimetest = [][3]string{
-	{"Content-type: text/plain", "Content-type", "text/plain"},
-	{"Content-type:    ", "Content-type", ""},
+	{"Content-Type: text/plain", "Content-Type", "text/plain"},
+	{"Content-Type:    ", "Content-Type", ""},
 }
 
 func TestSplitMimeHeader(t *testing.T) {

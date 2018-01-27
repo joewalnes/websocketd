@@ -5,7 +5,7 @@
 
 # Uses Semantic Versioning scheme - http://semver.org/
 VERSION_MAJOR=0
-VERSION_MINOR=2
+VERSION_MINOR=3
 
 # Last part of version number (patch) is incremented automatically from Git tags
 LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
@@ -19,7 +19,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.6.2
+GO_VERSION=1.9.2
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 
@@ -54,7 +54,7 @@ FLAGS_all = GOROOT=$(GOROOT) GOPATH=$(GOPATH)
 FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
 FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
-FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64
+FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
 FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
 FLAGS_darwin_386    = $(FLAGS_all) GOOS=darwin  GOARCH=386   CGO_ENABLED=0
 FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
@@ -103,7 +103,7 @@ out/$(RELEASE_VERSION)/%/websocketd out/$(RELEASE_VERSION)/%/websocketd.exe: $(G
 	$(call msg,"Compiling release for $*")
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go get golang.org/x/net/websocket
+	$(FLAGS_$*) $(GO_DIR)/go/bin/go get github.com/gorilla/websocket
 	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
 	touch $@
 

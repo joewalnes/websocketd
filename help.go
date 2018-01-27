@@ -33,23 +33,23 @@ Options:
   --port=PORT                    HTTP port to listen on.
 
   --address=ADDRESS              Address to bind to (multiple options allowed)
-                                 Use square brackets to specify IPv6 address. 
+                                 Use square brackets to specify IPv6 address.
                                  Default: "" (all)
 
   --sameorigin={true,false}      Restrict (HTTP 403) protocol upgrades if the
-                                 Origin header does not match to requested HTTP 
+                                 Origin header does not match to requested HTTP
                                  Host. Default: false.
 
   --origin=host[:port][,host[:port]...]
                                  Restrict (HTTP 403) protocol upgrades if the
                                  Origin header does not match to one of the host
                                  and port combinations listed. If the port is not
-                                 specified, any port number will match. 
+                                 specified, any port number will match.
                                  Default: "" (allow any origin)
 
-  --ssl                          Listen for HTTPS socket instead of HTTP.                     
+  --ssl                          Listen for HTTPS socket instead of HTTP.
   --sslcert=FILE                 All three options must be used or all of
-  --sslkey=FILE                  them should be omitted. 
+  --sslkey=FILE                  them should be omitted.
 
   --redirport=PORT               Open alternative port and redirect HTTP traffic
                                  from it to canonical address (mostly useful
@@ -57,7 +57,8 @@ Options:
                                  traffic)
 
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
-                                 passed to executed scripts.
+                                 passed to executed scripts. Does not work for
+																 Windows since all the variables are kept there.
 
   --binary={true,false}          Switches communication to binary, process reads
                                  send to browser as blobs and all reads from the
@@ -76,16 +77,16 @@ Options:
 
   --cgidir=DIR                   Serve CGI scripts in this directory over HTTP.
 
-  --maxforks=N                   Limit number of processes that websocketd is 
+  --maxforks=N                   Limit number of processes that websocketd is
                                  able to execute with WS and CGI handlers.
-                                 When maxforks reached the server will be 
-                                 rejecting requests that require executing 
+                                 When maxforks reached the server will be
+                                 rejecting requests that require executing
                                  another process (unlimited when 0 or negative).
                                  Default: 0
 
   --closems=milliseconds         Specifies additional time process needs to gracefully
-                                 finish before websocketd will send termination signals 
-                                 to it. Default: 0 (signals sent after 100ms, 250ms, 
+                                 finish before websocketd will send termination signals
+                                 to it. Default: 0 (signals sent after 100ms, 250ms,
                                  and 500ms of waiting)
 
   --header="..."                 Set custom HTTP header to each answer. For
