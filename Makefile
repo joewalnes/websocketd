@@ -11,7 +11,7 @@
 
 # Go installation config.
 #GO_VERSION=1.2.1.linux-amd64
-GO_VER=1.4
+GO_VER=1.10.3
 SYSTEM_NAME:=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 SYSTEM_ARCH:=$(shell uname -m)
 GO_ARCH:=$(if $(filter x86_64, $(SYSTEM_ARCH)),amd64,386)
