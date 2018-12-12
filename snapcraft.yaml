@@ -1,0 +1,24 @@
+name: websocketd
+version: '1.0'
+summary: Turn any program that uses STDIN/STDOUT into a WebSocket server 
+description: |
+  Turn any program that uses STDIN/STDOUT into a WebSocket server. Like inetd, but for WebSockets. 
+grade: stable
+confinement: strict
+base: core18
+parts:
+  websocketd:
+    plugin: go
+    source: https://github.com/joewalnes/websocketd.git
+    go-importpath: github.com/joewalnes/websocketd
+    build-packages:
+      - build-essential
+apps:
+  websocketd:
+    command: bin/websocketd
+    daemon: simple
+    restart-condition: on-abnormal
+    plugs:
+      - home
+      - network
+      - network-bind
