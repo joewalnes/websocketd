@@ -121,6 +121,11 @@ Example Projects
 
 Got more examples? Open a pull request.
 
+See also
+--------
+
+* [stdinho](https://github.com/ostrolucky/stdinho) - If you need to stream output of a command over HTTP instead
+
 My Other Projects
 -----------------
 
