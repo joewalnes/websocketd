@@ -4,7 +4,7 @@
 use namespace HH\Lib\Str;
 
 <<__EntryPoint>>
-async function main(): Awaitable<noreturn> {
+async function dumpEnv(): Awaitable<void> {
   // Standard CGI(ish) environment variables, as defined in
   // http://tools.ietf.org/html/rfc3875
   $names = keyset[
