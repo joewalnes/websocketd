@@ -2,6 +2,7 @@
 <?hh // strict
 
 use namespace HH\Lib\Str;
+use function HH\Lib\Experimental\IO\request_output;
 
 <<__EntryPoint>>
 async function dumpEnv(): Awaitable<void> {
@@ -31,17 +32,23 @@ async function dumpEnv(): Awaitable<void> {
     'HTTPS'
   ];
 
-	/* HH_IGNORE_ERROR[2050] using global variable */
+  /* HH_IGNORE_ERROR[2050] using global variable */
   $server = dict($_SERVER);
+  
+  $ouput = request_output();
 
   foreach($names as $name) {
-    print Str\format("%s = %s\n", $name, idx($server, $name, '<unset>'));
+    await $output->writeAsync(
+      Str\format("%s = %s\n", $name, idx($server, $name, '<unset>'))
+    );
   }
   
   // Additional HTTP headers
   foreach($server as $k => $v) {
      if ($k is string && Str\starts_with($k, 'HTTP_')) {
-        print Str\format("%s = %s\n", $k, $v as string);
+        await $output->writeAsync(
+          Str\format("%s = %s\n", $k, $v as string)
+        );
      }
   }
 }
