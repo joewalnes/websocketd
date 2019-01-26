@@ -11,7 +11,7 @@ async function greeter(): Awaitable<void> {
     $output = IO\request_output();
     while(!$input->isEndOfFile()) {
         await $ouput->writeAsync(
-          Str\format('Hello %s!', await $input->readLineAsync())
+          Str\format("Hello %s!\n", await $input->readLineAsync())
         );
     }
 }
