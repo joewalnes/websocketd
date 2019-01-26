@@ -51,4 +51,7 @@ async function dumpEnv(): Awaitable<void> {
         );
      }
   }
+  
+  // flush output
+  await $output->flushAsync();
 }
