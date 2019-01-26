@@ -17,4 +17,7 @@ async function count(): Awaitable<void> {
     // usleep is builtin, it is not an async builtin - so it also must block the main request thread
     usleep(500000);
   }
+  
+  // flush output
+  await $output->flushAsync();
 }
