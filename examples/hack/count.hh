@@ -1,6 +1,7 @@
 #!/usr/bin/hhvm
 <?hh // strict
 
+use namespace HH\Lib\Str;
 use function HH\Lib\Experimental\IO\request_output;
 use function usleep;
 
