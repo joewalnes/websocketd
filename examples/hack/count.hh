@@ -8,7 +8,7 @@ use function usleep;
 // Simple example script that counts to 10 at ~2Hz, then stops.
 
 <<__EntryPoint>>
-async function count(): Awaitable<noreturn> {
+async function count_to_ten(): Awaitable<noreturn> {
   $output = request_output();
   for ($count = 1; $count <= 10; $count++) {
     await $output->writeAsync(
