@@ -46,7 +46,7 @@ func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []s
 		env = append(env, v)
 	}
 
-	// IMPORTANT ---> Adding a header? Make sure standardHeaderCount (above) is up to date.
+	// IMPORTANT ---> Adding a header? Make sure standardEnvCount (above) is up to date.
 
 	// Standard CGI specification headers.
 	// As defined in http://tools.ietf.org/html/rfc3875
