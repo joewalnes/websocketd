@@ -1,4 +1,4 @@
-# Copyright 2013 Joe Walnes and the websocketd team.
+# Copyright 2013-2019 Joe Walnes and the websocketd team.
 # All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -16,10 +16,12 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 		| sort -n \
 		| tail -n 1)
 
-VERSION_PATCH:=$(if $(LAST_PATCH_VERSION),$(shell expr $(LAST_PATCH_VERSION)),0)
+
+
+VERSION_PATCH:=$(shell expr $$(( $(or $(LAST_PATCH_VERSION),-1) + 1 )))
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.9.2
+GO_VERSION=1.11.5
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 
@@ -41,73 +43,47 @@ endif
 
 
 
-GO_SRC_URL=https://storage.googleapis.com/golang/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
-GO_DOWNLOAD=go-local/$(GO_VERSION).tgz
-GO_DIR=go-local/$(GO_VERSION)
-GO_UNPACKED=$(GO_DIR)/.unpacked
+GO_SRC_URL=https://dl.google.com/go/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
+GO_DIR=../go-$(GO_VERSION)
 
 # Prevent any global environment polluting the builds
-GOROOT=$(shell readlink -f $(GO_DIR))/go
-GOPATH=$(shell readlink -f go-path)
-
-FLAGS_all = GOROOT=$(GOROOT) GOPATH=$(GOPATH)
-FLAGS_linux_amd64   = $(FLAGS_all) GOOS=linux   GOARCH=amd64
-FLAGS_linux_386     = $(FLAGS_all) GOOS=linux   GOARCH=386
-FLAGS_linux_arm     = $(FLAGS_all) GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
-FLAGS_linux_arm64   = $(FLAGS_all) GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
-FLAGS_darwin_amd64  = $(FLAGS_all) GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
-FLAGS_darwin_386    = $(FLAGS_all) GOOS=darwin  GOARCH=386   CGO_ENABLED=0
-FLAGS_freebsd_amd64  = $(FLAGS_all) GOOS=freebsd  GOARCH=amd64 CGO_ENABLED=0
-FLAGS_freebsd_386    = $(FLAGS_all) GOOS=freebsd  GOARCH=386   CGO_ENABLED=0
-FLAGS_windows_386   = $(FLAGS_all) GOOS=windows GOARCH=386   CGO_ENABLED=0
-FLAGS_windows_amd64 = $(FLAGS_all) GOOS=windows GOARCH=amd64 CGO_ENABLED=0
-FLAGS_openbsd_386   = $(FLAGS_all) GOOS=openbsd GOARCH=386   CGO_ENABLED=0
-FLAGS_openbsd_amd64 = $(FLAGS_all) GOOS=openbsd GOARCH=amd64 CGO_ENABLED=0
-FLAGS_solaris_amd64 = $(FLAGS_all) GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
-
-EXTENSION_windows_386=.exe
-EXTENSION_windows_amd64=.exe
+FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
+FLAGS_linux_386     = GOOS=linux   GOARCH=386
+FLAGS_linux_arm     = GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
+FLAGS_linux_arm64   = GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
+FLAGS_darwin_amd64  = GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
+FLAGS_darwin_386    = GOOS=darwin  GOARCH=386   CGO_ENABLED=0
+FLAGS_freebsd_amd64 = GOOS=freebsd GOARCH=amd64 CGO_ENABLED=0
+FLAGS_freebsd_386   = GOOS=freebsd GOARCH=386   CGO_ENABLED=0
+FLAGS_windows_386   = GOOS=windows GOARCH=386   CGO_ENABLED=0
+FLAGS_windows_amd64 = GOOS=windows GOARCH=amd64 CGO_ENABLED=0
+FLAGS_openbsd_386   = GOOS=openbsd GOARCH=386   CGO_ENABLED=0
+FLAGS_openbsd_amd64 = GOOS=openbsd GOARCH=amd64 CGO_ENABLED=0
+FLAGS_solaris_amd64 = GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
 
 all: build
-.PHONY: all
 
-go-path/src/github.com/joewalnes/websocketd: ../*.go ../libwebsocketd/*.go
-	rm -f $@
-	mkdir -p go-path/src/github.com/joewalnes
-	cd go-path/src/github.com/joewalnes && ln -s ../../../../../ websocketd
+localgo: $(GO_DIR)/bin/go
 
-
-# Download Go source code
-$(GO_DOWNLOAD):
-	$(call msg,"Dowloading Go $(GO_VERSION)")
-	mkdir -p $(dir $@)
-	curl --silent --fail --output $@ $(GO_SRC_URL)
-
-go-download: $(GO_DOWNLOAD)
-.PHONY: go-download
-
-# Unpack Go source code
-$(GO_UNPACKED): $(GO_DOWNLOAD)
-	$(call msg,"Unpacking Go $(GO_VERSION)")
-	rm -f $(GO_UNPACKED)
+$(GO_DIR)/bin/go:
 	mkdir -p $(GO_DIR)
-	tar xzf $(GO_DOWNLOAD) -C $(GO_DIR)
-	touch $(GO_UNPACKED)
-
-go-unpack: $(GO_UNPACKED)
-.PHONY: go-unpack
+	rm -f $@
+	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
+	curl $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_DIR)
 
 
 # Cross-compile final applications
-out/$(RELEASE_VERSION)/%/websocketd out/$(RELEASE_VERSION)/%/websocketd.exe: $(GO_UNPACKED) $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
-	$(call msg,"Compiling release for $*")
+out/$(RELEASE_VERSION)/%/websocketd: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go get github.com/gorilla/websocket
-	$(FLAGS_$*) $(GO_DIR)/go/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd$(EXTENSION_$*) $(wildcard ../*.go)
-	touch $@
+	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd ..
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd $(wildcard ../*.go) go-path/src/github.com/joewalnes/websocketd
+out/$(RELEASE_VERSION)/%/websocketd.exe: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
+	rm -f $@
+	mkdir -p $(dir $@)
+	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd.exe ..
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd
 	rm -f $@
 	zip -j $@ out/$(RELEASE_VERSION)/$*/* ../{README.md,LICENSE,CHANGES}
 
@@ -118,10 +94,8 @@ DEBS = out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb out/$(RELEA
 RPMS = out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm
 
 binaries: $(BINARIES)
-.PHONY: websocketd
 
 build: out/$(RELEASE_VERSION)/CHECKSUMS
-.PHONY: build
 
 out/$(RELEASE_VERSION)/CHECKSUMS: $(BINARIES) $(ZIPS)  $(DEBS) $(RPMS)
 	sha256sum $^ | sed -e 's/out\/$(RELEASE_VERSION)\///' >$@
@@ -134,10 +108,8 @@ DEBFPM=""
 RPMFPM=--rpm-os linux
 
 deb: $(DEBS)
-.PHONY: deb
 
 rpm: $(RPMS)
-.PHONY: rpm
 
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_386/websocketd
@@ -175,17 +147,10 @@ out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: $(GO_UNPACKED) ou
 
 # Clean up
 clobber: clean
-.PHONY: clobber
+	rm -rf $(GO_DIR)
 
-clean: clean-go clean-out
-.PHONY: clean
 
-clean-go:
-	rm -rf go-local
-	rm -rf go-path
-.PHONY: clean-go
-
-clean-out:
+clean:
 	rm -rf out
-.PHONY: clean-out
 
+.PHONY: all build deb rpm localgo clobber clean

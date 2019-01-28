@@ -15,19 +15,21 @@ SYSTEM_NAME:=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 SYSTEM_ARCH:=$(shell uname -m)
 GO_ARCH:=$(if $(filter x86_64, $(SYSTEM_ARCH)),amd64,386)
 GO_VERSION:=$(GO_VER).$(SYSTEM_NAME)-$(GO_ARCH)
-GO_DOWNLOAD_URL:=http://golang.org/dl/go$(GO_VERSION).tar.gz
-GO_WORKDIR:=go-v$(GO_VERSION)
+GO_DOWNLOAD_URL:=https://dl.google.com/go/go$(GO_VERSION).tar.gz
+GO_DIR:=go-$(GO_VER)
 
 # Build websocketd binary
-websocketd: $(GO_WORKDIR)/bin/go $(wildcard *.go) $(wildcard libwebsocketd/*.go)
-	$(GO_WORKDIR)/bin/go build
+websocketd: $(GO_DIR)/bin/go $(wildcard *.go) $(wildcard libwebsocketd/*.go)
+	$(GO_DIR)/bin/go build
+
+localgo: $(GO_DIR)/bin/go
 
 # Download and unpack Go distribution.
-$(GO_WORKDIR)/bin/go:
-	mkdir -p $(GO_WORKDIR)
+$(GO_DIR)/bin/go:
+	mkdir -p $(GO_DIR)
 	rm -f $@
-	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_WORKDIR)
-	wget -q -O - $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_WORKDIR)
+	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
+	curl -s $(GO_DOWNLOAD_URL) | tar xf - --strip-components=1 -C $(GO_DIR)
 
 # Clean up binary
 clean:

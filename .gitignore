@@ -1,5 +1,2 @@
 websocketd
-*.swp
-*.swo
-go
-go-v*
+go-*

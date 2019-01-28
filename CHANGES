@@ -1,3 +1,9 @@
+Version 0.3.1  (Jan 28, 2019)
+
+* Minor improvements to websocketd itself
+* Use of go modules, gorilla websockets set to 1.4.0
+* Binaries build code switched to 1.11.5 (improving underlying protocol handlers)
+
 Version 0.3.0  (??, 2017)
 
 * Migration of underlying websocket server to Gorilla Websocket lib.
