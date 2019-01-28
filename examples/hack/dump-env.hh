@@ -5,7 +5,7 @@ use namespace HH\Lib\Str;
 use function HH\Lib\Experimental\IO\request_output;
 
 <<__EntryPoint>>
-async function dumpEnv(): Awaitable<void> {
+async function dumpEnv(): Awaitable<noreturn> {
   // Standard CGI(ish) environment variables, as defined in
   // http://tools.ietf.org/html/rfc3875
   $names = keyset[
@@ -39,10 +39,10 @@ async function dumpEnv(): Awaitable<void> {
 
   foreach($names as $name) {
     await $output->writeAsync(
-      Str\format("%s = %s\n", $name, idx($server, $name, '<unset>'))
+      Str\format("%s = %s\n", $name, $server[$name] ?? '<unset>')
     );
   }
-  
+
   // Additional HTTP headers
   foreach($server as $k => $v) {
      if ($k is string && Str\starts_with($k, 'HTTP_')) {
@@ -51,7 +51,9 @@ async function dumpEnv(): Awaitable<void> {
         );
      }
   }
-  
+
   // flush output
   await $output->flushAsync();
+
+  exit(0);
 }
