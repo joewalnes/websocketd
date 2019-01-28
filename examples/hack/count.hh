@@ -3,7 +3,6 @@
 
 use namespace HH\Lib\Str;
 use function HH\Lib\Experimental\IO\request_output;
-use function usleep;
 
 // Simple example script that counts to 10 at ~2Hz, then stops.
 
@@ -14,13 +13,12 @@ async function count_to_ten(): Awaitable<noreturn> {
     await $output->writeAsync(
       Str\format("%d\n",$count)
     );
- 
-    // usleep is builtin, it is not an async builtin - so it also must block the main request thread
-    usleep(500000);
+
+    HH\Asio\usleep(500000);
   }
-  
+
   // flush output
   await $output->flushAsync();
-  
+
   exit(0);
 }
