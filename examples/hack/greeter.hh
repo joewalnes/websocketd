@@ -5,7 +5,7 @@ use namespace HH\Lib\Str;
 use namespace HH\Lib\Experimental\IO;
 
 <<__EntryPoint>>
-async function greeter(): Awaitable<void> {
+async function greeter(): Awaitable<noreturn> {
   // For each line FOO received on STDIN, respond with "Hello FOO!".
   $input = IO\request_input();
   $output = IO\request_output();
@@ -17,4 +17,6 @@ async function greeter(): Awaitable<void> {
     
   // flush output
   await $output->flushAsync();
+  
+  exit(0);
 }
