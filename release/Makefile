@@ -43,7 +43,7 @@ endif
 
 
 
-GO_SRC_URL=https://dl.google.com/go/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
+GO_DOWNLOAD_URL=https://dl.google.com/go/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
 GO_DIR=../go-$(GO_VERSION)
 
 # Prevent any global environment polluting the builds
@@ -69,7 +69,7 @@ $(GO_DIR)/bin/go:
 	mkdir -p $(GO_DIR)
 	rm -f $@
 	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
-	curl $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_DIR)
+	curl -s $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_DIR)
 
 
 # Cross-compile final applications
