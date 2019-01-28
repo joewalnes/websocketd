@@ -18,7 +18,7 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 
 
 
-VERSION_PATCH:=$(shell expr $$(( $(or $(LAST_PATCH_VERSION),-1) + 1 )))
+VERSION_PATCH:=$(or $(LAST_PATCH_VERSION),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
 GO_VERSION=1.11.5
