@@ -3,4 +3,3 @@ websocketd
 *.swo
 go
 go-v*
-go-workspace
