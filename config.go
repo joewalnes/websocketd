@@ -18,7 +18,7 @@ import (
 	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
-type Config struct {
+type websocketdConfig struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
@@ -27,13 +27,13 @@ type Config struct {
 	*libwebsocketd.Config
 }
 
-type Arglist []string
+type arglist []string
 
-func (al *Arglist) String() string {
+func (al *arglist) String() string {
 	return fmt.Sprintf("%v", []string(*al))
 }
 
-func (al *Arglist) Set(value string) error {
+func (al *arglist) Set(value string) error {
 	*al = append(*al, value)
 	return nil
 }
@@ -50,8 +50,8 @@ var defaultPassEnv = map[string]string{
 	"windows": "PATH,SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
-func parseCommandLine() *Config {
-	var mainConfig Config
+func parseCommandLine() *websocketdConfig {
+	var mainConfig websocketdConfig
 	var config libwebsocketd.Config
 
 	flag.Usage = func() {}
@@ -60,7 +60,7 @@ func parseCommandLine() *Config {
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
 
-	addrlist := Arglist(make([]string, 0, 1)) // pre-reserve for 1 address
+	addrlist := arglist(make([]string, 0, 1)) // pre-reserve for 1 address
 	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
 
 	// server config options
@@ -86,20 +86,20 @@ func parseCommandLine() *Config {
 	sameOriginFlag := flag.Bool("sameorigin", false, "Restrict upgrades if origin and host headers differ")
 	allowOriginsFlag := flag.String("origin", "", "Restrict upgrades if origin does not match the list")
 
-	headers := Arglist(make([]string, 0))
-	headersWs := Arglist(make([]string, 0))
-	headersHttp := Arglist(make([]string, 0))
+	headers := arglist(make([]string, 0))
+	headersWs := arglist(make([]string, 0))
+	headersHTTP := arglist(make([]string, 0))
 	flag.Var(&headers, "header", "Custom headers for any response.")
 	flag.Var(&headersWs, "header-ws", "Custom headers for successful WebSocket upgrade responses.")
-	flag.Var(&headersHttp, "header-http", "Custom headers for all but WebSocket upgrade HTTP responses.")
+	flag.Var(&headersHTTP, "header-http", "Custom headers for all but WebSocket upgrade HTTP responses.")
 
 	err := flag.CommandLine.Parse(os.Args[1:])
 	if err != nil {
 		if err == flag.ErrHelp {
-			PrintHelp()
+			printHelp()
 			os.Exit(0)
 		} else {
-			ShortHelp()
+			shortHelp()
 			os.Exit(2)
 		}
 	}
@@ -126,13 +126,13 @@ func parseCommandLine() *Config {
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
 	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
 		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
-		ShortHelp()
+		shortHelp()
 		os.Exit(1)
 	}
 
 	config.Headers = []string(headers)
 	config.HeadersWs = []string(headersWs)
-	config.HeadersHTTP = []string(headersHttp)
+	config.HeadersHTTP = []string(headersHTTP)
 
 	config.CloseMs = *closeMsFlag
 	config.Binary = *binaryFlag
@@ -143,22 +143,22 @@ func parseCommandLine() *Config {
 	config.CgiDir = *cgiDirFlag
 	config.DevConsole = *devConsoleFlag
 	config.StartupTime = time.Now()
-	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
+	config.ServerSoftware = fmt.Sprintf("websocketd/%s", getVersionString())
 	config.HandshakeTimeout = time.Millisecond * 1500 // only default for now
 
 	if len(os.Args) == 1 {
 		fmt.Printf("Command line arguments are missing.\n")
-		ShortHelp()
+		shortHelp()
 		os.Exit(1)
 	}
 
 	if *versionFlag {
-		fmt.Printf("%s %s\n", HelpProcessName(), Version())
+		fmt.Printf("%s %s\n", processName(), getVersionString())
 		os.Exit(0)
 	}
 
 	if *licenseFlag {
-		fmt.Printf("%s %s\n", HelpProcessName(), Version())
+		fmt.Printf("%s %s\n", processName(), getVersionString())
 		fmt.Printf("%s\n", libwebsocketd.License)
 		os.Exit(0)
 	}
@@ -203,14 +203,14 @@ func parseCommandLine() *Config {
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
 		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.\n")
-		ShortHelp()
+		shortHelp()
 		os.Exit(1)
 	}
 
 	if len(args) > 0 {
 		if config.ScriptDir != "" {
 			fmt.Fprintf(os.Stderr, "Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.\n")
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 		if path, err := exec.LookPath(args[0]); err == nil {
@@ -219,7 +219,7 @@ func parseCommandLine() *Config {
 			config.UsingScriptDir = false
 		} else {
 			fmt.Fprintf(os.Stderr, "Unable to locate specified COMMAND '%s' in OS path.\n", args[0])
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 	}
@@ -228,18 +228,18 @@ func parseCommandLine() *Config {
 		scriptDir, err := filepath.Abs(config.ScriptDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 		inf, err := os.Stat(scriptDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not find your script dir '%s'.\n", config.ScriptDir)
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 		if !inf.IsDir() {
 			fmt.Fprintf(os.Stderr, "Did you mean to specify COMMAND instead of --dir '%s'?\n", config.ScriptDir)
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		} else {
 			config.ScriptDir = scriptDir
@@ -250,7 +250,7 @@ func parseCommandLine() *Config {
 	if config.CgiDir != "" {
 		if inf, err := os.Stat(config.CgiDir); err != nil || !inf.IsDir() {
 			fmt.Fprintf(os.Stderr, "Your CGI dir '%s' is not pointing to an accessible directory.\n", config.CgiDir)
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 	}
@@ -258,7 +258,7 @@ func parseCommandLine() *Config {
 	if config.StaticDir != "" {
 		if inf, err := os.Stat(config.StaticDir); err != nil || !inf.IsDir() {
 			fmt.Fprintf(os.Stderr, "Your static dir '%s' is not pointing to an accessible directory.\n", config.StaticDir)
-			ShortHelp()
+			shortHelp()
 			os.Exit(1)
 		}
 	}
