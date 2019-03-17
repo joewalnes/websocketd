@@ -3,48 +3,12 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Uses Semantic Versioning scheme - http://semver.org/
-VERSION_MAJOR=0
-VERSION_MINOR=3
+RELEASE_VERSION=0.3.2
 
-# Last part of version number (patch) is incremented automatically from Git tags
-LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
-		| grep -e 'refs/tags/v[0-9\.]*$$' \
-		| sed -e 's|^.*refs/tags/v||' \
-		| grep -e "^$(VERSION_MAJOR)\.$(VERSION_MINOR)\.[0-9][0-9]*$$" \
-		| sed -e 's/^.*\.//' \
-		| sort -n \
-		| tail -n 1)
-
-
-
-VERSION_PATCH:=$(or $(LAST_PATCH_VERSION),0)
-RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
-
-GO_VERSION=1.11.5
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
-
-# Would NOT WORK on: ARM, WINDOWS
-
-UNAME_SYS=$(shell uname -s | tr A-Z a-z)
-UNAME_ARCH=$(shell uname -m)
-ifeq ($(UNAME_ARCH),x86_64)
-	UNAME_ARCH=amd64
-else
-	UNAME_ARCH=386 
-endif
-
-ifeq ($(UNAME_SYS),gnu)
-	UNAME_SYS=linux
-else ifeq ($(UNAME_SYS),sunos)
-	UNAME_SYS=solaris
-endif
-
-
-
-GO_DOWNLOAD_URL=https://dl.google.com/go/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
-GO_DIR=../go-$(GO_VERSION)
+GO_VER:=1.11.5
+GO_DIR:=../go-$(GO_VER)
 
 # Prevent any global environment polluting the builds
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
@@ -63,25 +27,19 @@ FLAGS_solaris_amd64 = GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
 
 all: build
 
-localgo: $(GO_DIR)/bin/go
 
-$(GO_DIR)/bin/go:
-	mkdir -p $(GO_DIR)
-	rm -f $@
-	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
-	curl -s $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_DIR)
+BUILDINFO:=$(shell echo "Built $(shell date +"%F %R") by $(shell git config user.email) on $(shell uname -v) git:$(shell git rev-parse --verify HEAD | cut -b 1-7)" | tr " " ^)
 
 
-# Cross-compile final applications
 out/$(RELEASE_VERSION)/%/websocketd: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd ..
+	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -ldflags "-X main.buildinfo=$(BUILDINFO)" -o out/$(RELEASE_VERSION)/$*/websocketd ..
 
 out/$(RELEASE_VERSION)/%/websocketd.exe: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd.exe ..
+	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -ldflags "-X main.buildinfo=$(BUILDINFO)" -o out/$(RELEASE_VERSION)/$*/websocketd.exe ..
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd
 	rm -f $@
@@ -145,12 +103,14 @@ out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: $(GO_UNPACKED) ou
 	rm -rf out/$(RELEASE_VERSION)/rpm32/
 
 
-# Clean up
-clobber: clean
-	rm -rf $(GO_DIR)
-
-
 clean:
 	rm -rf out
 
-.PHONY: all build deb rpm localgo clobber clean
+clobber:
+	rm -rf $(GO_DIR)
+
+
+.PHONY: all build deb rpm localgo clean clobber
+
+
+include ../golang.mk

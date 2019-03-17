@@ -8,14 +8,16 @@ package main
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 // This value can be set for releases at build time using:
 //   go {build|run} -ldflags "-X main.version 1.2.3 -X main.buildinfo timestamp-@githubuser-platform".
 // If unset, Version() shall return "DEVBUILD".
-const version = "DEVBUILD"
-const buildinfo = "--"
+var version = "DEVBUILD"
+var buildinfo = "--"
 
 func getVersionString() string {
-	return fmt.Sprintf("%s (%s %s-%s) %s", version, runtime.Version(), runtime.GOOS, runtime.GOARCH, buildinfo)
+	printable := strings.Replace(buildinfo, "^", " ", -1)
+	return fmt.Sprintf("%s (%s %s-%s) %s", version, runtime.Version(), runtime.GOOS, runtime.GOARCH, printable)
 }
