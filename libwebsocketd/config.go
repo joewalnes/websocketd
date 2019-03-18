@@ -5,11 +5,11 @@
 
 package libwebsocketd
 
-import (
-	"time"
-)
+import "time"
 
 type Config struct {
+	LogLevel
+
 	// base initiaization fields
 	StartupTime    time.Time // Server startup time (used for dev console caching).
 	CommandName    string    // Command to execute.
@@ -20,21 +20,23 @@ type Config struct {
 	HandshakeTimeout time.Duration // time to finish handshake (default 1500ms)
 
 	// settings
-	Binary         bool     // Use binary communication (send data in chunks they are read from process)
-	ReverseLookup  bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
-	Ssl            bool     // websocketd works with --ssl which means TLS is in use
-	ScriptDir      string   // Base directory for websocket scripts.
-	UsingScriptDir bool     // Are we running with a script dir.
-	StaticDir      string   // If set, static files will be served from this dir over HTTP.
-	CgiDir         string   // If set, CGI scripts will be served from this dir over HTTP.
-	DevConsole     bool     // Enable dev console. This disables StaticDir and CgiDir.
-	AllowOrigins   []string // List of allowed origin addresses for websocket upgrade.
-	SameOrigin     bool     // If set, requires websocket upgrades to be performed from same origin only.
-	Headers        []string
-	HeadersWs      []string
-	HeadersHTTP    []string
+	Binary        bool     // Use binary communication (send data in chunks they are read from process)
+	ReverseLookup bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
+	Ssl           bool     // websocketd works with --ssl which means TLS is in use
+	ScriptDir     string   // Base directory for websocket scripts.
+	StaticDir     string   // If set, static files will be served from this dir over HTTP.
+	CgiDir        string   // If set, CGI scripts will be served from this dir over HTTP.
+	DevConsole    bool     // Enable dev console. This disables StaticDir and CgiDir.
+	AllowOrigins  []string // List of allowed origin addresses for websocket upgrade.
+	SameOrigin    bool     // If set, requires websocket upgrades to be performed from same origin only.
+	Headers       []string
+	HeadersWs     []string
+	HeadersHTTP   []string
 
 	// created environment
 	Env       []string // Additional environment variables to pass to process ("key=value").
 	ParentEnv []string // Variables kept from os.Environ() before sanitizing it for subprocess.
+
+	// TODO: DEPRECATING SOON
+	UsingScriptDir bool // Are we running with a script dir.
 }

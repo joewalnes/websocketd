@@ -18,4 +18,5 @@ $(GO_DIR)/bin/go:
 	rm -f $@
 	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
 	curl -s $(GO_DOWNLOAD_URL) | tar xf - --strip-components=1 -C $(GO_DIR)
-
+	# prevent scanning of go.mod/go.sum
+	touch $(GO_DIR)/go.mod 

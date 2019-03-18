@@ -6,6 +6,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -36,45 +37,54 @@ func logfunc(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName 
 }
 
 func main() {
-	config := parseCommandLine()
-
-	log := libwebsocketd.RootLogScope(config.LogLevel, logfunc)
-
-	if config.DevConsole {
-		if config.StaticDir != "" {
-			log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")
-			os.Exit(4)
-		}
-		if config.CgiDir != "" {
-			log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --cgidir. Pick one.")
-			os.Exit(4)
-		}
+	config, err := parseCommandLine()
+	if err == flag.ErrHelp {
+		printHelp()
+		os.Exit(0)
+	} else {
+		fmt.Fprintln(os.Stderr, err)
+		shortHelp()
+		os.Exit(1)
 	}
+
+	if config.version {
+		fmt.Printf("%s %s\n", processName(), getVersionString())
+		os.Exit(0)
+	}
+
+	if config.license {
+		fmt.Printf("%s %s\n", processName(), getVersionString())
+		fmt.Printf("%s\n", libwebsocketd.License)
+		os.Exit(0)
+	}
+
+	service := config.service
+	log := libwebsocketd.RootLogScope(service.LogLevel, logfunc)
 
 	if runtime.GOOS != "windows" { // windows relies on env variables to find its libs... e.g. socket stuff
 		os.Clearenv() // it's ok to wipe it clean, we already read env variables from passenv into config
 	}
-	handler := libwebsocketd.NewWebsocketdServer(config.Config, log, config.MaxForks)
+	handler := libwebsocketd.NewWebsocketdServer(service, log, config.maxForks)
 	http.Handle("/", handler)
 
-	if config.UsingScriptDir {
-		log.Info("server", "Serving from directory      : %s", config.ScriptDir)
-	} else if config.CommandName != "" {
-		log.Info("server", "Serving using application   : %s %s", config.CommandName, strings.Join(config.CommandArgs, " "))
+	if service.UsingScriptDir {
+		log.Info("server", "Serving from directory      : %s", service.ScriptDir)
+	} else if service.CommandName != "" {
+		log.Info("server", "Serving using application   : %s %s", service.CommandName, strings.Join(service.CommandArgs, " "))
 	}
-	if config.StaticDir != "" {
-		log.Info("server", "Serving static content from : %s", config.StaticDir)
+	if service.StaticDir != "" {
+		log.Info("server", "Serving static content from : %s", service.StaticDir)
 	}
-	if config.CgiDir != "" {
-		log.Info("server", "Serving CGI scripts from    : %s", config.CgiDir)
+	if service.CgiDir != "" {
+		log.Info("server", "Serving CGI scripts from    : %s", service.CgiDir)
 	}
 
 	rejects := make(chan error, 1)
-	for _, addrSingle := range config.Addr {
+	for _, addrSingle := range config.addr {
 		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, "/"))
-		if config.DevConsole {
+		if service.DevConsole {
 			log.Info("server", "Developer console enabled   : %s", handler.TellURL("http", addrSingle, "/"))
-		} else if config.StaticDir != "" || config.CgiDir != "" {
+		} else if service.StaticDir != "" || service.CgiDir != "" {
 			log.Info("server", "Serving CGI or static files : %s", handler.TellURL("http", addrSingle, "/"))
 		}
 		// ListenAndServe is blocking function. Let's run it in
@@ -82,22 +92,22 @@ func main() {
 		// Since it's blocking it'll never return non-error.
 
 		go func(addr string) {
-			if config.Ssl {
-				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
+			if service.Ssl {
+				rejects <- http.ListenAndServeTLS(addr, config.certFile, config.keyFile, nil)
 			} else {
 				rejects <- http.ListenAndServe(addr, nil)
 			}
 		}(addrSingle)
 
-		if config.RedirPort != 0 {
+		if config.redirPort != 0 {
 			go func(addr string) {
 				pos := strings.IndexByte(addr, ':')
-				rediraddr := addr[:pos] + ":" + strconv.Itoa(config.RedirPort) // it would be silly to optimize this one
+				rediraddr := addr[:pos] + ":" + strconv.Itoa(config.redirPort) // it would be silly to optimize this one
 				redir := &http.Server{Addr: rediraddr, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 					// redirect to same hostname as in request but different port and probably schema
 					uri := "https://"
-					if !config.Ssl {
+					if !service.Ssl {
 						uri = "http://"
 					}
 					uri += r.Host[:strings.IndexByte(r.Host, ':')] + addr[pos:] + "/"

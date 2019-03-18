@@ -18,26 +18,6 @@ import (
 	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
-type websocketdConfig struct {
-	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
-	MaxForks          int      // Number of allowable concurrent forks
-	LogLevel          libwebsocketd.LogLevel
-	RedirPort         int
-	CertFile, KeyFile string
-	*libwebsocketd.Config
-}
-
-type arglist []string
-
-func (al *arglist) String() string {
-	return fmt.Sprintf("%v", []string(*al))
-}
-
-func (al *arglist) Set(value string) error {
-	*al = append(*al, value)
-	return nil
-}
-
 // Borrowed from net/http/cgi
 var defaultPassEnv = map[string]string{
 	"darwin":  "PATH,DYLD_LIBRARY_PATH",
@@ -50,220 +30,200 @@ var defaultPassEnv = map[string]string{
 	"windows": "PATH,SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
-func parseCommandLine() *websocketdConfig {
-	var mainConfig websocketdConfig
-	var config libwebsocketd.Config
+type websocketdConfig struct {
+	port              uint
+	addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	maxForks          int      // Number of allowable concurrent forks
+	logLevelStr       string
+	redirPort         int
+	certFile, keyFile string
+	passEnv           string
 
-	flag.Usage = func() {}
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	service *libwebsocketd.Config
 
-	// If adding new command line options, also update the help text in help.go.
-	// The flag library's auto-generate help message isn't pretty enough.
+	version, license bool
+}
 
-	addrlist := arglist(make([]string, 0, 1)) // pre-reserve for 1 address
-	flag.Var(&addrlist, "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
+// parse has odd signature but since it's internal func it should be okay... linter would not be happy
+func parse(cnf *websocketdConfig, args []string) (error, []string) {
+	websocketdFlags := flag.NewFlagSet("websocketd", flag.ContinueOnError)
+	websocketdFlags.Usage = func() {}
 
-	// server config options
-	portFlag := flag.Int("port", 0, "HTTP port to listen on")
-	versionFlag := flag.Bool("version", false, "Print version and exit")
-	licenseFlag := flag.Bool("license", false, "Print license and exit")
-	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
-	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
-	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
-	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
-	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
-	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
-	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
+	websocketdFlags.BoolVar(&cnf.version, "version", false, "Print version and exit")
+	websocketdFlags.BoolVar(&cnf.license, "license", false, "Print license and exit")
 
-	// lib config options
-	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
-	reverseLookupFlag := flag.Bool("reverselookup", false, "Perform reverse DNS lookups on remote clients")
-	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
-	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
-	cgiDirFlag := flag.String("cgidir", "", "Serve CGI scripts from this directory over HTTP")
-	devConsoleFlag := flag.Bool("devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
-	passEnvFlag := flag.String("passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
-	sameOriginFlag := flag.Bool("sameorigin", false, "Restrict upgrades if origin and host headers differ")
-	allowOriginsFlag := flag.String("origin", "", "Restrict upgrades if origin does not match the list")
+	websocketdFlags.Var((*arglist)(&cnf.addr), "address", "Interfaces to bind to (e.g. 127.0.0.1 or [::1]).")
+	websocketdFlags.UintVar(&cnf.port, "port", 0, "HTTP port to listen on")
+	websocketdFlags.StringVar(&cnf.logLevelStr, "loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
+	websocketdFlags.StringVar(&cnf.certFile, "sslcert", "", "Should point to certificate PEM file when --ssl is used")
+	websocketdFlags.StringVar(&cnf.keyFile, "sslkey", "", "Should point to certificate private key file when --ssl is used")
+	websocketdFlags.IntVar(&cnf.maxForks, "maxforks", 0, "Max forks, zero means unlimited")
+	websocketdFlags.IntVar(&cnf.redirPort, "redirport", 0, "HTTP port to redirect to canonical --port address")
+	websocketdFlags.StringVar(&cnf.passEnv, "passenv", defaultPassEnv[runtime.GOOS], "List of envvars to pass to subprocesses (others will be cleaned out)")
 
-	headers := arglist(make([]string, 0))
-	headersWs := arglist(make([]string, 0))
-	headersHTTP := arglist(make([]string, 0))
-	flag.Var(&headers, "header", "Custom headers for any response.")
-	flag.Var(&headersWs, "header-ws", "Custom headers for successful WebSocket upgrade responses.")
-	flag.Var(&headersHTTP, "header-http", "Custom headers for all but WebSocket upgrade HTTP responses.")
+	// service-implementing flags
+	websocketdFlags.BoolVar(&cnf.service.Ssl, "ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
+	websocketdFlags.UintVar(&cnf.service.CloseMs, "closems", 0, "Time to start sending signals (0 never)")
+	websocketdFlags.BoolVar(&cnf.service.Binary, "binary", false, "Set websocketd to experimental binary mode (default is line by line)")
+	websocketdFlags.BoolVar(&cnf.service.ReverseLookup, "reverselookup", false, "Perform reverse DNS lookups on remote clients")
+	websocketdFlags.StringVar(&cnf.service.ScriptDir, "dir", "", "Base directory for WebSocket scripts")
+	websocketdFlags.StringVar(&cnf.service.StaticDir, "staticdir", "", "Serve static content from this directory over HTTP")
+	websocketdFlags.StringVar(&cnf.service.CgiDir, "cgidir", "", "Serve CGI scripts from this directory over HTTP")
+	websocketdFlags.BoolVar(&cnf.service.DevConsole, "devconsole", false, "Enable development console (cannot be used in conjunction with --staticdir)")
+	websocketdFlags.BoolVar(&cnf.service.SameOrigin, "sameorigin", false, "Restrict upgrades if origin and host headers differ")
+	websocketdFlags.Var((*arglist)(&cnf.service.AllowOrigins), "origin", "Restrict upgrades if origin does not match the list")
 
-	err := flag.CommandLine.Parse(os.Args[1:])
-	if err != nil {
-		if err == flag.ErrHelp {
-			printHelp()
-			os.Exit(0)
-		} else {
-			shortHelp()
-			os.Exit(2)
-		}
-	}
+	websocketdFlags.Var((*arglist)(&cnf.service.Headers), "header", "Custom headers for any response.")
+	websocketdFlags.Var((*arglist)(&cnf.service.HeadersWs), "header-ws", "Custom headers for successful WebSocket upgrade responses.")
+	websocketdFlags.Var((*arglist)(&cnf.service.HeadersHTTP), "header-http", "Custom headers for all but WebSocket upgrade HTTP responses.")
 
-	port := *portFlag
-	if port == 0 {
-		if *sslFlag {
-			port = 443
-		} else {
-			port = 80
-		}
-	}
+	return websocketdFlags.Parse(args), websocketdFlags.Args()
+}
 
-	if socknum := len(addrlist); socknum != 0 {
-		mainConfig.Addr = make([]string, socknum)
-		for i, addrSingle := range addrlist {
-			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, port)
-		}
-	} else {
-		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
-	}
-	mainConfig.MaxForks = *maxForksFlag
-	mainConfig.RedirPort = *redirPortFlag
-	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
-	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
-		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
-		shortHelp()
-		os.Exit(1)
-	}
-
-	config.Headers = []string(headers)
-	config.HeadersWs = []string(headersWs)
-	config.HeadersHTTP = []string(headersHTTP)
-
-	config.CloseMs = *closeMsFlag
-	config.Binary = *binaryFlag
-	config.ReverseLookup = *reverseLookupFlag
-	config.Ssl = *sslFlag
-	config.ScriptDir = *scriptDirFlag
-	config.StaticDir = *staticDirFlag
-	config.CgiDir = *cgiDirFlag
-	config.DevConsole = *devConsoleFlag
-	config.StartupTime = time.Now()
-	config.ServerSoftware = fmt.Sprintf("websocketd/%s", getVersionString())
-	config.HandshakeTimeout = time.Millisecond * 1500 // only default for now
-
+func parseCommandLine() (*websocketdConfig, error) {
 	if len(os.Args) == 1 {
-		fmt.Printf("Command line arguments are missing.\n")
-		shortHelp()
-		os.Exit(1)
+		return nil, fmt.Errorf("Command line arguments are missing.")
 	}
 
-	if *versionFlag {
-		fmt.Printf("%s %s\n", processName(), getVersionString())
-		os.Exit(0)
+	service := new(libwebsocketd.Config)
+	config := &websocketdConfig{service: service}
+
+	err, args := parse(config, os.Args[1:])
+	if err != nil {
+		return nil, err
 	}
 
-	if *licenseFlag {
-		fmt.Printf("%s %s\n", processName(), getVersionString())
-		fmt.Printf("%s\n", libwebsocketd.License)
-		os.Exit(0)
+	if config.version || config.license {
+		return config, nil
+	}
+
+	service.LogLevel = libwebsocketd.LevelFromString(config.logLevelStr)
+	if service.LogLevel == libwebsocketd.LogUnknown {
+		return nil, fmt.Errorf("Incorrect loglevel flag '%s'. Use --help to see allowed values.", config.logLevelStr)
 	}
 
 	// Reading SSL options
-	if config.Ssl {
-		if *sslCert == "" || *sslKey == "" {
-			fmt.Fprintf(os.Stderr, "Please specify both --sslcert and --sslkey when requesting --ssl.\n")
-			os.Exit(1)
+	if service.Ssl {
+		if config.certFile == "" || config.keyFile == "" {
+			return nil, fmt.Errorf("Please specify both --sslcert and --sslkey when requesting --ssl.")
 		}
 	} else {
-		if *sslCert != "" || *sslKey != "" {
-			fmt.Fprintf(os.Stderr, "You should not be using --ssl* flags when there is no --ssl option.\n")
-			os.Exit(1)
+		if config.certFile != "" || config.keyFile != "" {
+			return nil, fmt.Errorf("You should not be using --ssl* flags when there is no --ssl option.")
 		}
 	}
 
-	mainConfig.CertFile = *sslCert
-	mainConfig.KeyFile = *sslKey
+	if config.port == 443 {
+		if service.Ssl {
+			config.port = 443
+		} else {
+			config.port = 80
+		}
+	}
+
+	if socknum := len(config.addr); socknum != 0 {
+		for i, addrSingle := range config.addr {
+			if !strings.ContainsRune(addrSingle, ':') {
+				config.addr[i] = fmt.Sprintf("%s:%d", addrSingle, config.port)
+			}
+		}
+	} else {
+		config.addr = []string{fmt.Sprintf(":%d", config.port)}
+	}
+
+	service.HandshakeTimeout = time.Millisecond * 1500 // only default for now
 
 	// Building config.ParentEnv to avoid calling Environ all the time in the scripts
 	// (caller is responsible for wiping environment if desired)
-	config.ParentEnv = make([]string, 0)
-	newlineCleaner := strings.NewReplacer("\n", " ", "\r", " ")
-	for _, key := range strings.Split(*passEnvFlag, ",") {
+	service.ParentEnv = make([]string, 0)
+	for _, key := range strings.Split(config.passEnv, ",") {
 		if key != "HTTPS" {
-			if v := os.Getenv(key); v != "" {
-				// inevitably adding flavor of libwebsocketd appendEnv func.
-				// it's slightly nicer than in net/http/cgi implementation
-				if clean := strings.TrimSpace(newlineCleaner.Replace(v)); clean != "" {
-					config.ParentEnv = append(config.ParentEnv, fmt.Sprintf("%s=%s", key, clean))
-				}
-			}
+			// even if var is empty, we pass it
+			service.ParentEnv = append(service.ParentEnv, fmt.Sprintf("%s=%s", key, strings.TrimSpace(os.Getenv(key))))
 		}
 	}
 
-	if *allowOriginsFlag != "" {
-		config.AllowOrigins = strings.Split(*allowOriginsFlag, ",")
+	if ln := len(service.AllowOrigins); ln > 0 {
+		// split values by comma if they are listed as groups
+		tmp := make([]string, 0, ln)
+		for _, orig := range service.AllowOrigins {
+			pos := strings.IndexByte(orig, ',')
+			for pos >= 0 {
+				add, orig := strings.TrimSpace(orig[:pos]), orig[pos+1:]
+				if len(add) > 0 {
+					tmp = append(tmp, add)
+				}
+				pos = strings.IndexByte(orig, ',')
+			}
+			if orig = strings.TrimSpace(orig); len(orig) > 0 {
+				tmp = append(tmp, orig)
+			}
+		}
+		service.AllowOrigins = tmp
 	}
-	config.SameOrigin = *sameOriginFlag
 
-	args := flag.Args()
-	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
-		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.\n")
-		shortHelp()
-		os.Exit(1)
+	if len(args) < 1 && service.ScriptDir == "" && service.StaticDir == "" && service.CgiDir == "" {
+		return nil, fmt.Errorf("Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.")
 	}
 
 	if len(args) > 0 {
-		if config.ScriptDir != "" {
-			fmt.Fprintf(os.Stderr, "Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.\n")
-			shortHelp()
-			os.Exit(1)
+		if service.ScriptDir != "" {
+			return nil, fmt.Errorf("Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.")
 		}
 		if path, err := exec.LookPath(args[0]); err == nil {
-			config.CommandName = path // This can be command in PATH that we are able to execute
-			config.CommandArgs = flag.Args()[1:]
-			config.UsingScriptDir = false
+			service.CommandName = path // This can be command in PATH that we are able to execute
+			service.CommandArgs = flag.Args()[1:]
+			service.UsingScriptDir = false
 		} else {
-			fmt.Fprintf(os.Stderr, "Unable to locate specified COMMAND '%s' in OS path.\n", args[0])
-			shortHelp()
-			os.Exit(1)
+			return nil, fmt.Errorf("Unable to locate specified COMMAND '%s' in OS path.", args[0])
 		}
 	}
 
-	if config.ScriptDir != "" {
-		scriptDir, err := filepath.Abs(config.ScriptDir)
+	if service.ScriptDir != "" {
+		scriptDir, err := filepath.Abs(service.ScriptDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
-			shortHelp()
-			os.Exit(1)
+			return nil, fmt.Errorf("Could not resolve absolute path to dir '%s'.", service.ScriptDir)
 		}
 		inf, err := os.Stat(scriptDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find your script dir '%s'.\n", config.ScriptDir)
-			shortHelp()
-			os.Exit(1)
+			return nil, fmt.Errorf("Could not find your script dir '%s'.", service.ScriptDir)
 		}
 		if !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Did you mean to specify COMMAND instead of --dir '%s'?\n", config.ScriptDir)
-			shortHelp()
-			os.Exit(1)
+			return nil, fmt.Errorf("Did you mean to specify COMMAND instead of --dir '%s'?", service.ScriptDir)
 		} else {
-			config.ScriptDir = scriptDir
-			config.UsingScriptDir = true
+			service.ScriptDir = scriptDir
+			service.UsingScriptDir = true
 		}
 	}
 
-	if config.CgiDir != "" {
-		if inf, err := os.Stat(config.CgiDir); err != nil || !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Your CGI dir '%s' is not pointing to an accessible directory.\n", config.CgiDir)
-			shortHelp()
-			os.Exit(1)
+	if service.CgiDir != "" {
+		if inf, err := os.Stat(service.CgiDir); err != nil || !inf.IsDir() {
+			return nil, fmt.Errorf("Your CGI dir '%s' is not pointing to an accessible directory.", service.CgiDir)
+		}
+		if config.service.DevConsole {
+			return nil, fmt.Errorf("Invalid parameters: --devconsole cannot be used with --cgidir. Pick one.")
 		}
 	}
 
-	if config.StaticDir != "" {
-		if inf, err := os.Stat(config.StaticDir); err != nil || !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Your static dir '%s' is not pointing to an accessible directory.\n", config.StaticDir)
-			shortHelp()
-			os.Exit(1)
+	if service.StaticDir != "" {
+		if inf, err := os.Stat(service.StaticDir); err != nil || !inf.IsDir() {
+			return nil, fmt.Errorf("Your static dir '%s' is not pointing to an accessible directory.", service.StaticDir)
+		}
+		if config.service.DevConsole {
+			return nil, fmt.Errorf("Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")
 		}
 	}
 
-	mainConfig.Config = &config
+	return config, nil
+}
 
-	return &mainConfig
+type arglist []string
+
+func (al *arglist) String() string {
+	return fmt.Sprintf("%v", []string(*al))
+}
+
+func (al *arglist) Set(value string) error {
+	*al = append(*al, value)
+	return nil
 }
