@@ -115,6 +115,7 @@ Example Projects
 ----------------
 
 *   [Plot real time Linux CPU/IO/Mem stats to a HTML5 dashboard using websocketd and vmstat](https://github.com/joewalnes/web-vmstats) _(for Linux)_
+*   [List files from a configured folder](https://github.com/dbalakirev/directator) _(for Linux)_
 *   [Remote JScript & VBScript code execution tool based on websocketd](https://github.com/dab00/ws-console) _(for Windows)_
 *   [Arbitrary REPL in the browser using websocketd](https://github.com/rowanthorpe/ws-repl)
 *   [Retrieve SQL data from server with LiveCode and webSocketd](https://github.com/samansjukur/wslc)
