@@ -58,7 +58,7 @@ Options:
 
   --passenv VAR[,VAR...]         Lists environment variables allowed to be
                                  passed to executed scripts. Does not work for
-																 Windows since all the variables are kept there.
+                                 Windows since all the variables are kept there.
 
   --binary={true,false}          Switches communication to binary, process reads
                                  send to browser as blobs and all reads from the
