@@ -109,8 +109,8 @@ func main() {
 			}(addrSingle)
 		}
 	}
-	select {
-	case err := <-rejects:
+	err := <-rejects
+	if err != nil {
 		log.Fatal("server", "Can't start server: %s", err)
 		os.Exit(3)
 	}

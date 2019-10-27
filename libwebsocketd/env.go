@@ -42,9 +42,7 @@ func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []s
 	env = appendEnv(env, "SERVER_SOFTWARE", handler.server.Config.ServerSoftware)
 
 	parentStarts := len(env)
-	for _, v := range handler.server.Config.ParentEnv {
-		env = append(env, v)
-	}
+	env = append(env, handler.server.Config.ParentEnv...)
 
 	// IMPORTANT ---> Adding a header? Make sure standardEnvCount (above) is up to date.
 
