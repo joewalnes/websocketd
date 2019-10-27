@@ -71,7 +71,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if h.Config.CommandName != "" || h.Config.UsingScriptDir {
 		hdrs := req.Header
-		upgradeRe := regexp.MustCompile("(?i)(^|[,\\s])Upgrade($|[,\\s])")
+		upgradeRe := regexp.MustCompile(`(?i)(^|[,\s])Upgrade($|[,\s])`)
 		// WebSocket, limited to size of h.forks
 		if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
 			if h.noteForkCreated() == nil {
@@ -118,7 +118,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 			} else {
 				log.Error("http", "Max of possible forks already active, upgrade rejected")
-				http.Error(w, "429 Too Many Requests", 429)
+				http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
 			}
 			return
 		}
@@ -162,7 +162,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				cgiHandler.ServeHTTP(w, req)
 			} else {
 				log.Error("http", "Fork not allowed since maxforks amount has been reached. CGI was not run.")
-				http.Error(w, "429 Too Many Requests", 429)
+				http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
 			}
 			return
 		}
@@ -228,7 +228,6 @@ func (h *WebsocketdServer) noteForkCompled() {
 			panic("Cannot deplet number of allowed forks, something is not right in code!")
 		}
 	}
-	return
 }
 
 func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
