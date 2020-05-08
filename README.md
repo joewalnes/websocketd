@@ -67,7 +67,7 @@ Now let's turn it into a WebSocket server:
 $ websocketd --port=8080 ./count.sh
 ```
 
-Finally, let's create a web-page that to test it.
+Finally, let's create a web-page to test it.
 
 __count.html__:
 
