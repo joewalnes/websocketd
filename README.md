@@ -118,6 +118,7 @@ Example Projects
 *   [Arbitrary REPL in the browser using websocketd](https://github.com/rowanthorpe/ws-repl)
 *   [Retrieve SQL data from server with LiveCode and webSocketd](https://github.com/samansjukur/wslc)
 *   [List files from a configured folder](https://github.com/dbalakirev/directator) _(for Linux)_
+*   [Listen for gamepad events and report them to the system](https://github.com/experiment322/controlloid-server) _(this + android = gamepad emulator)_
 
 Got more examples? Open a pull request.
 
