@@ -61,6 +61,9 @@ FLAGS_openbsd_386   = GOOS=openbsd GOARCH=386   CGO_ENABLED=0
 FLAGS_openbsd_amd64 = GOOS=openbsd GOARCH=amd64 CGO_ENABLED=0
 FLAGS_solaris_amd64 = GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
 
+EXTENSION_windows_386 = .exe
+EXTENSION_windows_amd64 = .exe
+
 all: build
 
 localgo: $(GO_DIR)/bin/go
@@ -85,7 +88,11 @@ out/$(RELEASE_VERSION)/%/websocketd.exe: ../*.go ../libwebsocketd/*.go $(GO_DIR)
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd
 	rm -f $@
-	zip -j $@ out/$(RELEASE_VERSION)/$*/* ../{README.md,LICENSE,CHANGES}
+	zip -j $@ $< ../{README.md,LICENSE,CHANGES}
+
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-windows_%.zip: out/$(RELEASE_VERSION)/windows_%/websocketd.exe
+	rm -f $@
+	zip -j $@ $< ../{README.md,LICENSE,CHANGES}
 
 
 BINARIES = $(foreach PLATFORM,$(PLATFORMS),out/$(RELEASE_VERSION)/$(PLATFORM)/websocketd$(EXTENSION_$(PLATFORM)))
@@ -97,7 +104,7 @@ binaries: $(BINARIES)
 
 build: out/$(RELEASE_VERSION)/CHECKSUMS
 
-out/$(RELEASE_VERSION)/CHECKSUMS: $(BINARIES) $(ZIPS)  $(DEBS) $(RPMS)
+out/$(RELEASE_VERSION)/CHECKSUMS: $(BINARIES) $(ZIPS) $(DEBS) $(RPMS)
 	sha256sum $^ | sed -e 's/out\/$(RELEASE_VERSION)\///' >$@
 
 
@@ -117,7 +124,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb: $(GO_UNPACKED) ou
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb32/usr/share/man/man1/websocket.1.gz
-	fpm -f -s dir -t deb -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
+	fpm -f -s dir -t deb -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb --deb-no-default-config-files $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb32/
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_amd64/websocketd
@@ -125,7 +132,7 @@ out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_UNPACKED) 
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/deb64/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
 	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb64/usr/share/man/man1/websocket.1.gz
-	fpm -f -s dir -t deb -a amd64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb $(BASEFPM) $(DEB_FPM) usr/
+	fpm -f -s dir -t deb -a amd64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb --deb-no-default-config-files $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb64/
 
 out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_amd64/websocketd
