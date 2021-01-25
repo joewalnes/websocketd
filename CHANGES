@@ -1,3 +1,8 @@
+Version 0.4.1 (Jan 24, 2021)
+
+* Minor changes only
+* Updated to Go 1.15.7
+
 Version 0.3.1  (Jan 28, 2019)
 
 * Minor improvements to websocketd itself
