@@ -94,13 +94,16 @@ func main() {
 				pos := strings.IndexByte(addr, ':')
 				rediraddr := addr[:pos] + ":" + strconv.Itoa(config.RedirPort) // it would be silly to optimize this one
 				redir := &http.Server{Addr: rediraddr, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 					// redirect to same hostname as in request but different port and probably schema
 					uri := "https://"
 					if !config.Ssl {
 						uri = "http://"
 					}
-					uri += r.Host[:strings.IndexByte(r.Host, ':')] + addr[pos:] + "/"
+					if cpos := strings.IndexByte(r.Host, ':'); cpos > 0 {
+						uri += r.Host[:strings.IndexByte(r.Host, ':')] + addr[pos:] + "/"
+					} else {
+						uri += r.Host + addr[pos:] + "/"
+					}
 
 					http.Redirect(w, r, uri, http.StatusMovedPermanently)
 				})}
