@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -70,6 +71,20 @@ func main() {
 	}
 
 	rejects := make(chan error, 1)
+
+	// Serve and ServeTLS, called by the serve function below, do not return
+	// except on error. Let's run serve in a go routine, reporting result to
+	// control channel. This allows us to have multiple serve addresses.
+	serve := func(network, address string) {
+		if listener, err := net.Listen(network, address); err != nil {
+			rejects <- err
+		} else if config.Ssl {
+			rejects <- http.ServeTLS(listener, nil, config.CertFile, config.KeyFile)
+		} else {
+			rejects <- http.Serve(listener, nil)
+		}
+	}
+
 	for _, addrSingle := range config.Addr {
 		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, "/"))
 		if config.DevConsole {
@@ -77,17 +92,7 @@ func main() {
 		} else if config.StaticDir != "" || config.CgiDir != "" {
 			log.Info("server", "Serving CGI or static files : %s", handler.TellURL("http", addrSingle, "/"))
 		}
-		// ListenAndServe is blocking function. Let's run it in
-		// go routine, reporting result to control channel.
-		// Since it's blocking it'll never return non-error.
-
-		go func(addr string) {
-			if config.Ssl {
-				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
-			} else {
-				rejects <- http.ListenAndServe(addr, nil)
-			}
-		}(addrSingle)
+		go serve("tcp", addrSingle)
 
 		if config.RedirPort != 0 {
 			go func(addr string) {
@@ -111,6 +116,10 @@ func main() {
 				rejects <- redir.ListenAndServe()
 			}(addrSingle)
 		}
+	}
+	if config.Uds != "" {
+		log.Info("server", "Starting WebSocket server on Unix Domain Socket: %s", config.Uds)
+		go serve("unix", config.Uds)
 	}
 	err := <-rejects
 	if err != nil {

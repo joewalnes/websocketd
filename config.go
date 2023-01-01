@@ -20,6 +20,7 @@ import (
 
 type Config struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	Uds               string   // Unix Domain Socket to listen on
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
 	RedirPort         int
@@ -65,6 +66,7 @@ func parseCommandLine() *Config {
 
 	// server config options
 	portFlag := flag.Int("port", 0, "HTTP port to listen on")
+	udsFlag := flag.String("uds", "", "Path of the Unix Domain Socket to listen on")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -104,8 +106,11 @@ func parseCommandLine() *Config {
 		}
 	}
 
+	ipSocknum := len(addrlist)
 	port := *portFlag
-	if port == 0 {
+	udsOnly := *udsFlag != "" && ipSocknum == 0 && port == 0 && *redirPortFlag == 0
+
+	if port == 0 && !udsOnly {
 		if *sslFlag {
 			port = 443
 		} else {
@@ -113,14 +118,15 @@ func parseCommandLine() *Config {
 		}
 	}
 
-	if socknum := len(addrlist); socknum != 0 {
-		mainConfig.Addr = make([]string, socknum)
+	if ipSocknum != 0 {
+		mainConfig.Addr = make([]string, ipSocknum)
 		for i, addrSingle := range addrlist {
 			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, port)
 		}
-	} else {
+	} else if !udsOnly {
 		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
 	}
+	mainConfig.Uds = *udsFlag
 	mainConfig.MaxForks = *maxForksFlag
 	mainConfig.RedirPort = *redirPortFlag
 	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)

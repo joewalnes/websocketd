@@ -36,6 +36,11 @@ Options:
                                  Use square brackets to specify IPv6 address.
                                  Default: "" (all)
 
+  --uds=PATH                     Path to create a Unix Domain Socket to listen
+                                 on. If this is specified and no IP-specific
+                                 flags are specified, do not listen on IP.
+                                 Default: "" (do not serve on UDS)
+
   --sameorigin={true,false}      Restrict (HTTP 403) protocol upgrades if the
                                  Origin header does not match to requested HTTP
                                  Host. Default: false.

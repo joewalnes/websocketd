@@ -35,8 +35,9 @@ func NewWebsocketdHandler(s *WebsocketdServer, req *http.Request, log *LogScope)
 
 	wsh.RemoteInfo, err = GetRemoteInfo(req.RemoteAddr, s.Config.ReverseLookup)
 	if err != nil {
+		// This occurs when serving over Unix Domain Sockets.
 		log.Error("session", "Could not understand remote address '%s': %s", req.RemoteAddr, err)
-		return nil, err
+		wsh.RemoteInfo = &RemoteInfo{Addr: "unknown_host", Host: "unknown_host", Port: ""}
 	}
 	log.Associate("remote", wsh.RemoteInfo.Host)
 
