@@ -54,8 +54,8 @@ func parseCommandLine() *Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
 
-	flag.Usage = func() {}
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	flag.CommandLine.Usage = func() {}
 
 	// If adding new command line options, also update the help text in help.go.
 	// The flag library's auto-generate help message isn't pretty enough.
