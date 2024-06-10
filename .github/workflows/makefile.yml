@@ -1,0 +1,55 @@
+name: build and test
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+
+    # - name: build using makefile
+    #   run: make websocketd
+
+    - name: build websocketd
+      run: go build
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: websocketd
+        path: |
+          websocketd
+          ./examples/bash/dump-env.sh
+
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download built websocketd
+      uses: actions/download-artifact@v4
+      with:
+        name: websocketd
+
+    - name: fix permissions
+      run: chmod +x ./websocketd && chmod +x ./examples/bash/dump-env.sh
+
+    - name: setup client
+      run: wget https://github.com/vi/websocat/releases/latest/download/websocat.x86_64-unknown-linux-musl && chmod +x websocat.x86_64-unknown-linux-musl 
+
+    - name: test
+      run: |
+        ./websocketd --port=8080 ./examples/bash/dump-env.sh &
+        ./websocat.x86_64-unknown-linux-musl -E ws://$(hostname):8080
