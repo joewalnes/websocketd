@@ -35,7 +35,7 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInter
 }
 
 func (we *WebSocketEndpoint) Terminate() {
-	we.ws.Close() // unblocks read_frames goroutine
+	we.ws.Close() // unblocks readFrames goroutine
 	we.log.Trace("websocket", "Terminated websocket connection")
 }
 
@@ -67,7 +67,7 @@ func (we *WebSocketEndpoint) StartReading() {
 	if we.pingInterval > 0 {
 		we.setupPingPong()
 	}
-	go we.read_frames()
+	go we.readFrames()
 }
 
 // setupPingPong configures ping/pong keepalive to detect dead connections.
@@ -103,7 +103,7 @@ func (we *WebSocketEndpoint) setupPingPong() {
 	}()
 }
 
-func (we *WebSocketEndpoint) read_frames() {
+func (we *WebSocketEndpoint) readFrames() {
 	for {
 		mtype, rd, err := we.ws.NextReader()
 		if err != nil {

@@ -8,6 +8,7 @@ package libwebsocketd
 import (
 	"bufio"
 	"io"
+	"os"
 	"syscall"
 	"time"
 )
@@ -43,54 +44,35 @@ func (pe *ProcessEndpoint) Terminate() {
 		pe.log.Debug("process", "STDIN close: %s", err)
 	}
 
-	// a bit verbose to create good debugging trail
-	select {
-	case <-terminated:
-		pe.log.Debug("process", "Process %v terminated after stdin was closed", pe.process.cmd.Process.Pid)
-		return // means process finished
-	case <-time.After(100*time.Millisecond + pe.closetime):
+	pid := pe.process.cmd.Process.Pid
+
+	// Escalating termination: stdin close → SIGINT → SIGTERM → SIGKILL
+	signals := []struct {
+		signal  os.Signal
+		name    string
+		timeout time.Duration
+	}{
+		{nil, "stdin was closed", 100*time.Millisecond + pe.closetime},
+		{syscall.SIGINT, "SIGINT", 250*time.Millisecond + pe.closetime},
+		{syscall.SIGTERM, "SIGTERM", 500*time.Millisecond + pe.closetime},
+		{syscall.SIGKILL, "SIGKILL", 1000 * time.Millisecond},
 	}
 
-	err := pe.process.cmd.Process.Signal(syscall.SIGINT)
-	if err != nil {
-		// process is done without this, great!
-		pe.log.Error("process", "SIGINT unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
+	for _, step := range signals {
+		if step.signal != nil {
+			if err := pe.process.cmd.Process.Signal(step.signal); err != nil {
+				pe.log.Error("process", "%s unsuccessful to %v: %s", step.name, pid, err)
+			}
+		}
+		select {
+		case <-terminated:
+			pe.log.Debug("process", "Process %v terminated after %s", pid, step.name)
+			return
+		case <-time.After(step.timeout):
+		}
 	}
 
-	select {
-	case <-terminated:
-		pe.log.Debug("process", "Process %v terminated after SIGINT", pe.process.cmd.Process.Pid)
-		return // means process finished
-	case <-time.After(250*time.Millisecond + pe.closetime):
-	}
-
-	err = pe.process.cmd.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		// process is done without this, great!
-		pe.log.Error("process", "SIGTERM unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
-	}
-
-	select {
-	case <-terminated:
-		pe.log.Debug("process", "Process %v terminated after SIGTERM", pe.process.cmd.Process.Pid)
-		return // means process finished
-	case <-time.After(500*time.Millisecond + pe.closetime):
-	}
-
-	err = pe.process.cmd.Process.Kill()
-	if err != nil {
-		pe.log.Error("process", "SIGKILL unsuccessful to %v: %s", pe.process.cmd.Process.Pid, err)
-		return
-	}
-
-	select {
-	case <-terminated:
-		pe.log.Debug("process", "Process %v terminated after SIGKILL", pe.process.cmd.Process.Pid)
-		return // means process finished
-	case <-time.After(1000 * time.Millisecond):
-	}
-
-	pe.log.Error("process", "SIGKILL did not terminate %v!", pe.process.cmd.Process.Pid)
+	pe.log.Error("process", "SIGKILL did not terminate %v!", pid)
 }
 
 func (pe *ProcessEndpoint) Output() chan []byte {
@@ -107,15 +89,15 @@ func (pe *ProcessEndpoint) Send(msg []byte) bool {
 }
 
 func (pe *ProcessEndpoint) StartReading() {
-	go pe.log_stderr()
+	go pe.logStderr()
 	if pe.bin {
-		go pe.process_binout()
+		go pe.readBinaryOutput()
 	} else {
-		go pe.process_txtout()
+		go pe.readTextOutput()
 	}
 }
 
-func (pe *ProcessEndpoint) process_txtout() {
+func (pe *ProcessEndpoint) readTextOutput() {
 	bufin := bufio.NewReader(pe.process.stdout)
 	for {
 		buf, err := bufin.ReadBytes('\n')
@@ -132,7 +114,7 @@ func (pe *ProcessEndpoint) process_txtout() {
 	close(pe.output)
 }
 
-func (pe *ProcessEndpoint) process_binout() {
+func (pe *ProcessEndpoint) readBinaryOutput() {
 	buf := make([]byte, 10*1024*1024)
 	for {
 		n, err := pe.process.stdout.Read(buf)
@@ -149,7 +131,7 @@ func (pe *ProcessEndpoint) process_binout() {
 	close(pe.output)
 }
 
-func (pe *ProcessEndpoint) log_stderr() {
+func (pe *ProcessEndpoint) logStderr() {
 	bufstderr := bufio.NewReader(pe.process.stderr)
 	for {
 		buf, err := bufstderr.ReadSlice('\n')
