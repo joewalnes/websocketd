@@ -5,18 +5,18 @@
 | # | Category | Grade | Key Finding |
 |---|----------|-------|-------------|
 | 1 | Architecture | A- | Clean handler chain, bidirectional PipeEndpoints, extracted config validators |
-| 2 | Code Quality | B+ | No known bugs; defensive panic in fork tracking (http.go:252) |
-| 3 | Consistency | B+ | All methods camelCase, uniform error-return pattern throughout |
+| 2 | Code Quality | A- | No known bugs; all production error paths handled |
+| 3 | Consistency | B+ | All methods camelCase, uniform error-return pattern; some legacy style in env.go |
 | 4 | Security | A- | Symlink boundary check, origin hardened, env isolated, mTLS, gosec clean |
 | 5 | Performance | B | Regex compiled once, backpressure via OS pipes, no per-request allocations |
-| 6 | DRY | B+ | Terminate() signal loop extracted; no meaningful duplication remains |
-| 7 | Testability | A- | 12 extracted pure functions, Endpoint interface, per-test server isolation |
-| 8 | Test Coverage | A | 217 tests (1.28:1 test-to-code ratio), all production files have unit tests |
+| 6 | DRY | B+ | Signal loop extracted; no meaningful duplication remains |
+| 7 | Testability | A- | Extracted pure functions, Endpoint interface, per-test server isolation |
+| 8 | Test Coverage | A | 217 tests (1.28:1 ratio), all production files unit tested, CI on 4 platforms |
 | 9 | Type Safety | A- | Go types used correctly throughout |
 | 10 | Documentation | B | README accurate, CHANGES current; tutorial needs rewrite (#438) |
-| 11 | Error Handling | B+ | Errors returned not panicked; one defensive panic remains in fork tracking |
+| 11 | Error Handling | A- | Errors returned not panicked, graceful fork tracking, gosec clean |
 | 12 | Extensibility | B | Handler chain extensible, config validators composable |
-| 13 | Repo Hygiene | B+ | Clean atomic commits, pinned deps, no junk; no CI configured |
+| 13 | Repo Hygiene | A- | Clean atomic commits, pinned deps, CI on 4 platforms, no junk |
 
 **Overall: A-**
 
@@ -24,32 +24,30 @@
 
 ## Top Strengths
 
-- **PipeEndpoints** (endpoint.go:24-56) — bidirectional message relay with independent goroutines per direction, providing natural backpressure through OS pipe buffers with zero application-level buffering
-- **Test suite** — 217 tests: unit tests for every production file, integration tests for security/regression/edge cases/backpressure, cross-platform testcmd binary, ephemeral ports
-- **Security posture** — symlink boundary check (handler.go:167-183), origin validation with unit tests, environment whitelist isolation, mutual TLS support, gosec clean
-- **Decomposed hot path** — ServeHTTP is a clean handler chain; config parsing delegates to 7 testable pure functions
+- **PipeEndpoints** (endpoint.go:24-56) — bidirectional relay with independent goroutines, natural backpressure, zero application-level buffering
+- **Test suite** — 217 tests across unit + integration, CI on Linux x86/ARM64 + macOS ARM64 + Windows x86_64, regression tests for 6 historical bugs
+- **Security posture** — symlink boundary check, origin validation, env whitelist, mTLS (--sslca), ping/pong dead connection detection (--pingms), gosec clean
+- **Decomposed architecture** — ServeHTTP is a 20-line handler chain; config parsing delegates to 7 pure testable functions; no god objects
 
 ## Remaining Issues
 
-1. **MEDIUM [Error Handling]** `libwebsocketd/http.go:252` — `panic("Cannot deplete number of allowed forks...")` in `noteForkCompleted()`. Defensive check for a should-never-happen condition, but a panic kills the entire process. Should log and continue.
-
-2. **LOW [Clarity]** `libwebsocketd/launcher.go:44` — `return ..., err` where `err` is guaranteed nil. Should be `return ..., nil` for clarity.
-
-3. **LOW [Infra]** No CI configured. Tests run locally but not on push/PR.
+1. **LOW [Docs]** Tutorial needs rewrite (#438) — detailed user feedback available.
+2. **LOW [Docs]** Reverse proxy documentation (#27) — wiki page may exist but isn't linked from README.
+3. **LOW [Feature]** 8 open issues, all deferred (feature requests and docs, no bugs).
 
 ## Architecture Assessment
 
-The architecture is now clean across all layers. ServeHTTP delegates to focused handlers (serveWebSocket, serveCGI, serveStatic, serveDevConsole). PipeEndpoints runs each direction in its own goroutine, enabling synchronous Send() with natural backpressure. Config parsing is decomposed into 7 pure validation functions. The Endpoint interface remains the strongest design element — it cleanly decouples WebSocket I/O from process I/O.
+The architecture is clean across all layers. ServeHTTP delegates to focused handlers. PipeEndpoints runs each direction independently. Config parsing is decomposed into testable functions. The Endpoint interface decouples WebSocket I/O from process I/O. Signal escalation is a single loop over a table.
 
-The main structural limitation is that the project has no plugin or middleware system — adding a new handler type still requires editing serveHTTP. For websocketd's scope this is appropriate; it's not a framework.
+The main limitation is scope-appropriate: no plugin/middleware system. Adding a new handler type still requires editing ServeHTTP. For a focused CLI tool this is the right tradeoff.
 
 ## Documentation vs Reality
 
-- **handler.go:25** — URLInfo comment removed, but URLInfo is still embedded in WebsocketdHandler when only FilePath is used in 2 places. Minor over-exposure, not a doc issue.
-- **Tutorial** (#438) — User-reported confusion about step ordering, port configuration, and --staticdir vs --devconsole interaction. Not yet addressed.
+- **Tutorial** (#438): User-reported confusion about step ordering and port configuration. Not yet addressed.
+- **URLInfo**: Embedded in WebsocketdHandler but only FilePath and ScriptPath are used externally. Minor over-exposure.
 
 ## Quick Wins
 
-1. **Replace fork panic with log** — http.go:252, change panic to log.Error + return. Single line.
-2. **Fix launcher return** — launcher.go:44, change `err` to `nil`. Trivial.
-3. **Add GitHub Actions CI** — run `go test ./...` on push. ~20-line YAML file.
+1. **Rewrite the 10-minute tutorial** — detailed user feedback in #438. Documentation B → A-.
+2. **Link the nginx wiki page from README** — closes #27. One line.
+3. **Add `go test -race` to CI** — catches test infrastructure races. One line in YAML.
