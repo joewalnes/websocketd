@@ -73,7 +73,7 @@ bench/results/
 The `bench.yml` GitHub Actions workflow:
 - Runs all scenarios on every push to master and on PRs
 - Uploads `report.html` as a workflow artifact
-- Tracks metrics over time on [the dashboard](https://joewalnes.github.io/websocketd/dev/bench/)
+- Tracks metrics over time on [the dashboard](https://websocketd.com/dev/bench/)
 - Posts comparison comments on PRs
 - Blocks merges on >15% regression
 
