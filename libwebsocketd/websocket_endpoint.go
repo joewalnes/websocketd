@@ -111,7 +111,8 @@ func (we *WebSocketEndpoint) readFrames() {
 			break
 		}
 		if mtype != we.mtype {
-			we.log.Debug("websocket", "Received message of type that we did not expect... Ignoring...")
+			we.log.Debug("websocket", "Ignoring message of unexpected type %d (want %d)", mtype, we.mtype)
+			continue
 		}
 
 		p, err := io.ReadAll(rd)
@@ -119,13 +120,10 @@ func (we *WebSocketEndpoint) readFrames() {
 			we.log.Debug("websocket", "Cannot read received message: %s", err)
 			break
 		}
-		switch mtype {
-		case websocket.TextMessage:
+		if we.mtype == websocket.TextMessage {
 			we.output <- append(p, '\n')
-		case websocket.BinaryMessage:
+		} else {
 			we.output <- p
-		default:
-			we.log.Debug("websocket", "Received message of unknown type: %d", mtype)
 		}
 	}
 	close(we.output)
