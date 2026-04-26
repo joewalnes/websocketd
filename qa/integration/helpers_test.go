@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -69,13 +70,31 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+// syncBuffer is a goroutine-safe bytes.Buffer for capturing stderr.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
 // Server wraps a running websocketd instance for testing.
 type Server struct {
 	t          *testing.T
 	Port       int
 	IsHTTPS    bool
 	cmd        *exec.Cmd
-	stderr     bytes.Buffer
+	stderr     syncBuffer
 	stderrDone chan struct{}
 }
 
@@ -442,16 +461,6 @@ func generateTestCert(t *testing.T) (certPath, keyPath string) {
 // writeFile writes content to a file in the given directory.
 func writeFile(dir, name, content string) error {
 	return os.WriteFile(filepath.Join(dir, name), []byte(content), 0644)
-}
-
-// containsLine checks if any line in text matches the expected string.
-func containsLine(text, expected string) bool {
-	for _, line := range strings.Split(text, "\n") {
-		if strings.TrimSpace(line) == expected {
-			return true
-		}
-	}
-	return false
 }
 
 // findEnvValue finds the value of an environment variable in env dump output.
