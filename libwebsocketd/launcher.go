@@ -28,16 +28,21 @@ func launchCmd(commandName string, commandArgs []string, env []string) (*Launche
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
+		stdout.Close()
 		return nil, err
 	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		stdout.Close()
+		stderr.Close()
 		return nil, err
 	}
 
-	err = cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
+		stdin.Close()
+		stdout.Close()
+		stderr.Close()
 		return nil, err
 	}
 
