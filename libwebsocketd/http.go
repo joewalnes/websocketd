@@ -24,18 +24,26 @@ import (
 
 var ForkNotAllowedError = errors.New("too many forks active")
 
+var upgradeRe = regexp.MustCompile(`(?i)(^|[,\s])Upgrade($|[,\s])`)
+
 // WebsocketdServer presents http.Handler interface for requests libwebsocketd is handling.
 type WebsocketdServer struct {
-	Config *Config
-	Log    *LogScope
-	forks  chan byte
+	Config   *Config
+	Log      *LogScope
+	forks    chan byte
+	hostname string // cached os.Hostname(), computed once at startup
 }
 
 // NewWebsocketdServer creates WebsocketdServer struct with pre-determined config, logscope and maxforks limit
 func NewWebsocketdServer(config *Config, log *LogScope, maxforks int) *WebsocketdServer {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "UNKNOWN"
+	}
 	mux := &WebsocketdServer{
-		Config: config,
-		Log:    log,
+		Config:   config,
+		Log:      log,
+		hostname: hostname,
 	}
 	if maxforks > 0 {
 		mux.forks = make(chan byte, maxforks)
@@ -71,11 +79,10 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if h.Config.CommandName != "" || h.Config.UsingScriptDir {
 		hdrs := req.Header
-		upgradeRe := regexp.MustCompile(`(?i)(^|[,\s])Upgrade($|[,\s])`)
 		// WebSocket, limited to size of h.forks
 		if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
 			if h.noteForkCreated() == nil {
-				defer h.noteForkCompled()
+				defer h.noteForkCompleted()
 
 				// start figuring out if we even need to upgrade
 				handler, err := NewWebsocketdHandler(h, req, log)
@@ -144,9 +151,12 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 			log.Associate("cgiscript", filePath)
 			if h.noteForkCreated() == nil {
-				defer h.noteForkCompled()
+				defer h.noteForkCompleted()
 
-				// Make variables to supplement cgi... Environ it uses will show empty list.
+				// Build extra environment for CGI handler.
+				// Go's cgi.Handler sets standard CGI variables (RFC 3875 §4.1)
+				// automatically from the HTTP request. Env provides additional
+				// variables like SERVER_SOFTWARE and any passed parent env vars.
 				envlen := len(h.Config.ParentEnv)
 				cgienv := make([]string, envlen+1)
 				if envlen > 0 {
@@ -155,9 +165,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
 				cgiHandler := &cgi.Handler{
 					Path: filePath,
-					Env: []string{
-						"SERVER_SOFTWARE=" + h.Config.ServerSoftware,
-					},
+					Env:  cgienv,
 				}
 				log.Access("http", "CGI")
 				cgiHandler.ServeHTTP(w, req)
@@ -182,19 +190,10 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.NotFound(w, req)
 }
 
-var canonicalHostname string
-
 // TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
 func (h *WebsocketdServer) TellURL(scheme, host, path string) string {
 	if len(host) > 0 && host[0] == ':' {
-		if canonicalHostname == "" {
-			var err error
-			canonicalHostname, err = os.Hostname()
-			if err != nil {
-				canonicalHostname = "UNKNOWN"
-			}
-		}
-		host = canonicalHostname + host
+		host = h.hostname + host
 	}
 	if h.Config.Ssl {
 		return scheme + "s://" + host + path
@@ -217,7 +216,7 @@ func (h *WebsocketdServer) noteForkCreated() error {
 	}
 }
 
-func (h *WebsocketdServer) noteForkCompled() {
+func (h *WebsocketdServer) noteForkCompleted() {
 	if h.forks != nil { // see comment in noteForkCreated
 		select {
 		case <-h.forks:
@@ -232,13 +231,6 @@ func (h *WebsocketdServer) noteForkCompled() {
 }
 
 func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
-	// CONVERT GORILLA:
-	// this is origin checking function, it's called from wshandshake which is from ServeHTTP main handler
-	// should be trivial to reuse in gorilla's upgrader.CheckOrigin function.
-	// Only difference is to parse request and fetching passed Origin header out of it instead of using
-	// pre-parsed wsconf.Origin
-
-	// check for origin to be correct in future
 	// handshaker triggers answering with 403 if error was returned
 	// We keep behavior of original handshaker that populates this field
 	origin := req.Header.Get("Origin")
@@ -292,8 +284,8 @@ func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
 				if err != nil {
 					continue // unparseable
 				}
-				if allowPort == "80" && allowed[len(allowed)-3:] != ":80" {
-					// any port is allowed, host names need to match
+				if allowPort == "80" && (len(allowed) < 3 || allowed[len(allowed)-3:] != ":80") {
+					// port defaulted to 80 (not explicitly specified), any port is allowed
 					matchFound = allowServer == originServer
 				} else {
 					// exact match of host names and ports
