@@ -51,15 +51,7 @@ func TestBUG002_GatewayInterfaceShouldBeStandard(t *testing.T) {
 	}
 }
 
-func TestBUG004_GorillaDependencyVersion(t *testing.T) {
-	t.Skip("BUG-004: gorilla/websocket v1.4.0 is outdated and archived. See qa/bugs-found.md.")
-
-	// This is an audit finding, not a runtime test.
-	// gorilla/websocket v1.4.0 was released in 2018.
-	// The library has been archived by maintainers.
-	// Run: govulncheck ./...
-	t.Fatal("gorilla/websocket dependency needs updating")
-}
+// TestBUG004 removed — fixed by upgrading gorilla/websocket v1.4.0 → v1.5.3.
 
 func TestBUG005_GoModuleVersion(t *testing.T) {
 	t.Skip("BUG-005: go.mod specifies Go 1.15 which is end-of-life. See qa/bugs-found.md.")
