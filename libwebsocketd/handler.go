@@ -154,7 +154,7 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 		urlInfo.PathInfo = "/" + strings.Join(parts[i+1:], "/")
 		return urlInfo, nil
 	}
-	panic(fmt.Sprintf("GetURLInfo cannot parse path %#v", path))
+	return nil, fmt.Errorf("could not resolve script for path %q", path)
 }
 
 func generateId() string {
