@@ -8,6 +8,7 @@ package libwebsocketd
 import (
 	"bufio"
 	"io"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -18,6 +19,7 @@ type ProcessEndpoint struct {
 	output    chan []byte
 	log       *LogScope
 	bin       bool
+	stdinMu   sync.Mutex // serializes writes from Send goroutines
 }
 
 func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *ProcessEndpoint {
@@ -91,7 +93,18 @@ func (pe *ProcessEndpoint) Output() chan []byte {
 }
 
 func (pe *ProcessEndpoint) Send(msg []byte) bool {
-	pe.process.stdin.Write(msg)
+	// Write to stdin in a goroutine to avoid blocking PipeEndpoints.
+	// Without this, a large payload in binary mode deadlocks: Send blocks
+	// on stdin.Write (pipe full), so PipeEndpoints can't drain stdout,
+	// so the child blocks on stdout.Write — both sides wait forever.
+	go func() {
+		pe.stdinMu.Lock()
+		defer pe.stdinMu.Unlock()
+		_, err := pe.process.stdin.Write(msg)
+		if err != nil {
+			pe.log.Debug("process", "Cannot write to STDIN: %s", err)
+		}
+	}()
 	return true
 }
 
