@@ -6,6 +6,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,6 +35,30 @@ func logfunc(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName 
 	l.Mutex.Lock()
 	fmt.Printf("%s | %-6s | %-10s | %s | %s\n", libwebsocketd.Timestamp(), levelName, category, assocDump, fullMsg)
 	l.Mutex.Unlock()
+}
+
+// listenAndServeMutualTLS starts an HTTPS server that requires client certificates
+// verified against the given CA file.
+func listenAndServeMutualTLS(addr, certFile, keyFile, caFile string, log *libwebsocketd.LogScope) error {
+	caCert, err := os.ReadFile(caFile)
+	if err != nil {
+		return fmt.Errorf("failed to read CA file %s: %w", caFile, err)
+	}
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return fmt.Errorf("failed to parse CA certificates from %s", caFile)
+	}
+
+	tlsConfig := &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs:  caCertPool,
+	}
+	server := &http.Server{
+		Addr:      addr,
+		TLSConfig: tlsConfig,
+	}
+	log.Info("server", "Mutual TLS enabled (client certs verified against %s)", caFile)
+	return server.ListenAndServeTLS(certFile, keyFile)
 }
 
 func main() {
@@ -83,7 +109,12 @@ func main() {
 
 		go func(addr string) {
 			if config.Ssl {
-				rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
+				if config.SslCaFile != "" {
+					// Mutual TLS: require and verify client certificates
+					rejects <- listenAndServeMutualTLS(addr, config.CertFile, config.KeyFile, config.SslCaFile, log)
+				} else {
+					rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
+				}
 			} else {
 				rejects <- http.ListenAndServe(addr, nil)
 			}
