@@ -75,10 +75,6 @@ var CheckOriginTests = []struct {
 	{"server.example.com", ReqHTTP, "", OriginCouldDiffer, NoOriginList, ReturnsPass, "any origin allowed, even empty"},
 }
 
-// CONVERT GORILLA
-// as method for origin checking changes to handle things without websocket.Config the test
-// should be altered too
-
 func TestCheckOrigin(t *testing.T) {
 	for _, testcase := range CheckOriginTests {
 		br := bufio.NewReader(strings.NewReader(fmt.Sprintf(`GET /chat HTTP/1.1
@@ -132,5 +128,148 @@ func TestSplitMimeHeader(t *testing.T) {
 		if tst[1] != s || tst[2] != v {
 			t.Errorf("%v and %v  are not same as expexted %v and %v", s, v, tst[1], tst[2])
 		}
+	}
+}
+
+// --- New unit tests for extracted functions ---
+
+func TestIsWebSocketUpgrade(t *testing.T) {
+	tests := []struct {
+		name       string
+		upgrade    string
+		connection string
+		want       bool
+	}{
+		{"standard", "websocket", "Upgrade", true},
+		{"lowercase", "websocket", "upgrade", true},
+		{"mixed case upgrade header", "WebSocket", "Upgrade", true},
+		{"connection with multiple values", "websocket", "keep-alive, Upgrade", true},
+		{"no upgrade header", "", "Upgrade", false},
+		{"wrong upgrade value", "h2c", "Upgrade", false},
+		{"no connection header", "websocket", "", false},
+		{"connection without upgrade", "websocket", "keep-alive", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			if tt.upgrade != "" {
+				req.Header.Set("Upgrade", tt.upgrade)
+			}
+			if tt.connection != "" {
+				req.Header.Set("Connection", tt.connection)
+			}
+			if got := isWebSocketUpgrade(req); got != tt.want {
+				t.Errorf("isWebSocketUpgrade() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatchOrigin(t *testing.T) {
+	tests := []struct {
+		name       string
+		server     string
+		port       string
+		scheme     string
+		allowed    []string
+		wantMatch  bool
+	}{
+		{"exact host match", "example.com", "80", "http", []string{"example.com"}, true},
+		{"host with any port", "example.com", "8080", "http", []string{"example.com"}, true},
+		{"exact host and port", "example.com", "81", "http", []string{"example.com:81"}, true},
+		{"port mismatch", "example.com", "80", "http", []string{"example.com:81"}, false},
+		{"host mismatch", "other.com", "80", "http", []string{"example.com"}, false},
+		{"multiple allowed", "b.com", "80", "http", []string{"a.com", "b.com"}, true},
+		{"scheme match", "example.com", "443", "https", []string{"https://example.com:443"}, true},
+		{"scheme mismatch", "example.com", "80", "http", []string{"https://example.com"}, false},
+		{"empty list", "example.com", "80", "http", []string{}, false},
+		{"short origin string", "x", "80", "http", []string{"x"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := matchOrigin(tt.server, tt.port, tt.scheme, tt.allowed)
+			if got != tt.wantMatch {
+				t.Errorf("matchOrigin(%q, %q, %q, %v) = %v, want %v",
+					tt.server, tt.port, tt.scheme, tt.allowed, got, tt.wantMatch)
+			}
+		})
+	}
+}
+
+func TestTellURL(t *testing.T) {
+	tests := []struct {
+		name   string
+		ssl    bool
+		scheme string
+		host   string
+		path   string
+		want   string
+	}{
+		{"http basic", false, "http", "localhost:8080", "/path", "http://localhost:8080/path"},
+		{"https basic", true, "http", "localhost:8080", "/path", "https://localhost:8080/path"},
+		{"ws scheme", false, "ws", "localhost:8080", "/ws", "ws://localhost:8080/ws"},
+		{"wss scheme", true, "ws", "localhost:8080", "/ws", "wss://localhost:8080/ws"},
+		{"port-only host uses hostname", false, "http", ":8080", "/", "http://testhost:8080/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &WebsocketdServer{
+				Config:   &Config{Ssl: tt.ssl},
+				hostname: "testhost",
+			}
+			got := s.TellURL(tt.scheme, tt.host, tt.path)
+			if got != tt.want {
+				t.Errorf("TellURL(%q, %q, %q) = %q, want %q", tt.scheme, tt.host, tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNoteForkCreatedAndCompleted(t *testing.T) {
+	t.Run("nil forks (unlimited)", func(t *testing.T) {
+		s := &WebsocketdServer{}
+		if err := s.noteForkCreated(); err != nil {
+			t.Errorf("unlimited forks should never fail: %v", err)
+		}
+		s.noteForkCompleted() // should not panic
+	})
+
+	t.Run("fork limit enforced", func(t *testing.T) {
+		s := &WebsocketdServer{forks: make(chan byte, 2)}
+
+		// Fill up forks
+		if err := s.noteForkCreated(); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.noteForkCreated(); err != nil {
+			t.Fatal(err)
+		}
+
+		// Third should fail
+		if err := s.noteForkCreated(); err != ForkNotAllowedError {
+			t.Errorf("expected ForkNotAllowedError, got %v", err)
+		}
+
+		// Release one, should work again
+		s.noteForkCompleted()
+		if err := s.noteForkCreated(); err != nil {
+			t.Errorf("fork should be available after release: %v", err)
+		}
+
+		// Clean up
+		s.noteForkCompleted()
+		s.noteForkCompleted()
+	})
+}
+
+func TestPushHeaders(t *testing.T) {
+	h := http.Header{}
+	pushHeaders(h, []string{"X-Foo: bar", "X-Baz: qux"})
+
+	if got := h.Get("X-Foo"); got != "bar" {
+		t.Errorf("X-Foo = %q, want %q", got, "bar")
+	}
+	if got := h.Get("X-Baz"); got != "qux" {
+		t.Errorf("X-Baz = %q, want %q", got, "qux")
 	}
 }

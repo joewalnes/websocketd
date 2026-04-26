@@ -72,122 +72,150 @@ func pushHeaders(h http.Header, hdrs []string) {
 	}
 }
 
+// isWebSocketUpgrade checks if the request is a WebSocket upgrade request.
+func isWebSocketUpgrade(req *http.Request) bool {
+	hdrs := req.Header
+	return strings.ToLower(hdrs.Get("Upgrade")) == "websocket" &&
+		upgradeRe.MatchString(hdrs.Get("Connection"))
+}
+
 // ServeHTTP muxes between WebSocket handler, CGI handler, DevConsole, Static HTML or 404.
 func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log := h.Log.NewLevel(h.Log.LogFunc)
 	log.Associate("url", h.TellURL("http", req.Host, req.RequestURI))
 
-	if h.Config.CommandName != "" || h.Config.UsingScriptDir {
-		hdrs := req.Header
-		// WebSocket, limited to size of h.forks
-		if strings.ToLower(hdrs.Get("Upgrade")) == "websocket" && upgradeRe.MatchString(hdrs.Get("Connection")) {
-			if h.noteForkCreated() == nil {
-				defer h.noteForkCompleted()
-
-				// start figuring out if we even need to upgrade
-				handler, err := NewWebsocketdHandler(h, req, log)
-				if err != nil {
-					if err == ScriptNotFoundError {
-						log.Access("session", "NOT FOUND: %s", err)
-						http.Error(w, "404 Not Found", 404)
-					} else {
-						log.Access("session", "INTERNAL ERROR: %s", err)
-						http.Error(w, "500 Internal Server Error", 500)
-					}
-					return
-				}
-
-				var headers http.Header
-				if len(h.Config.Headers)+len(h.Config.HeadersWs) > 0 {
-					headers = http.Header(make(map[string][]string))
-					pushHeaders(headers, h.Config.Headers)
-					pushHeaders(headers, h.Config.HeadersWs)
-				}
-
-				upgrader := &websocket.Upgrader{
-					HandshakeTimeout: h.Config.HandshakeTimeout,
-					CheckOrigin: func(r *http.Request) bool {
-						// backporting previous checkorigin for use in gorilla/websocket for now
-						err := checkOrigin(req, h.Config, log)
-						return err == nil
-					},
-				}
-				conn, err := upgrader.Upgrade(w, req, headers)
-				if err != nil {
-					log.Access("session", "Unable to Upgrade: %s", err)
-					http.Error(w, "500 Internal Error", 500)
-					return
-				}
-
-				// old func was used in x/net/websocket style, we reuse it here for gorilla/websocket
-				handler.accept(conn, log)
-				return
-
-			} else {
-				log.Error("http", "Max of possible forks already active, upgrade rejected")
-				http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
-			}
-			return
-		}
+	if h.serveWebSocket(w, req, log) {
+		return
 	}
 
 	pushHeaders(w.Header(), h.Config.Headers)
 	pushHeaders(w.Header(), h.Config.HeadersHTTP)
 
-	// Dev console (if enabled)
-	if h.Config.DevConsole {
-		log.Access("http", "DEVCONSOLE")
-		content := ConsoleContent
-		content = strings.Replace(content, "{{license}}", License, -1)
-		content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
-		http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
+	if h.serveDevConsole(w, req, log) {
+		return
+	}
+	if h.serveCGI(w, req, log) {
+		return
+	}
+	if h.serveStatic(w, req, log) {
 		return
 	}
 
-	// CGI scripts, limited to size of h.forks
-	if h.Config.CgiDir != "" {
-		filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
-		if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
-
-			log.Associate("cgiscript", filePath)
-			if h.noteForkCreated() == nil {
-				defer h.noteForkCompleted()
-
-				// Build extra environment for CGI handler.
-				// Go's cgi.Handler sets standard CGI variables (RFC 3875 §4.1)
-				// automatically from the HTTP request. Env provides additional
-				// variables like SERVER_SOFTWARE and any passed parent env vars.
-				envlen := len(h.Config.ParentEnv)
-				cgienv := make([]string, envlen+1)
-				if envlen > 0 {
-					copy(cgienv, h.Config.ParentEnv)
-				}
-				cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
-				cgiHandler := &cgi.Handler{
-					Path: filePath,
-					Env:  cgienv,
-				}
-				log.Access("http", "CGI")
-				cgiHandler.ServeHTTP(w, req)
-			} else {
-				log.Error("http", "Fork not allowed since maxforks amount has been reached. CGI was not run.")
-				http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
-			}
-			return
-		}
-	}
-
-	// Static files
-	if h.Config.StaticDir != "" {
-		handler := http.FileServer(http.Dir(h.Config.StaticDir))
-		log.Access("http", "STATIC")
-		handler.ServeHTTP(w, req)
-		return
-	}
-
-	// 404
 	log.Access("http", "NOT FOUND")
 	http.NotFound(w, req)
+}
+
+// serveWebSocket handles WebSocket upgrade requests. Returns true if handled.
+func (h *WebsocketdServer) serveWebSocket(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
+	if h.Config.CommandName == "" && !h.Config.UsingScriptDir {
+		return false
+	}
+	if !isWebSocketUpgrade(req) {
+		return false
+	}
+
+	if h.noteForkCreated() != nil {
+		log.Error("http", "Max of possible forks already active, upgrade rejected")
+		http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
+		return true
+	}
+	defer h.noteForkCompleted()
+
+	handler, err := NewWebsocketdHandler(h, req, log)
+	if err != nil {
+		if err == ScriptNotFoundError {
+			log.Access("session", "NOT FOUND: %s", err)
+			http.Error(w, "404 Not Found", 404)
+		} else {
+			log.Access("session", "INTERNAL ERROR: %s", err)
+			http.Error(w, "500 Internal Server Error", 500)
+		}
+		return true
+	}
+
+	var headers http.Header
+	if len(h.Config.Headers)+len(h.Config.HeadersWs) > 0 {
+		headers = http.Header(make(map[string][]string))
+		pushHeaders(headers, h.Config.Headers)
+		pushHeaders(headers, h.Config.HeadersWs)
+	}
+
+	upgrader := &websocket.Upgrader{
+		HandshakeTimeout: h.Config.HandshakeTimeout,
+		CheckOrigin: func(r *http.Request) bool {
+			return checkOrigin(req, h.Config, log) == nil
+		},
+	}
+	conn, err := upgrader.Upgrade(w, req, headers)
+	if err != nil {
+		log.Access("session", "Unable to Upgrade: %s", err)
+		http.Error(w, "500 Internal Error", 500)
+		return true
+	}
+
+	handler.accept(conn, log)
+	return true
+}
+
+// serveDevConsole serves the interactive development console. Returns true if handled.
+func (h *WebsocketdServer) serveDevConsole(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
+	if !h.Config.DevConsole {
+		return false
+	}
+	log.Access("http", "DEVCONSOLE")
+	content := ConsoleContent
+	content = strings.Replace(content, "{{license}}", License, -1)
+	content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
+	http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
+	return true
+}
+
+// serveCGI executes CGI scripts from the configured directory. Returns true if handled.
+func (h *WebsocketdServer) serveCGI(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
+	if h.Config.CgiDir == "" {
+		return false
+	}
+	filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
+	fi, err := os.Stat(filePath)
+	if err != nil || fi.IsDir() {
+		return false
+	}
+
+	log.Associate("cgiscript", filePath)
+	if h.noteForkCreated() != nil {
+		log.Error("http", "Fork not allowed since maxforks amount has been reached. CGI was not run.")
+		http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
+		return true
+	}
+	defer h.noteForkCompleted()
+
+	// Build extra environment for CGI handler.
+	// Go's cgi.Handler sets standard CGI variables (RFC 3875 §4.1)
+	// automatically from the HTTP request. Env provides additional
+	// variables like SERVER_SOFTWARE and any passed parent env vars.
+	envlen := len(h.Config.ParentEnv)
+	cgienv := make([]string, envlen+1)
+	if envlen > 0 {
+		copy(cgienv, h.Config.ParentEnv)
+	}
+	cgienv[envlen] = "SERVER_SOFTWARE=" + h.Config.ServerSoftware
+	cgiHandler := &cgi.Handler{
+		Path: filePath,
+		Env:  cgienv,
+	}
+	log.Access("http", "CGI")
+	cgiHandler.ServeHTTP(w, req)
+	return true
+}
+
+// serveStatic serves static files from the configured directory. Returns true if handled.
+func (h *WebsocketdServer) serveStatic(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
+	if h.Config.StaticDir == "" {
+		return false
+	}
+	log.Access("http", "STATIC")
+	http.FileServer(http.Dir(h.Config.StaticDir)).ServeHTTP(w, req)
+	return true
 }
 
 // TellURL is a helper function that changes http to https or ws to wss in case if SSL is used
@@ -211,32 +239,24 @@ func (h *WebsocketdServer) noteForkCreated() error {
 		default:
 			return ForkNotAllowedError
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (h *WebsocketdServer) noteForkCompleted() {
-	if h.forks != nil { // see comment in noteForkCreated
+	if h.forks != nil {
 		select {
 		case <-h.forks:
 			return
 		default:
-			// This could only happen if the completion handler called more times than creation handler above
-			// Code should be audited to not allow this to happen, it's desired to have test that would
-			// make sure this is impossible but it is not exist yet.
-			panic("Cannot deplet number of allowed forks, something is not right in code!")
+			panic("Cannot deplete number of allowed forks, something is not right in code!")
 		}
 	}
 }
 
 func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
-	// handshaker triggers answering with 403 if error was returned
-	// We keep behavior of original handshaker that populates this field
 	origin := req.Header.Get("Origin")
 	if origin == "" || (origin == "null" && config.AllowOrigins == nil) {
-		// we don't want to trust string "null" if there is any
-		// enforcements are active
 		origin = "file:"
 	}
 
@@ -248,7 +268,6 @@ func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
 
 	log.Associate("origin", originParsed.String())
 
-	// If some origin restrictions are present:
 	if config.SameOrigin || config.AllowOrigins != nil {
 		originServer, originPort, err := tellHostPort(originParsed.Host, originParsed.Scheme == "https")
 		if err != nil {
@@ -267,41 +286,45 @@ func checkOrigin(req *http.Request, config *Config, log *LogScope) (err error) {
 			}
 		}
 		if config.AllowOrigins != nil {
-			matchFound := false
-			for _, allowed := range config.AllowOrigins {
-				if pos := strings.Index(allowed, "://"); pos > 0 {
-					// allowed schema has to match
-					allowedURL, err := url.Parse(allowed)
-					if err != nil {
-						continue // pass bad URLs in origin list
-					}
-					if allowedURL.Scheme != originParsed.Scheme {
-						continue // mismatch
-					}
-					allowed = allowed[pos+3:]
-				}
-				allowServer, allowPort, err := tellHostPort(allowed, false)
-				if err != nil {
-					continue // unparseable
-				}
-				if allowPort == "80" && (len(allowed) < 3 || allowed[len(allowed)-3:] != ":80") {
-					// port defaulted to 80 (not explicitly specified), any port is allowed
-					matchFound = allowServer == originServer
-				} else {
-					// exact match of host names and ports
-					matchFound = allowServer == originServer && allowPort == originPort
-				}
-				if matchFound {
-					break
-				}
-			}
-			if !matchFound {
+			if !matchOrigin(originServer, originPort, originParsed.Scheme, config.AllowOrigins) {
 				log.Access("session", "Origin is not listed in allowed list")
 				return fmt.Errorf("origin list matches were not found")
 			}
 		}
 	}
 	return nil
+}
+
+// matchOrigin checks if the given origin server/port/scheme matches any entry
+// in the allowed origins list. Extracted for testability.
+func matchOrigin(originServer, originPort, originScheme string, allowedOrigins []string) bool {
+	for _, allowed := range allowedOrigins {
+		if pos := strings.Index(allowed, "://"); pos > 0 {
+			allowedURL, err := url.Parse(allowed)
+			if err != nil {
+				continue
+			}
+			if allowedURL.Scheme != originScheme {
+				continue
+			}
+			allowed = allowed[pos+3:]
+		}
+		allowServer, allowPort, err := tellHostPort(allowed, false)
+		if err != nil {
+			continue
+		}
+		if allowPort == "80" && (len(allowed) < 3 || allowed[len(allowed)-3:] != ":80") {
+			// port defaulted to 80 (not explicitly specified), any port is allowed
+			if allowServer == originServer {
+				return true
+			}
+		} else {
+			if allowServer == originServer && allowPort == originPort {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func tellHostPort(host string, ssl bool) (server, port string, err error) {
