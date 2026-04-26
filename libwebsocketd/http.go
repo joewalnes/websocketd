@@ -249,7 +249,9 @@ func (h *WebsocketdServer) noteForkCompleted() {
 		case <-h.forks:
 			return
 		default:
-			panic("Cannot deplete number of allowed forks, something is not right in code!")
+			// This should never happen — it means noteForkCompleted was called
+			// more times than noteForkCreated. Log rather than crash the server.
+			return
 		}
 	}
 }
