@@ -24,6 +24,8 @@ Version 0.5.0 (Apr 26, 2026)
 * Added symlink boundary check in script directory mode (security hardening)
 * Extracted signal escalation loop in Terminate() (was 4x repeated pattern)
 * Renamed snake_case methods to camelCase (Go convention)
+* Added GitHub Actions CI across 4 platforms (Linux x86/ARM64, macOS ARM64, Windows)
+* Replaced fork tracking panic with graceful handling
 * Increased test count from 7 to 217
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
