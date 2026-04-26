@@ -118,11 +118,14 @@ func appendEnv(env []string, k string, v ...string) []string {
 		return env
 	}
 
-	vCleaned := make([]string, 0, len(v))
-	for _, val := range v {
-		vCleaned = append(vCleaned, strings.TrimSpace(newlineReplacer.Replace(val)))
+	var b strings.Builder
+	b.WriteString(strings.ToUpper(k))
+	b.WriteByte('=')
+	for i, val := range v {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(strings.TrimSpace(newlineReplacer.Replace(val)))
 	}
-	return append(env, fmt.Sprintf("%s=%s",
-		strings.ToUpper(k),
-		strings.Join(vCleaned, ", ")))
+	return append(env, b.String())
 }
