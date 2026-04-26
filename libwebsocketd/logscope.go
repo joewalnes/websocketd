@@ -39,6 +39,9 @@ type AssocPair struct {
 	Value string
 }
 
+// Associate adds metadata to this log scope. Must be called during setup,
+// before any goroutines start logging on this scope — the Associated slice
+// is not synchronized for concurrent access.
 func (l *LogScope) Associate(key string, value string) {
 	l.Associated = append(l.Associated, AssocPair{key, value})
 }
