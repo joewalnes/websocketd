@@ -32,6 +32,7 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope) *WebSocke
 }
 
 func (we *WebSocketEndpoint) Terminate() {
+	we.ws.Close() // unblocks read_frames goroutine
 	we.log.Trace("websocket", "Terminated websocket connection")
 }
 
