@@ -26,6 +26,10 @@ Version 0.5.0 (Apr 26, 2026)
 * Renamed snake_case methods to camelCase (Go convention)
 * Added GitHub Actions CI across 4 platforms (Linux x86/ARM64, macOS ARM64, Windows)
 * Replaced fork tracking panic with graceful handling
+* Renamed error vars to Go convention (ErrScriptNotFound, ErrForkNotAllowed)
+* Cached dev console template license substitution at init (was per-request)
+* Renamed env.go replacers to idiomatic Go names
+* Added race detector (-race), staticcheck, and gosec to CI lint job
 * Increased test count from 7 to 217
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
