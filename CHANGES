@@ -19,7 +19,9 @@ Version 0.5.0 (Apr 26, 2026)
 * Decomposed parseCommandLine into testable validation functions
 * Split PipeEndpoints into two independent goroutines for proper backpressure
 * WebSocketEndpoint.Terminate now closes connection (clean shutdown on process exit)
-* Increased test count from 7 to 185
+* Added --pingms flag for WebSocket ping/pong dead connection detection (#456)
+* Added --sslca flag for mutual TLS client certificate verification (#413)
+* Increased test count from 7 to 195+
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
