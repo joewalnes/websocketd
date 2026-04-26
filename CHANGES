@@ -15,6 +15,9 @@ Version 0.5.0 (Apr 26, 2026)
 * Updated minimum Go version from 1.15 to 1.21
 * Replaced deprecated ioutil.ReadAll with io.ReadAll
 * Renamed noteForkCompled → noteForkCompleted (typo fix)
+* Decomposed ServeHTTP into focused handler methods (serveWebSocket, serveCGI, serveStatic, serveDevConsole)
+* Decomposed parseCommandLine into testable validation functions
+* Increased unit test count from 7 to 76
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
