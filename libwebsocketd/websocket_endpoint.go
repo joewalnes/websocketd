@@ -7,7 +7,6 @@ package libwebsocketd
 
 import (
 	"io"
-	"io/ioutil"
 
 	"github.com/gorilla/websocket"
 )
@@ -79,7 +78,7 @@ func (we *WebSocketEndpoint) read_frames() {
 			we.log.Debug("websocket", "Received message of type that we did not expect... Ignoring...")
 		}
 
-		p, err := ioutil.ReadAll(rd)
+		p, err := io.ReadAll(rd)
 		if err != nil && err != io.EOF {
 			we.log.Debug("websocket", "Cannot read received message: %s", err)
 			break

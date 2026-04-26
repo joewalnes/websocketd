@@ -33,10 +33,17 @@ func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *Proc
 
 func (pe *ProcessEndpoint) Terminate() {
 	terminated := make(chan struct{})
-	go func() { pe.process.cmd.Wait(); terminated <- struct{}{} }()
+	go func() {
+		if err := pe.process.cmd.Wait(); err != nil {
+			pe.log.Debug("process", "Process exit: %s", err)
+		}
+		terminated <- struct{}{}
+	}()
 
 	// for some processes this is enough to finish them...
-	pe.process.stdin.Close()
+	if err := pe.process.stdin.Close(); err != nil {
+		pe.log.Debug("process", "STDIN close: %s", err)
+	}
 
 	// a bit verbose to create good debugging trail
 	select {
