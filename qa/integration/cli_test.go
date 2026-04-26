@@ -93,21 +93,26 @@ func TestCLI007_SSLWithoutCert(t *testing.T) {
 }
 
 func TestCLI008_CustomHeaders(t *testing.T) {
-	// Note: --header applies to WebSocket upgrade responses only (not HTTP).
-	// This is websocketd's actual behavior — --header-http is for HTTP responses.
+	// --header applies to ALL responses (both HTTP and WebSocket).
 	t.Parallel()
 	s := startServerOpts(t,
 		[]string{`--header=X-Custom-Test: hello123`},
 		"echo")
 
-	// --header should appear in WebSocket upgrade response
+	// Should appear in HTTP responses
+	resp, _ := s.HTTPGet("/")
+	if v := resp.Header.Get("X-Custom-Test"); v != "hello123" {
+		t.Errorf("expected X-Custom-Test: hello123 in HTTP response, got %q", v)
+	}
+
+	// Should also appear in WebSocket upgrade responses
 	dialer := websocket.Dialer{HandshakeTimeout: 5 * time.Second}
-	conn, resp, err := dialer.Dial(s.WSURL("/"), nil)
+	conn, resp2, err := dialer.Dial(s.WSURL("/"), nil)
 	if err != nil {
 		t.Fatalf("WebSocket connect failed: %v", err)
 	}
 	defer conn.Close()
-	if v := resp.Header.Get("X-Custom-Test"); v != "hello123" {
+	if v := resp2.Header.Get("X-Custom-Test"); v != "hello123" {
 		t.Errorf("expected X-Custom-Test: hello123 in WS response, got %q", v)
 	}
 }

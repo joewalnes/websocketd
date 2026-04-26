@@ -124,6 +124,7 @@ func (h *WebsocketdServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	pushHeaders(w.Header(), h.Config.Headers)
 	pushHeaders(w.Header(), h.Config.HeadersHTTP)
 
 	// Dev console (if enabled)
