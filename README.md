@@ -127,6 +127,5 @@ My Other Projects
 
 *   [ReconnectingWebSocket](https://github.com/joewalnes/reconnecting-websocket) - Simplest way to add some robustness to your WebSocket connections.
 *   [Smoothie Charts](http://smoothiecharts.org/) - JavaScript charts for streaming data.
-*   Visit [The Igloo Lab](http://theigloolab.com/) to see and subscribe to other thingies I make.
 
 And [follow @joewalnes](https://twitter.com/joewalnes)!
