@@ -17,7 +17,9 @@ Version 0.5.0 (Apr 26, 2026)
 * Renamed noteForkCompled → noteForkCompleted (typo fix)
 * Decomposed ServeHTTP into focused handler methods (serveWebSocket, serveCGI, serveStatic, serveDevConsole)
 * Decomposed parseCommandLine into testable validation functions
-* Increased unit test count from 7 to 76
+* Split PipeEndpoints into two independent goroutines for proper backpressure
+* WebSocketEndpoint.Terminate now closes connection (clean shutdown on process exit)
+* Increased test count from 7 to 185
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
