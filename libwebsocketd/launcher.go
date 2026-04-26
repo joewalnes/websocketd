@@ -41,5 +41,5 @@ func launchCmd(commandName string, commandArgs []string, env []string) (*Launche
 		return nil, err
 	}
 
-	return &LaunchedProcess{cmd, stdin, stdout, stderr}, err
+	return &LaunchedProcess{cmd, stdin, stdout, stderr}, nil
 }
