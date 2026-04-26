@@ -5,6 +5,8 @@
 
 package libwebsocketd
 
+import "strings"
+
 // Although this isn't particularly elegant, it's the simplest
 // way to embed the console content into the binary.
 
@@ -347,4 +349,9 @@ Full documentation at http://websocketd.com/
 `
 )
 
-var ConsoleContent = defaultConsoleContent
+// ConsoleContent has {{license}} pre-expanded. Only {{addr}} needs per-request substitution.
+var ConsoleContent string
+
+func init() {
+	ConsoleContent = strings.Replace(defaultConsoleContent, "{{license}}", License, -1)
+}
