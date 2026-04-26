@@ -124,8 +124,10 @@ func TestPERF006_LargePayloadBinary(t *testing.T) {
 	defer ws.Close()
 
 	// Test increasing binary payload sizes.
-	// Note: Very large payloads (1MB+) may time out — binary-echo uses io.Copy
-	// which may not flush until EOF or buffer fills.
+	// In binary mode, the response may arrive as multiple WebSocket messages
+	// because readBinaryOutput sends whatever the pipe Read returns. Pipe
+	// buffer sizes vary by OS (Linux ~64KB, Windows ~32KB), so we collect
+	// all bytes rather than expecting a single message.
 	sizes := []int{1024, 10 * 1024, 64 * 1024}
 	for _, size := range sizes {
 		data := make([]byte, size)
@@ -135,11 +137,20 @@ func TestPERF006_LargePayloadBinary(t *testing.T) {
 
 		start := time.Now()
 		ws.SendBinary(data)
-		_, recv := ws.RecvBinary()
+
+		var total int
+		for total < size {
+			ws.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+			_, chunk, err := ws.conn.ReadMessage()
+			if err != nil {
+				t.Fatalf("size %d: read failed after %d/%d bytes: %v", size, total, size, err)
+			}
+			total += len(chunk)
+		}
 		elapsed := time.Since(start)
 
-		if len(recv) != size {
-			t.Errorf("size %d: expected %d bytes, got %d", size, size, len(recv))
+		if total != size {
+			t.Errorf("size %d: expected %d bytes, got %d", size, size, total)
 		} else {
 			t.Logf("Binary %dKB round-trip: %v", size/1024, elapsed)
 		}
