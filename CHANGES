@@ -37,6 +37,7 @@ Version 0.5.0 (Apr 26, 2026)
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
 * Added QA test plans (qa/plans/) documenting ~270 manual and automated test cases across 14 categories
+* Added k6 performance benchmarking system (bench/) with 7 scenarios, HTML reports, and CI regression detection
 
 Version 0.4.1 (Jan 24, 2021)
 
