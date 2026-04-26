@@ -21,7 +21,10 @@ Version 0.5.0 (Apr 26, 2026)
 * WebSocketEndpoint.Terminate now closes connection (clean shutdown on process exit)
 * Added --pingms flag for WebSocket ping/pong dead connection detection (#456)
 * Added --sslca flag for mutual TLS client certificate verification (#413)
-* Increased test count from 7 to 195+
+* Added symlink boundary check in script directory mode (security hardening)
+* Extracted signal escalation loop in Terminate() (was 4x repeated pattern)
+* Renamed snake_case methods to camelCase (Go convention)
+* Increased test count from 7 to 217
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
