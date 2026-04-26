@@ -1,74 +1,55 @@
 # Codebase Scorecard: websocketd
 
-**Audited**: 2026-04-26 | **Size**: 25 files, 5.4 KLOC (2.4K src + 3.0K test) | **Language**: Go
+**Audited**: 2026-04-26 | **Size**: 27 files, 7.0 KLOC (3.1K src + 3.9K test) | **Language**: Go | **Deps**: 1 (gorilla/websocket v1.5.3, pinned)
 
 | # | Category | Grade | Key Finding |
 |---|----------|-------|-------------|
-| 1 | Architecture | B+ | ServeHTTP decomposed into focused handlers; config extracted into testable functions |
-| 2 | Code Quality | B | Origin underflow, nil pointer, CGI env all fixed; Send() goroutine-per-msg remains |
-| 3 | Consistency | B | Extracted functions follow uniform error-return pattern; legacy snake_case methods remain |
-| 4 | Security | B+ | Gorilla updated, gosec findings addressed, origin checking hardened |
-| 5 | Performance | B- | Regex compiled once; Send() still spawns unbounded goroutines under load |
-| 6 | DRY | B | Terminate() timeout pattern 4x; most other duplication resolved by extraction |
-| 7 | Testability | B+ | 12 extracted pure functions; Endpoint interface enables clean mocking |
-| 8 | Test Coverage | A- | 176 tests (76 unit + 100 integration); covers security, regression, edge cases |
-| 9 | Type Safety | A- | Go's type system used correctly throughout |
-| 10 | Documentation | B+ | README accurate, CHANGES up to date, thread-safety contracts documented |
-| 11 | Error Handling | B | Nil pointer fixed, gosec addressed; Send() still can't signal write failure |
-| 12 | Extensibility | B | Handler chain is extensible; adding new handlers is straightforward |
-| 13 | Repo Hygiene | A- | Clean history, atomic commits, no junk files |
+| 1 | Architecture | A- | Clean handler chain, bidirectional PipeEndpoints, extracted config validators |
+| 2 | Code Quality | B+ | No known bugs; defensive panic in fork tracking (http.go:252) |
+| 3 | Consistency | B+ | All methods camelCase, uniform error-return pattern throughout |
+| 4 | Security | A- | Symlink boundary check, origin hardened, env isolated, mTLS, gosec clean |
+| 5 | Performance | B | Regex compiled once, backpressure via OS pipes, no per-request allocations |
+| 6 | DRY | B+ | Terminate() signal loop extracted; no meaningful duplication remains |
+| 7 | Testability | A- | 12 extracted pure functions, Endpoint interface, per-test server isolation |
+| 8 | Test Coverage | A | 217 tests (1.28:1 test-to-code ratio), all production files have unit tests |
+| 9 | Type Safety | A- | Go types used correctly throughout |
+| 10 | Documentation | B | README accurate, CHANGES current; tutorial needs rewrite (#438) |
+| 11 | Error Handling | B+ | Errors returned not panicked; one defensive panic remains in fork tracking |
+| 12 | Extensibility | B | Handler chain extensible, config validators composable |
+| 13 | Repo Hygiene | B+ | Clean atomic commits, pinned deps, no junk; no CI configured |
 
-**Overall: B+**
+**Overall: A-**
 
-**Previous score (2026-04-25): B-** | **Delta: +1 full grade**
-
-## Changes Since Last Audit
-
-| Category | Before | After | What changed |
-|----------|--------|-------|--------------|
-| Architecture | B- | B+ | Decomposed ServeHTTP and parseCommandLine |
-| Code Quality | C+ | B | Fixed origin underflow, nil pointer, CGI env, panic |
-| Security | B | B+ | Gorilla v1.5.3, gosec fixes, origin hardening |
-| Performance | C | B- | Regex compiled once (was per-request) |
-| Testability | B- | B+ | 12 extracted testable functions |
-| Test Coverage | B | A- | 7 → 76 unit tests |
-| Error Handling | C+ | B | Nil checks, error returns replace panics |
+**Score history: B- (Apr 25) → B+ (Apr 26 AM) → A- (Apr 26 PM)**
 
 ## Top Strengths
 
-- **Endpoint interface** (endpoint.go) — clean bidirectional piping abstraction unchanged and solid
-- **Test suite** — 176 tests: integration tests catch real bugs (binary deadlock, nil pointer, process hang); unit tests validate config parsing and HTTP routing logic in isolation
-- **Decomposed ServeHTTP** (http.go:82-100) — clean handler chain with `serveWebSocket`, `serveDevConsole`, `serveCGI`, `serveStatic` each returning bool
-- **Extracted config validators** (config.go) — `resolvePort`, `validateSSL`, `buildParentEnv`, `resolveCommand`, `resolveScriptDir`, `validateDir` all return errors, all unit tested
+- **PipeEndpoints** (endpoint.go:24-56) — bidirectional message relay with independent goroutines per direction, providing natural backpressure through OS pipe buffers with zero application-level buffering
+- **Test suite** — 217 tests: unit tests for every production file, integration tests for security/regression/edge cases/backpressure, cross-platform testcmd binary, ephemeral ports
+- **Security posture** — symlink boundary check (handler.go:167-183), origin validation with unit tests, environment whitelist isolation, mutual TLS support, gosec clean
+- **Decomposed hot path** — ServeHTTP is a clean handler chain; config parsing delegates to 7 testable pure functions
 
 ## Remaining Issues
 
-1. **MEDIUM [Resource]** `libwebsocketd/process_endpoint.go:107` — `Send()` spawns one goroutine per message, serialized by mutex. Under sustained traffic goroutines accumulate. Should be a single writer goroutine with a buffered channel. (Deferred — design under consideration.)
+1. **MEDIUM [Error Handling]** `libwebsocketd/http.go:252` — `panic("Cannot deplete number of allowed forks...")` in `noteForkCompleted()`. Defensive check for a should-never-happen condition, but a panic kills the entire process. Should log and continue.
 
-2. **LOW [Race]** `libwebsocketd/process_endpoint.go:18` + `handler.go:77` — `closetime` field is modified after construction (`process.closetime += ...`) but read in `Terminate()`. Not mutex-protected. Safe in practice because modification completes before `Terminate()` can be called, but fragile.
+2. **LOW [Clarity]** `libwebsocketd/launcher.go:44` — `return ..., err` where `err` is guaranteed nil. Should be `return ..., nil` for clarity.
 
-3. **LOW [Race]** `qa/integration/helpers_test.go` — `Server.stderr` buffer accessed concurrently (goroutine writing, cleanup reading). Test infrastructure only, not production code.
-
-4. **LOW [Cleanup]** `handler.go:25` — TODO comment noting `*URLInfo` is over-exposed. Used in 3 places; could be simplified.
+3. **LOW [Infra]** No CI configured. Tests run locally but not on push/PR.
 
 ## Architecture Assessment
 
-The refactoring significantly improved the two weakest areas. ServeHTTP is now a 20-line method that delegates to focused handlers — each can be reasoned about and tested independently. The config parsing follows the same pattern: `parseCommandLine` orchestrates 7 pure validation functions that return errors instead of calling `os.Exit`.
+The architecture is now clean across all layers. ServeHTTP delegates to focused handlers (serveWebSocket, serveCGI, serveStatic, serveDevConsole). PipeEndpoints runs each direction in its own goroutine, enabling synchronous Send() with natural backpressure. Config parsing is decomposed into 7 pure validation functions. The Endpoint interface remains the strongest design element — it cleanly decouples WebSocket I/O from process I/O.
 
-The core Endpoint/PipeEndpoints design remains the strongest part of the architecture. The main structural concern is now the Send() goroutine-per-message pattern — it works but doesn't provide backpressure. A single writer goroutine with a buffered channel would be more idiomatic and resource-bounded.
+The main structural limitation is that the project has no plugin or middleware system — adding a new handler type still requires editing serveHTTP. For websocketd's scope this is appropriate; it's not a framework.
 
 ## Documentation vs Reality
 
-- **SCORECARD.md** itself was stale (listed old findings as current). Now updated.
-- **handler.go:25** TODO comment says URLInfo is used in "one single place" — actually used in 3 places (handler.go:51, env.go:58-59). Minor inaccuracy.
+- **handler.go:25** — URLInfo comment removed, but URLInfo is still embedded in WebsocketdHandler when only FilePath is used in 2 places. Minor over-exposure, not a doc issue.
+- **Tutorial** (#438) — User-reported confusion about step ordering, port configuration, and --staticdir vs --devconsole interaction. Not yet addressed.
 
 ## Quick Wins
 
-1. **Replace Send() goroutine-per-message** with single writer goroutine + buffered channel — fixes resource and backpressure issues in one change.
-2. **Initialize closetime in constructor** instead of modifying after creation — eliminates the race.
-3. **Protect test stderr buffer** with mutex in helpers_test.go — fixes `-race` detector warnings.
-
-## Technical Debt
-
-- **Send() goroutine management** — Current: unbounded goroutines. Target: single writer goroutine with channel. Scope: process_endpoint.go only, but needs careful shutdown/ordering testing.
-- **10 open GitHub issues** — Mix of features (#413, #403, #350), docs (#27, #438, #449), and fixable bugs (#456 ping/pong, #453 CGI paths, #448 slow connect, #445 frame size). These represent the next phase of work.
+1. **Replace fork panic with log** — http.go:252, change panic to log.Error + return. Single line.
+2. **Fix launcher return** — launcher.go:44, change `err` to `nil`. Trivial.
+3. **Add GitHub Actions CI** — run `go test ./...` on push. ~20-line YAML file.
