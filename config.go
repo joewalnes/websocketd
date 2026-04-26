@@ -50,6 +50,107 @@ var defaultPassEnv = map[string]string{
 	"windows": "PATH,SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
+// resolveAddresses builds the list of TCP addresses to listen on.
+func resolveAddresses(addrlist []string, port int) []string {
+	if len(addrlist) > 0 {
+		addrs := make([]string, len(addrlist))
+		for i, addr := range addrlist {
+			addrs[i] = fmt.Sprintf("%s:%d", addr, port)
+		}
+		return addrs
+	}
+	return []string{fmt.Sprintf(":%d", port)}
+}
+
+// resolvePort determines the listening port, using defaults for HTTP (80) or HTTPS (443).
+func resolvePort(portFlag int, ssl bool) int {
+	if portFlag != 0 {
+		return portFlag
+	}
+	if ssl {
+		return 443
+	}
+	return 80
+}
+
+// validateSSL checks that SSL-related flags are consistent.
+func validateSSL(ssl bool, certFile, keyFile string) error {
+	if ssl {
+		if certFile == "" || keyFile == "" {
+			return fmt.Errorf("please specify both --sslcert and --sslkey when requesting --ssl")
+		}
+	} else {
+		if certFile != "" || keyFile != "" {
+			return fmt.Errorf("you should not be using --ssl* flags when there is no --ssl option")
+		}
+	}
+	return nil
+}
+
+// buildParentEnv constructs the filtered parent environment variable list.
+func buildParentEnv(passenv string) []string {
+	env := make([]string, 0)
+	newlineCleaner := strings.NewReplacer("\n", " ", "\r", " ")
+	for _, key := range strings.Split(passenv, ",") {
+		if key == "HTTPS" {
+			continue
+		}
+		if v := os.Getenv(key); v != "" {
+			if clean := strings.TrimSpace(newlineCleaner.Replace(v)); clean != "" {
+				env = append(env, fmt.Sprintf("%s=%s", key, clean))
+			}
+		}
+	}
+	return env
+}
+
+// resolveCommand validates and resolves the command to execute.
+// Returns the resolved command path, arguments, and whether it uses a script directory.
+func resolveCommand(args []string, scriptDir string) (commandName string, commandArgs []string, usingScriptDir bool, err error) {
+	if len(args) > 0 {
+		if scriptDir != "" {
+			return "", nil, false, fmt.Errorf("ambiguous: provided COMMAND and --dir argument, please only specify one")
+		}
+		path, lookErr := exec.LookPath(args[0])
+		if lookErr != nil {
+			return "", nil, false, fmt.Errorf("unable to locate specified COMMAND '%s' in OS path", args[0])
+		}
+		return path, args[1:], false, nil
+	}
+	return "", nil, false, nil
+}
+
+// resolveScriptDir validates and resolves the script directory path.
+func resolveScriptDir(dir string) (string, error) {
+	if dir == "" {
+		return "", nil
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", fmt.Errorf("could not resolve absolute path to dir '%s'", dir)
+	}
+	inf, err := os.Stat(absDir)
+	if err != nil {
+		return "", fmt.Errorf("could not find your script dir '%s'", dir)
+	}
+	if !inf.IsDir() {
+		return "", fmt.Errorf("did you mean to specify COMMAND instead of --dir '%s'?", dir)
+	}
+	return absDir, nil
+}
+
+// validateDir checks that a directory path exists and is a directory.
+func validateDir(dir, label string) error {
+	if dir == "" {
+		return nil
+	}
+	inf, err := os.Stat(dir)
+	if err != nil || !inf.IsDir() {
+		return fmt.Errorf("your %s '%s' is not pointing to an accessible directory", label, dir)
+	}
+	return nil
+}
+
 func parseCommandLine() *Config {
 	var mainConfig Config
 	var config libwebsocketd.Config
@@ -104,48 +205,6 @@ func parseCommandLine() *Config {
 		}
 	}
 
-	port := *portFlag
-	if port == 0 {
-		if *sslFlag {
-			port = 443
-		} else {
-			port = 80
-		}
-	}
-
-	if socknum := len(addrlist); socknum != 0 {
-		mainConfig.Addr = make([]string, socknum)
-		for i, addrSingle := range addrlist {
-			mainConfig.Addr[i] = fmt.Sprintf("%s:%d", addrSingle, port)
-		}
-	} else {
-		mainConfig.Addr = []string{fmt.Sprintf(":%d", port)}
-	}
-	mainConfig.MaxForks = *maxForksFlag
-	mainConfig.RedirPort = *redirPortFlag
-	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
-	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
-		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
-		ShortHelp()
-		os.Exit(1)
-	}
-
-	config.Headers = []string(headers)
-	config.HeadersWs = []string(headersWs)
-	config.HeadersHTTP = []string(headersHttp)
-
-	config.CloseMs = *closeMsFlag
-	config.Binary = *binaryFlag
-	config.ReverseLookup = *reverseLookupFlag
-	config.Ssl = *sslFlag
-	config.ScriptDir = *scriptDirFlag
-	config.StaticDir = *staticDirFlag
-	config.CgiDir = *cgiDirFlag
-	config.DevConsole = *devConsoleFlag
-	config.StartupTime = time.Now()
-	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
-	config.HandshakeTimeout = time.Millisecond * 1500 // only default for now
-
 	if len(os.Args) == 1 {
 		fmt.Printf("Command line arguments are missing.\n")
 		ShortHelp()
@@ -163,43 +222,54 @@ func parseCommandLine() *Config {
 		os.Exit(0)
 	}
 
-	// Reading SSL options
-	if config.Ssl {
-		if *sslCert == "" || *sslKey == "" {
-			fmt.Fprintf(os.Stderr, "Please specify both --sslcert and --sslkey when requesting --ssl.\n")
-			os.Exit(1)
-		}
-	} else {
-		if *sslCert != "" || *sslKey != "" {
-			fmt.Fprintf(os.Stderr, "You should not be using --ssl* flags when there is no --ssl option.\n")
-			os.Exit(1)
-		}
+	// Resolve port and addresses
+	port := resolvePort(*portFlag, *sslFlag)
+	mainConfig.Addr = resolveAddresses([]string(addrlist), port)
+	mainConfig.MaxForks = *maxForksFlag
+	mainConfig.RedirPort = *redirPortFlag
+
+	// Validate log level
+	mainConfig.LogLevel = libwebsocketd.LevelFromString(*logLevelFlag)
+	if mainConfig.LogLevel == libwebsocketd.LogUnknown {
+		fmt.Printf("Incorrect loglevel flag '%s'. Use --help to see allowed values.\n", *logLevelFlag)
+		ShortHelp()
+		os.Exit(1)
 	}
 
+	// Validate SSL
+	if err := validateSSL(*sslFlag, *sslCert, *sslKey); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 	mainConfig.CertFile = *sslCert
 	mainConfig.KeyFile = *sslKey
 
-	// Building config.ParentEnv to avoid calling Environ all the time in the scripts
-	// (caller is responsible for wiping environment if desired)
-	config.ParentEnv = make([]string, 0)
-	newlineCleaner := strings.NewReplacer("\n", " ", "\r", " ")
-	for _, key := range strings.Split(*passEnvFlag, ",") {
-		if key != "HTTPS" {
-			if v := os.Getenv(key); v != "" {
-				// inevitably adding flavor of libwebsocketd appendEnv func.
-				// it's slightly nicer than in net/http/cgi implementation
-				if clean := strings.TrimSpace(newlineCleaner.Replace(v)); clean != "" {
-					config.ParentEnv = append(config.ParentEnv, fmt.Sprintf("%s=%s", key, clean))
-				}
-			}
-		}
-	}
+	// Build lib config
+	config.Headers = []string(headers)
+	config.HeadersWs = []string(headersWs)
+	config.HeadersHTTP = []string(headersHttp)
+	config.CloseMs = *closeMsFlag
+	config.Binary = *binaryFlag
+	config.ReverseLookup = *reverseLookupFlag
+	config.Ssl = *sslFlag
+	config.ScriptDir = *scriptDirFlag
+	config.StaticDir = *staticDirFlag
+	config.CgiDir = *cgiDirFlag
+	config.DevConsole = *devConsoleFlag
+	config.StartupTime = time.Now()
+	config.ServerSoftware = fmt.Sprintf("websocketd/%s", Version())
+	config.HandshakeTimeout = time.Millisecond * 1500
 
+	// Build parent environment
+	config.ParentEnv = buildParentEnv(*passEnvFlag)
+
+	// Parse origins
 	if *allowOriginsFlag != "" {
 		config.AllowOrigins = strings.Split(*allowOriginsFlag, ",")
 	}
 	config.SameOrigin = *sameOriginFlag
 
+	// Resolve command or script directory
 	args := flag.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
 		fmt.Fprintf(os.Stderr, "Please specify COMMAND or provide --dir, --staticdir or --cgidir argument.\n")
@@ -208,62 +278,40 @@ func parseCommandLine() *Config {
 	}
 
 	if len(args) > 0 {
-		if config.ScriptDir != "" {
-			fmt.Fprintf(os.Stderr, "Ambiguous. Provided COMMAND and --dir argument. Please only specify just one.\n")
+		commandName, commandArgs, _, err := resolveCommand(args, config.ScriptDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			ShortHelp()
 			os.Exit(1)
 		}
-		if path, err := exec.LookPath(args[0]); err == nil {
-			config.CommandName = path // This can be command in PATH that we are able to execute
-			config.CommandArgs = flag.Args()[1:]
-			config.UsingScriptDir = false
-		} else {
-			fmt.Fprintf(os.Stderr, "Unable to locate specified COMMAND '%s' in OS path.\n", args[0])
-			ShortHelp()
-			os.Exit(1)
-		}
+		config.CommandName = commandName
+		config.CommandArgs = commandArgs
+		config.UsingScriptDir = false
 	}
 
 	if config.ScriptDir != "" {
-		scriptDir, err := filepath.Abs(config.ScriptDir)
+		scriptDir, err := resolveScriptDir(config.ScriptDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not resolve absolute path to dir '%s'.\n", config.ScriptDir)
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			ShortHelp()
 			os.Exit(1)
 		}
-		inf, err := os.Stat(scriptDir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find your script dir '%s'.\n", config.ScriptDir)
-			ShortHelp()
-			os.Exit(1)
-		}
-		if !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Did you mean to specify COMMAND instead of --dir '%s'?\n", config.ScriptDir)
-			ShortHelp()
-			os.Exit(1)
-		} else {
-			config.ScriptDir = scriptDir
-			config.UsingScriptDir = true
-		}
+		config.ScriptDir = scriptDir
+		config.UsingScriptDir = true
 	}
 
-	if config.CgiDir != "" {
-		if inf, err := os.Stat(config.CgiDir); err != nil || !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Your CGI dir '%s' is not pointing to an accessible directory.\n", config.CgiDir)
-			ShortHelp()
-			os.Exit(1)
-		}
+	if err := validateDir(config.CgiDir, "CGI dir"); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		ShortHelp()
+		os.Exit(1)
 	}
 
-	if config.StaticDir != "" {
-		if inf, err := os.Stat(config.StaticDir); err != nil || !inf.IsDir() {
-			fmt.Fprintf(os.Stderr, "Your static dir '%s' is not pointing to an accessible directory.\n", config.StaticDir)
-			ShortHelp()
-			os.Exit(1)
-		}
+	if err := validateDir(config.StaticDir, "static dir"); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		ShortHelp()
+		os.Exit(1)
 	}
 
 	mainConfig.Config = &config
-
 	return &mainConfig
 }
