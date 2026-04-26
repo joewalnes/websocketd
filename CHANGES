@@ -1,5 +1,7 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Fixed readFrames processing unexpected message types instead of skipping them
+* Fixed pipe file descriptor leak on partial launch failure
 * Fixed high-severity integer overflow vulnerability by upgrading gorilla/websocket v1.4.0 → v1.5.3
 * Fixed nil pointer panic when WebSocket connection breaks during send (#342)
 * Fixed --header flag to apply to all responses, not just WebSocket upgrades
