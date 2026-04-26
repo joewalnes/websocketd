@@ -22,7 +22,7 @@ type WebsocketdHandler struct {
 
 	Id string
 	*RemoteInfo
-	*URLInfo // TODO: I cannot find where it's used except in one single place as URLInfo.FilePath
+	*URLInfo
 	Env      []string
 
 	command string
@@ -145,6 +145,13 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 			continue
 		}
 
+		// Verify the resolved path stays within the script directory.
+		// This prevents symlink attacks where a link inside ScriptDir
+		// points to an arbitrary file outside it.
+		if err := checkPathBoundary(urlInfo.FilePath, config.ScriptDir); err != nil {
+			return nil, ScriptNotFoundError
+		}
+
 		// no extra args
 		if isLastPart {
 			return urlInfo, nil
@@ -155,6 +162,24 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 		return urlInfo, nil
 	}
 	return nil, fmt.Errorf("could not resolve script for path %q", path)
+}
+
+// checkPathBoundary resolves symlinks and verifies the real path is within the
+// allowed directory. Returns an error if the path escapes the boundary.
+func checkPathBoundary(path, boundary string) error {
+	realPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+	realBoundary, err := filepath.EvalSymlinks(boundary)
+	if err != nil {
+		return err
+	}
+	// Ensure the resolved path starts with the resolved boundary
+	if !strings.HasPrefix(realPath, realBoundary+string(filepath.Separator)) && realPath != realBoundary {
+		return fmt.Errorf("path %q escapes boundary %q", realPath, realBoundary)
+	}
+	return nil
 }
 
 func generateId() string {
