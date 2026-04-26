@@ -14,7 +14,7 @@ go build
 go test ./...
 ```
 
-Tests are in `libwebsocketd/`. No linter is currently configured.
+Unit tests are in `libwebsocketd/`. Integration tests are in `qa/integration/`. No linter is currently configured.
 
 ## Mistake retrospectives
 
@@ -34,6 +34,16 @@ Update `README.md` (and any relevant docs) before committing if the change affec
 - Public API, CLI interface, or configuration
 - Setup/installation steps
 - Feature behavior visible to users
+
+## Changelog
+
+Update `CHANGES` before committing if the change affects:
+- Dependencies (especially security fixes)
+- User-visible behavior, CLI flags, or defaults
+- New features or test infrastructure
+- Bug fixes referenced by issue number
+
+Latest version goes at the top. Follow the existing format.
 
 ## Test-first
 
