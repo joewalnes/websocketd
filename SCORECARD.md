@@ -5,47 +5,49 @@
 | # | Category | Grade | Key Finding |
 |---|----------|-------|-------------|
 | 1 | Architecture | A- | Clean handler chain, bidirectional PipeEndpoints, extracted config validators |
-| 2 | Code Quality | A- | No known bugs; one minor logic issue in readFrames type mismatch handling |
+| 2 | Code Quality | A | No known bugs; readFrames, launcher, and all error paths fixed |
 | 3 | Consistency | A- | All naming idiomatic Go; error vars ErrFoo, methods camelCase, uniform patterns |
 | 4 | Security | A | Symlink boundary, origin hardened, env isolated, mTLS, gosec + staticcheck in CI |
-| 5 | Performance | B+ | Regex compiled once, template cached at init, backpressure via OS pipes |
+| 5 | Performance | A- | Regex compiled once, template cached, strings.Builder in hot path, OS pipe backpressure |
 | 6 | DRY | B+ | Signal loop extracted; no meaningful duplication remains |
 | 7 | Testability | A- | Extracted pure functions, Endpoint interface, per-test server isolation |
-| 8 | Test Coverage | A | 217 tests (1.66:1 ratio), CI on 4 platforms with -race, staticcheck, gosec |
+| 8 | Test Coverage | A | 217 tests (1.66:1 ratio), CI on 4 platforms with -race, polling-based waits |
 | 9 | Type Safety | A- | Go types used correctly throughout |
 | 10 | Documentation | B | README accurate, CHANGES current; tutorial needs rewrite (#438) |
-| 11 | Error Handling | A- | Errors returned not panicked, graceful fork tracking, gosec clean |
+| 11 | Error Handling | A | Errors returned not panicked, pipe FDs cleaned up, gosec clean |
 | 12 | Extensibility | B | Handler chain extensible, config validators composable |
 | 13 | Repo Hygiene | A | Clean atomic commits, pinned deps, CI on 4 platforms, -race + lint + security scan |
 
-**Overall: A-**
+**Overall: A-** (high A-, 6 categories at full A)
 
-**Score history: B- (Apr 25) → B+ (Apr 26 AM) → A- (Apr 26 PM) → A- (Apr 26 EVE, 4 categories improved)**
+**Score history: B- (Apr 25) → B+ (Apr 26 AM) → A- (Apr 26 PM) → A- (Apr 26 EVE, 8 categories improved total)**
 
 ## Top Strengths
 
 - **PipeEndpoints** (endpoint.go:24-56) — bidirectional relay with independent goroutines, natural backpressure, zero application-level buffering
-- **Test suite** — 217 tests across unit + integration, CI on Linux x86/ARM64 + macOS ARM64 + Windows x86_64, regression tests for 6 historical bugs
+- **Test suite** — 217 tests across unit + integration, CI on Linux x86/ARM64 + macOS ARM64 + Windows x86_64, regression tests for 6 historical bugs, polling-based waits
 - **Security posture** — symlink boundary check, origin validation, env whitelist, mTLS (--sslca), ping/pong dead connection detection (--pingms), gosec + staticcheck clean
 - **CI pipeline** — 4-platform testing with race detector, staticcheck linter, gosec security scanner; all green
 - **Decomposed architecture** — ServeHTTP is a 20-line handler chain; config parsing delegates to 7 pure testable functions; no god objects
 
-## Improvements This Round
+## Improvements This Session
 
-- Consistency B+ → A-: Renamed error vars to ErrFoo convention, env.go replacers to idiomatic names
-- Security A- → A: Added staticcheck + gosec to CI, preventing regressions
-- Performance B → B+: Cached dev console template license substitution at init
-- Repo Hygiene A- → A: Added -race detector, staticcheck, gosec to CI lint job
+| Category | Start | Now | Key Change |
+|----------|-------|-----|------------|
+| Code Quality | A- | A | Fixed readFrames type-mismatch, launcher pipe leak |
+| Consistency | B+ | A- | Error vars ErrFoo, env.go replacers renamed |
+| Security | A- | A | staticcheck + gosec in CI |
+| Performance | B | A- | Template cached, strings.Builder in appendEnv |
+| Error Handling | A- | A | Pipe FDs cleaned up on partial failure |
+| Repo Hygiene | A- | A | -race, staticcheck, gosec in CI |
+| Test Coverage | A | A | Polling replaces hardcoded sleeps |
 
 ## Remaining Issues
 
 1. **LOW [Docs]** Tutorial needs rewrite (#438) — detailed user feedback available.
 2. **LOW [Docs]** Reverse proxy documentation (#27) — wiki page may exist but isn't linked from README.
 3. **LOW [Feature]** 8 open issues, all deferred (feature requests and docs, no bugs).
-4. **LOW [Code]** websocket_endpoint.go:113 readFrames logs "Ignoring" unexpected message type but still processes it.
-5. **LOW [Code]** launcher.go:24-38 pipe file descriptors not explicitly closed on partial setup failure.
-6. **LOW [Test]** 811 lines of endpoint/env code only covered by integration tests, no isolated unit tests.
-7. **LOW [Test]** Several integration tests use hardcoded time.Sleep instead of polling patterns.
+4. **LOW [Test]** Endpoint and env code (process_endpoint, websocket_endpoint, env.go) only covered by integration tests, no isolated unit tests.
 
 ## Architecture Assessment
 
@@ -64,6 +66,4 @@ Handler coupling (WebsocketdHandler stores *WebsocketdServer) is a minor concern
 
 1. **Rewrite the 10-minute tutorial** — detailed user feedback in #438. Documentation B → A-.
 2. **Link the nginx wiki page from README** — closes #27. One line.
-3. **Fix readFrames type-mismatch logic** — log + continue instead of processing. Code Quality A- → A.
-4. **Close pipe FDs on launcher partial failure** — add deferred cleanup. Code Quality reinforcement.
-5. **Replace time.Sleep in tests with polling** — reduces flakiness risk. Test Coverage robustness.
+3. **Add unit tests for endpoint/env code** — increases isolated coverage. Testability A- → A.
