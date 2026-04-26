@@ -72,11 +72,8 @@ func TestBACKPRESSURE003_WebSocketCloseWhileProcessOutputPending(t *testing.T) {
 	// Abruptly close the WebSocket
 	ws.conn.UnderlyingConn().Close()
 
-	// Wait for cleanup
-	time.Sleep(1 * time.Second)
-
-	// Server should still work
-	ws2 := s.Connect("/")
+	// Server should still work after cleanup
+	ws2 := s.retryConnect(t, "/", 5*time.Second)
 	defer ws2.Close()
 	msg := ws2.Recv()
 	if msg != "tick" {
@@ -117,8 +114,14 @@ func TestBACKPRESSURE004_BidirectionalTraffic(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	// Wait for all echoes
-	time.Sleep(500 * time.Millisecond)
+	// Wait for echoes to arrive then close
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if int(atomic.LoadInt32(&received)) >= 15 {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	ws.Close()
 	<-done
 

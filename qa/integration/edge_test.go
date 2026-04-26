@@ -64,8 +64,7 @@ func TestEDGE004_ProcessExitDuringConnection(t *testing.T) {
 	ws.ExpectClosed()
 
 	// Server should still accept new connections
-	time.Sleep(100 * time.Millisecond)
-	ws2 := s.Connect("/")
+	ws2 := s.retryConnect(t, "/", 5*time.Second)
 	defer ws2.Close()
 	ws2.ExpectMessage("bye")
 }
@@ -78,7 +77,7 @@ func TestEDGE005_SendToExitedProcess(t *testing.T) {
 	defer ws.Close()
 
 	ws.ExpectMessage("done")
-	time.Sleep(500 * time.Millisecond)
+	ws.ExpectClosed()
 
 	// This send should not panic the server
 	err := ws.conn.WriteMessage(websocket.TextMessage, []byte("after exit"))
@@ -149,9 +148,8 @@ func TestEDGE009_ProcessHangRegression(t *testing.T) {
 	// Disconnect
 	ws.Close()
 
-	// Wait and verify we can connect again (process was cleaned up)
-	time.Sleep(1 * time.Second)
-	ws2 := s.Connect("/")
+	// Verify we can connect again (process was cleaned up)
+	ws2 := s.retryConnect(t, "/", 5*time.Second)
 	defer ws2.Close()
 	ws2.Recv() // should get a tick
 }

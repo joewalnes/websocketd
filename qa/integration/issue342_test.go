@@ -24,12 +24,9 @@ func TestIssue342_NilPointerOnBrokenConnection(t *testing.T) {
 	// Abruptly kill the connection (not a clean close)
 	ws.conn.UnderlyingConn().Close()
 
-	// Wait for the server to attempt sending to the dead connection.
+	// Server should still be alive — verify by connecting again.
 	// Before the fix, this would panic with nil pointer dereference.
-	time.Sleep(500 * time.Millisecond)
-
-	// Server should still be alive — verify by connecting again
-	ws2 := s.Connect("/")
+	ws2 := s.retryConnect(t, "/", 5*time.Second)
 	defer ws2.Close()
 	ws2.Recv() // should get a "tick"
 }

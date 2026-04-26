@@ -53,8 +53,17 @@ func TestPROC003_StderrToLogs(t *testing.T) {
 
 	// stderr goes to websocketd logs, not to the client
 	ws.ExpectClosed()
-	time.Sleep(200 * time.Millisecond)
-	stderr := s.Stderr()
+
+	// Poll for stderr content (process may still be flushing)
+	var stderr string
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		stderr = s.Stderr()
+		if strings.Contains(stderr, "stderr line") {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	if !strings.Contains(stderr, "stderr line") {
 		t.Logf("Note: stderr line not captured in websocketd output (may be expected based on log level)")
 	}
@@ -88,11 +97,8 @@ func TestPROC005_MaxforksRecovery(t *testing.T) {
 	ws1.ExpectMessage("hello")
 	ws1.Close()
 
-	// Wait for process cleanup
-	time.Sleep(300 * time.Millisecond)
-
-	// Should be able to connect again
-	ws2 := s.Connect("/")
+	// Should be able to connect again after fork is released
+	ws2 := s.retryConnect(t, "/", 5*time.Second)
 	defer ws2.Close()
 	ws2.Send("world")
 	ws2.ExpectMessage("world")

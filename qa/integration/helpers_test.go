@@ -474,6 +474,23 @@ func findEnvValue(envOutput, varName string) (string, bool) {
 	return "", false
 }
 
+// retryConnect polls until a new WebSocket connection succeeds and receives
+// a message, or fails the test after timeout. Use this instead of time.Sleep
+// when verifying that the server is still alive after a disconnect.
+func (s *Server) retryConnect(t *testing.T, path string, timeout time.Duration) *WSClient {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		ws, _, err := s.TryConnect(path, nil)
+		if err == nil {
+			return ws
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("could not reconnect to server within %v", timeout)
+	return nil
+}
+
 // collectMessages reads all messages until the connection closes or timeout.
 func collectMessages(ws *WSClient, timeout time.Duration) []string {
 	var msgs []string
