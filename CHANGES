@@ -1,6 +1,14 @@
 Version 0.5.0 (Apr 25, 2026)
 
 * Fixed high-severity integer overflow vulnerability by upgrading gorilla/websocket v1.4.0 → v1.5.3
+* Fixed nil pointer panic when WebSocket connection breaks during send (#342)
+* Fixed --header flag to apply to all responses, not just WebSocket upgrades
+* Fixed binary mode pipe deadlock for payloads >64KB (Send() now non-blocking)
+* Fixed GATEWAY_INTERFACE to standard CGI/1.1 per RFC 3875
+* Handled unchecked errors flagged by gosec static analysis (#418)
+* Removed dead link in README (#417)
+* Updated minimum Go version from 1.15 to 1.21
+* Replaced deprecated ioutil.ReadAll with io.ReadAll
 * Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
