@@ -41,8 +41,8 @@ func TestENV002_GatewayInterface(t *testing.T) {
 	defer ws.Close()
 
 	output := strings.Join(collectMessages(ws, 3*time.Second), "\n")
-	if v, ok := findEnvValue(output, "GATEWAY_INTERFACE"); !ok || v != "websocketd-CGI/0.1" {
-		t.Errorf("GATEWAY_INTERFACE: expected 'websocketd-CGI/0.1', got %q", v)
+	if v, ok := findEnvValue(output, "GATEWAY_INTERFACE"); !ok || v != "CGI/1.1" {
+		t.Errorf("GATEWAY_INTERFACE: expected 'CGI/1.1', got %q", v)
 	}
 }
 

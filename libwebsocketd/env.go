@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	gatewayInterface = "websocketd-CGI/0.1"
+	gatewayInterface = "CGI/1.1"
 )
 
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
