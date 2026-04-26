@@ -54,11 +54,9 @@ Before implementing a feature or fix:
 
 ## Pre-commit checks
 
-Always run tests before committing:
-```bash
-go test ./...
-```
-Do not commit if tests fail. Fix first.
+Before every commit:
+1. Run tests: `go test ./...` — do not commit if tests fail
+2. If the change affects user-visible behavior, dependencies, or bug fixes: update `CHANGES` in the same commit (not a follow-up)
 
 ## Commits
 
