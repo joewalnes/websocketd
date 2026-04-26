@@ -1,0 +1,18 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest        # Linux x86_64
+          - os: ubuntu-24.04-arm     # Linux ARM64
+          - os: macos-latest         # macOS ARM64
+          - os: windows-latest       # Windows x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - run: go test ./... -timeout=120s
