@@ -68,13 +68,42 @@ mkdir -p "$OUTPUT_DIR"
 # --- Write metadata ---
 
 GIT_HASH=$(git -C "$(dirname "$WEBSOCKETD_BIN")" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# Collect machine specs
+OS_NAME=$(uname -s)
+OS_VERSION=$(uname -r)
+ARCH=$(uname -m)
+if [ "$OS_NAME" = "Darwin" ]; then
+  CPU_MODEL=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "unknown")
+  CPU_CORES=$(sysctl -n hw.ncpu 2>/dev/null || echo "?")
+  RAM_BYTES=$(sysctl -n hw.memsize 2>/dev/null || echo "0")
+  RAM_GB=$(python3 -c "print(round($RAM_BYTES / (1024**3), 1))" 2>/dev/null || echo "?")
+  OS_PRETTY=$(sw_vers -productName 2>/dev/null || echo "macOS")
+  OS_PRETTY="$OS_PRETTY $(sw_vers -productVersion 2>/dev/null || echo "$OS_VERSION")"
+elif [ "$OS_NAME" = "Linux" ]; then
+  CPU_MODEL=$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo "unknown")
+  CPU_CORES=$(nproc 2>/dev/null || echo "?")
+  RAM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
+  RAM_GB=$(python3 -c "print(round($RAM_KB / (1024**2), 1))" 2>/dev/null || echo "?")
+  OS_PRETTY=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || echo "Linux $OS_VERSION")
+else
+  CPU_MODEL="unknown"
+  CPU_CORES="?"
+  RAM_GB="?"
+  OS_PRETTY="$OS_NAME $OS_VERSION"
+fi
+
 cat > "$OUTPUT_DIR/meta.json" <<METAEOF
 {
   "version": "$(echo "$VERSION" | tr '"' "'")",
   "git_hash": "$GIT_HASH",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "os": "$(uname -s)",
-  "arch": "$(uname -m)",
+  "os": "$OS_NAME",
+  "os_pretty": "$OS_PRETTY",
+  "arch": "$ARCH",
+  "cpu": "$CPU_MODEL",
+  "cpu_cores": "$CPU_CORES",
+  "ram_gb": "$RAM_GB",
   "k6_version": "$($K6 version 2>&1 | head -1)"
 }
 METAEOF

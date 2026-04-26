@@ -121,7 +121,8 @@ def build_report_data(results_dir):
         elif name.startswith("binary_"):
             recv = extract_counter_value(summary, "ws_binary_bytes_recv")
             dur = summary.get("metrics", {}).get("iteration_duration", {})
-            dur_ms = dur.get("values", {}).get("avg", 1000)
+            dur_v = dur.get("values", dur)
+            dur_ms = dur_v.get("avg", 1000)
             scenario["type"] = "binary"
             scenario["payload_size"] = name.split("_")[1]
             scenario["bytes_recv"] = recv
@@ -164,18 +165,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
          background: #f5f5f5; color: #333; padding: 20px; max-width: 1200px; margin: 0 auto; }
   h1 { margin-bottom: 4px; }
-  .meta { color: #666; margin-bottom: 24px; font-size: 14px; }
+  .meta { color: #666; margin-bottom: 24px; font-size: 13px; line-height: 1.6; }
   h2 { margin: 24px 0 12px; border-bottom: 2px solid #ddd; padding-bottom: 4px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
   .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .card h3 { font-size: 14px; color: #666; margin-bottom: 8px; }
+  .card h3 { font-size: 14px; color: #333; margin-bottom: 2px; }
+  .card .desc { font-size: 12px; color: #888; margin-bottom: 10px; }
   .card canvas { width: 100% !important; }
   table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px;
-          overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+          overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 8px; }
   th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }
   th { background: #f8f8f8; font-weight: 600; font-size: 13px; color: #666; }
   td { font-variant-numeric: tabular-nums; }
   .num { text-align: right; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; }
+  .better { font-size: 11px; color: #999; }
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -186,26 +189,50 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <h2>Summary</h2>
 <table id="summary-table">
-  <thead><tr><th>Scenario</th><th>Key Metric</th><th class="num">Value</th><th>Unit</th></tr></thead>
+  <thead><tr><th>Scenario</th><th>Key Metric</th><th class="num">Value</th><th>Unit</th><th></th></tr></thead>
   <tbody></tbody>
 </table>
 
 <h2>Latency</h2>
 <div class="grid">
-  <div class="card"><h3>Echo Latency (1 connection, sequential)</h3><canvas id="chart-latency"></canvas></div>
-  <div class="card"><h3>Sustained Load Latency (50 connections)</h3><canvas id="chart-sustained-latency"></canvas></div>
+  <div class="card">
+    <h3>Echo Latency</h3>
+    <div class="desc">1 connection, 1000 sequential send/recv round-trips. Lower is better.</div>
+    <canvas id="chart-latency"></canvas>
+  </div>
+  <div class="card">
+    <h3>Sustained Load Latency</h3>
+    <div class="desc">50 concurrent connections, continuous traffic for 30s. Lower is better.</div>
+    <canvas id="chart-sustained-latency"></canvas>
+  </div>
 </div>
 
 <h2>Throughput</h2>
 <div class="grid">
-  <div class="card"><h3>Messages per Second</h3><canvas id="chart-throughput"></canvas></div>
-  <div class="card"><h3>Connection Storm (cycle time by VU count)</h3><canvas id="chart-storm"></canvas></div>
+  <div class="card">
+    <h3>Throughput</h3>
+    <div class="desc">Echo: max msgs/sec on 1 connection. Churn: connect/send/recv/close cycles per sec. Higher is better.</div>
+    <canvas id="chart-throughput"></canvas>
+  </div>
+  <div class="card">
+    <h3>Connection Storm</h3>
+    <div class="desc">N clients connect simultaneously, each sends 1 message. Full cycle time shown. Lower is better.</div>
+    <canvas id="chart-storm"></canvas>
+  </div>
 </div>
 
-<h2>Binary</h2>
+<h2>Binary &amp; Backpressure</h2>
 <div class="grid">
-  <div class="card"><h3>Binary Throughput (MB/s by payload size)</h3><canvas id="chart-binary"></canvas></div>
-  <div class="card"><h3>Backpressure</h3><canvas id="chart-backpressure"></canvas></div>
+  <div class="card">
+    <h3>Binary Throughput</h3>
+    <div class="desc">Binary mode (--binary), 100 round-trips per payload size. Higher is better.</div>
+    <canvas id="chart-binary"></canvas>
+  </div>
+  <div class="card">
+    <h3>Backpressure</h3>
+    <div class="desc">Fast sender vs slow backend (100ms/msg). Shows how many messages are actually delivered. Higher received = better.</div>
+    <canvas id="chart-backpressure"></canvas>
+  </div>
 </div>
 
 <h2>Server Resources</h2>
@@ -216,69 +243,88 @@ const D = /* BENCH_DATA_JSON */;
 
 // Meta
 const meta = D.meta || {};
-document.getElementById('meta').textContent =
-  `Version: ${meta.version || '?'} | Commit: ${meta.git_hash || '?'} | ` +
-  `Date: ${meta.timestamp || '?'} | OS: ${meta.os || '?'} ${meta.arch || ''}`;
+const metaEl = document.getElementById('meta');
+metaEl.innerHTML = [
+  `<strong>Version:</strong> ${meta.version || '?'}`,
+  `<strong>Commit:</strong> ${meta.git_hash || '?'}`,
+  `<strong>Date:</strong> ${meta.timestamp || '?'}`,
+  `<strong>OS:</strong> ${meta.os_pretty || (meta.os + ' ' + meta.arch) || '?'}`,
+  `<strong>CPU:</strong> ${meta.cpu || '?'} (${meta.cpu_cores || '?'} cores)`,
+  `<strong>RAM:</strong> ${meta.ram_gb || '?'} GB`,
+  `<strong>k6:</strong> ${meta.k6_version || '?'}`,
+].join(' &nbsp;|&nbsp; ');
 
 // Summary table
 const tbody = document.querySelector('#summary-table tbody');
-function addRow(name, metric, value, unit) {
+function addRow(name, metric, value, unit, better) {
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${name}</td><td>${metric}</td><td class="num">${value}</td><td>${unit}</td>`;
+  tr.innerHTML = `<td>${name}</td><td>${metric}</td><td class="num">${value}</td><td>${unit}</td><td class="better">${better}</td>`;
   tbody.appendChild(tr);
 }
 
 const S = D.scenarios || {};
-if (S.echo_latency) addRow('Echo Latency', 'p95 RTT', S.echo_latency.p95, 'ms');
-if (S.echo_throughput) addRow('Echo Throughput', 'msgs/sec', S.echo_throughput.msgs_per_sec, 'msgs/sec');
-if (S.connection_churn) addRow('Connection Churn', 'conn/sec', S.connection_churn.conns_per_sec, 'conn/sec');
-if (S.sustained_load) addRow('Sustained Load', 'p95 RTT', S.sustained_load.p95, 'ms');
-if (S.sustained_load) addRow('Sustained Load', 'total msgs', S.sustained_load.total_msgs, 'msgs');
-Object.keys(S).filter(k => k.startsWith('connection_storm_')).forEach(k => {
-  addRow(`Storm (${S[k].vus} VUs)`, 'p95 cycle', S[k].p95, 'ms');
+if (S.echo_latency) addRow('Echo Latency', 'p95 RTT', S.echo_latency.p95, 'ms', 'lower is better');
+if (S.echo_throughput) addRow('Echo Throughput', 'msgs/sec', S.echo_throughput.msgs_per_sec, 'msgs/sec', 'higher is better');
+if (S.connection_churn) addRow('Connection Churn', 'conn/sec', S.connection_churn.conns_per_sec, 'conn/sec', 'higher is better');
+if (S.sustained_load) addRow('Sustained Load', 'p95 RTT', S.sustained_load.p95, 'ms', 'lower is better');
+if (S.sustained_load) addRow('Sustained Load', 'total msgs (30s)', S.sustained_load.total_msgs, 'msgs', 'higher is better');
+Object.keys(S).filter(k => k.startsWith('connection_storm_')).sort().forEach(k => {
+  addRow(`Storm (${S[k].vus} VUs)`, 'p95 cycle time', S[k].p95, 'ms', 'lower is better');
 });
-Object.keys(S).filter(k => k.startsWith('binary_')).forEach(k => {
-  addRow(`Binary ${S[k].payload_size}`, 'throughput', S[k].mb_per_sec, 'MB/s');
+Object.keys(S).filter(k => k.startsWith('binary_')).sort().forEach(k => {
+  addRow(`Binary ${S[k].payload_size}`, 'throughput', S[k].mb_per_sec, 'MB/s', 'higher is better');
 });
-if (S.backpressure) addRow('Backpressure', 'delivery ratio', S.backpressure.delivery_ratio, '');
+if (S.backpressure) addRow('Backpressure', 'msgs delivered', S.backpressure.msgs_recv, 'msgs', 'higher is better');
+if (S.backpressure) addRow('Backpressure', 'delivery ratio', (S.backpressure.delivery_ratio * 100).toFixed(1) + '%', '', '');
 
 // Chart helpers
 const COLORS = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948'];
-function barChart(id, labels, datasets) {
+
+function barChart(id, labels, datasets, yLabel) {
   const el = document.getElementById(id);
   if (!el) return;
   new Chart(el, {
     type: 'bar',
     data: { labels, datasets },
-    options: { responsive: true, plugins: { legend: { display: datasets.length > 1 } },
-               scales: { y: { beginAtZero: true } } }
+    options: {
+      responsive: true,
+      plugins: { legend: { display: datasets.length > 1 } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: yLabel, font: { size: 12 } } },
+        x: { title: { display: false } }
+      }
+    }
   });
 }
 
 // Latency chart
 if (S.echo_latency) {
-  barChart('chart-latency', ['p50','p95','p99','avg','max'], [{
-    label: 'ms', data: [S.echo_latency.p50, S.echo_latency.p95, S.echo_latency.p99,
-                         S.echo_latency.avg, S.echo_latency.max],
-    backgroundColor: COLORS
-  }]);
+  barChart('chart-latency',
+    ['p50','p95','p99','avg','max'],
+    [{ label: 'Round-trip time (ms)',
+       data: [S.echo_latency.p50, S.echo_latency.p95, S.echo_latency.p99,
+              S.echo_latency.avg, S.echo_latency.max],
+       backgroundColor: COLORS }],
+    'Milliseconds (ms)');
 }
 
 if (S.sustained_load) {
-  barChart('chart-sustained-latency', ['p50','p95','p99'], [{
-    label: 'ms', data: [S.sustained_load.p50, S.sustained_load.p95, S.sustained_load.p99],
-    backgroundColor: COLORS
-  }]);
+  barChart('chart-sustained-latency',
+    ['p50','p95','p99'],
+    [{ label: 'Round-trip time (ms)',
+       data: [S.sustained_load.p50, S.sustained_load.p95, S.sustained_load.p99],
+       backgroundColor: COLORS }],
+    'Milliseconds (ms)');
 }
 
 // Throughput chart
 {
-  const labels = [], values = [];
-  if (S.echo_throughput) { labels.push('Echo (1 conn)'); values.push(S.echo_throughput.msgs_per_sec); }
-  if (S.connection_churn) { labels.push('Churn (conn/sec)'); values.push(S.connection_churn.conns_per_sec); }
-  if (labels.length) barChart('chart-throughput', labels, [{
-    label: 'per second', data: values, backgroundColor: COLORS
-  }]);
+  const labels = [], values = [], units = [];
+  if (S.echo_throughput) { labels.push('Echo msgs/sec'); values.push(S.echo_throughput.msgs_per_sec); }
+  if (S.connection_churn) { labels.push('Churn conn/sec'); values.push(S.connection_churn.conns_per_sec); }
+  if (labels.length) barChart('chart-throughput', labels,
+    [{ label: 'Operations per second', data: values, backgroundColor: COLORS }],
+    'Per second');
 }
 
 // Storm chart
@@ -287,9 +333,9 @@ if (S.sustained_load) {
   if (storms.length) {
     barChart('chart-storm',
       storms.map(k => `${S[k].vus} VUs`),
-      [{ label: 'p95 cycle (ms)', data: storms.map(k => S[k].p95), backgroundColor: COLORS[0] },
-       { label: 'avg cycle (ms)', data: storms.map(k => S[k].avg), backgroundColor: COLORS[1] }]
-    );
+      [{ label: 'p95 (ms)', data: storms.map(k => S[k].p95), backgroundColor: COLORS[0] },
+       { label: 'avg (ms)', data: storms.map(k => S[k].avg), backgroundColor: COLORS[1] }],
+      'Cycle time (ms)');
   }
 }
 
@@ -299,29 +345,46 @@ if (S.sustained_load) {
   if (bins.length) {
     barChart('chart-binary',
       bins.map(k => S[k].payload_size),
-      [{ label: 'MB/s', data: bins.map(k => S[k].mb_per_sec), backgroundColor: COLORS[0] }]
-    );
+      [{ label: 'Throughput (MB/s)', data: bins.map(k => S[k].mb_per_sec), backgroundColor: COLORS[0] }],
+      'MB/s');
   }
 }
 
 // Backpressure chart
 if (S.backpressure) {
-  barChart('chart-backpressure', ['Sent','Received'], [{
-    label: 'messages', data: [S.backpressure.msgs_sent, S.backpressure.msgs_recv],
-    backgroundColor: [COLORS[0], COLORS[1]]
-  }]);
+  barChart('chart-backpressure',
+    ['Sent by client', 'Echoed by backend'],
+    [{ label: 'Messages', data: [S.backpressure.msgs_sent, S.backpressure.msgs_recv],
+       backgroundColor: [COLORS[0], COLORS[1]] }],
+    'Messages');
 }
 
 // Server resource charts
 const serverDiv = document.getElementById('server-charts');
 const SM = D.server_metrics || {};
+
+// Pretty names for scenarios
+const SCENARIO_NAMES = {
+  echo_latency: 'Echo Latency', echo_throughput: 'Echo Throughput',
+  connection_churn: 'Connection Churn', sustained_load: 'Sustained Load',
+  backpressure: 'Backpressure',
+};
+function scenarioLabel(name) {
+  if (SCENARIO_NAMES[name]) return SCENARIO_NAMES[name];
+  if (name.startsWith('connection_storm_')) return 'Storm ' + name.split('_').pop() + ' VUs';
+  if (name.startsWith('binary_')) return 'Binary ' + name.split('_').pop();
+  return name;
+}
+
 Object.keys(SM).forEach(name => {
   const points = SM[name];
   if (!points || !points.length) return;
 
   const card = document.createElement('div');
   card.className = 'card';
-  card.innerHTML = `<h3>${name} — RSS (KB)</h3><canvas id="srv-${name}"></canvas>`;
+  card.innerHTML = `<h3>${scenarioLabel(name)}</h3>`
+    + `<div class="desc">Resident memory (RSS) over time. Lower is better.</div>`
+    + `<canvas id="srv-${name}"></canvas>`;
   serverDiv.appendChild(card);
 
   new Chart(document.getElementById(`srv-${name}`), {
@@ -333,8 +396,11 @@ Object.keys(SM).forEach(name => {
         borderColor: COLORS[0], fill: false, pointRadius: 0, tension: 0.3
       }]
     },
-    options: { responsive: true, scales: { y: { beginAtZero: true } },
-               plugins: { legend: { display: false } } }
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'KB', font: { size: 12 } } } },
+      plugins: { legend: { display: false } }
+    }
   });
 });
 </script>
