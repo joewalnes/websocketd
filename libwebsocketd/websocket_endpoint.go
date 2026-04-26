@@ -46,10 +46,15 @@ func (we *WebSocketEndpoint) Output() chan []byte {
 
 func (we *WebSocketEndpoint) Send(msg []byte) bool {
 	w, err := we.ws.NextWriter(we.mtype)
-	if err == nil {
-		_, err = w.Write(msg)
+	if err != nil {
+		we.log.Trace("websocket", "Cannot send: %s", err)
+		return false
 	}
-	w.Close() // could need error handling
+
+	_, err = w.Write(msg)
+	if cerr := w.Close(); err == nil {
+		err = cerr
+	}
 
 	if err != nil {
 		we.log.Trace("websocket", "Cannot send: %s", err)
