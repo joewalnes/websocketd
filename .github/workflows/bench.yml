@@ -1,0 +1,56 @@
+name: Benchmarks
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build websocketd
+        run: go build -o websocketd .
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D68
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Run benchmarks
+        run: ./bench/run.sh ./websocketd
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: bench/results/report.html
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: websocketd Performance
+          tool: customSmallerIsBetter
+          output-file-path: bench/results/benchmark-data.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.event_name == 'push' }}
+          comment-on-alert: true
+          alert-threshold: '115%'
+          fail-on-alert: ${{ github.event_name == 'pull_request' }}
+          benchmark-data-dir-path: dev/bench
+          alert-comment-cc-users: '@joewalnes'
