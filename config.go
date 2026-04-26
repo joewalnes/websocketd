@@ -174,7 +174,9 @@ func parseCommandLine() *Config {
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
+	pingMsFlag := flag.Uint("pingms", 0, "WebSocket ping interval in milliseconds (0 disables)")
 	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
+	sslCaFlag := flag.String("sslca", "", "CA certificate file for client certificate verification (mutual TLS)")
 
 	// lib config options
 	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
@@ -249,9 +251,11 @@ func parseCommandLine() *Config {
 	config.HeadersWs = []string(headersWs)
 	config.HeadersHTTP = []string(headersHttp)
 	config.CloseMs = *closeMsFlag
+	config.PingInterval = time.Duration(*pingMsFlag) * time.Millisecond
 	config.Binary = *binaryFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag
+	config.SslCaFile = *sslCaFlag
 	config.ScriptDir = *scriptDirFlag
 	config.StaticDir = *staticDirFlag
 	config.CgiDir = *cgiDirFlag
