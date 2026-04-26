@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var ScriptNotFoundError = errors.New("script not found")
+var ErrScriptNotFound = errors.New("script not found")
 
 // WebsocketdHandler is a single request information and processing structure, it handles WS requests out of all that daemon can handle (static, cgi, devconsole)
 type WebsocketdHandler struct {
@@ -132,12 +132,12 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 
 		// not a valid path
 		if err != nil {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// at the end of url but is a dir
 		if isLastPart && statInfo.IsDir() {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// we've hit a dir, carry on looking
@@ -149,7 +149,7 @@ func GetURLInfo(path string, config *Config) (*URLInfo, error) {
 		// This prevents symlink attacks where a link inside ScriptDir
 		// points to an arbitrary file outside it.
 		if err := checkPathBoundary(urlInfo.FilePath, config.ScriptDir); err != nil {
-			return nil, ScriptNotFoundError
+			return nil, ErrScriptNotFound
 		}
 
 		// no extra args

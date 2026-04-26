@@ -22,7 +22,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var ForkNotAllowedError = errors.New("too many forks active")
+var ErrForkNotAllowed = errors.New("too many forks active")
 
 var upgradeRe = regexp.MustCompile(`(?i)(^|[,\s])Upgrade($|[,\s])`)
 
@@ -123,7 +123,7 @@ func (h *WebsocketdServer) serveWebSocket(w http.ResponseWriter, req *http.Reque
 
 	handler, err := NewWebsocketdHandler(h, req, log)
 	if err != nil {
-		if err == ScriptNotFoundError {
+		if err == ErrScriptNotFound {
 			log.Access("session", "NOT FOUND: %s", err)
 			http.Error(w, "404 Not Found", 404)
 		} else {
@@ -163,9 +163,7 @@ func (h *WebsocketdServer) serveDevConsole(w http.ResponseWriter, req *http.Requ
 		return false
 	}
 	log.Access("http", "DEVCONSOLE")
-	content := ConsoleContent
-	content = strings.Replace(content, "{{license}}", License, -1)
-	content = strings.Replace(content, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
+	content := strings.Replace(ConsoleContent, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
 	http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 	return true
 }
@@ -237,7 +235,7 @@ func (h *WebsocketdServer) noteForkCreated() error {
 		case h.forks <- 1:
 			return nil
 		default:
-			return ForkNotAllowedError
+			return ErrForkNotAllowed
 		}
 	}
 	return nil

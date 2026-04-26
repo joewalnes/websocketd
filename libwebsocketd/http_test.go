@@ -246,8 +246,8 @@ func TestNoteForkCreatedAndCompleted(t *testing.T) {
 		}
 
 		// Third should fail
-		if err := s.noteForkCreated(); err != ForkNotAllowedError {
-			t.Errorf("expected ForkNotAllowedError, got %v", err)
+		if err := s.noteForkCreated(); err != ErrForkNotAllowed {
+			t.Errorf("expected ErrForkNotAllowed, got %v", err)
 		}
 
 		// Release one, should work again

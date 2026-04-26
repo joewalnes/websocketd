@@ -6,14 +6,13 @@
 package libwebsocketd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestParsePathWithScriptDir(t *testing.T) {
-	baseDir, _ := ioutil.TempDir("", "websockets")
+	baseDir, _ := os.MkdirTemp("", "websockets")
 	scriptDir := filepath.Join(baseDir, "foo", "bar")
 	scriptPath := filepath.Join(scriptDir, "baz.sh")
 
@@ -68,7 +67,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing file should fail")
 	}
-	if err != ScriptNotFoundError {
+	if err != ErrScriptNotFound {
 		t.Error("should fail with script not found")
 	}
 
@@ -77,7 +76,7 @@ func TestParsePathWithScriptDir(t *testing.T) {
 	if err == nil {
 		t.Error("non-existing dir should fail")
 	}
-	if err != ScriptNotFoundError {
+	if err != ErrScriptNotFound {
 		t.Error("should fail with script not found")
 	}
 }
