@@ -15,8 +15,8 @@ const (
 	gatewayInterface = "CGI/1.1"
 )
 
-var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
-var headerDashToUnderscore = strings.NewReplacer("-", "_")
+var newlineReplacer = strings.NewReplacer("\n", " ", "\r", " ")
+var dashReplacer = strings.NewReplacer("-", "_")
 
 func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []string {
 	headers := req.Header
@@ -99,7 +99,7 @@ func createEnv(handler *WebsocketdHandler, req *http.Request, log *LogScope) []s
 	}
 
 	for k, hdrs := range headers {
-		header := fmt.Sprintf("HTTP_%s", headerDashToUnderscore.Replace(k))
+		header := fmt.Sprintf("HTTP_%s", dashReplacer.Replace(k))
 		env = appendEnv(env, header, hdrs...)
 		log.Debug("env", "Header variable %s", env[len(env)-1])
 	}
@@ -120,7 +120,7 @@ func appendEnv(env []string, k string, v ...string) []string {
 
 	vCleaned := make([]string, 0, len(v))
 	for _, val := range v {
-		vCleaned = append(vCleaned, strings.TrimSpace(headerNewlineToSpace.Replace(val)))
+		vCleaned = append(vCleaned, strings.TrimSpace(newlineReplacer.Replace(val)))
 	}
 	return append(env, fmt.Sprintf("%s=%s",
 		strings.ToUpper(k),
