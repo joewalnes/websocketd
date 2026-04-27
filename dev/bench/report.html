@@ -8,23 +8,58 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-         background: #f5f5f5; color: #333; padding: 20px; max-width: 1200px; margin: 0 auto; }
-  h1 { margin-bottom: 4px; }
-  .meta { color: #666; margin-bottom: 24px; font-size: 13px; line-height: 1.6; }
-  h2 { margin: 24px 0 12px; border-bottom: 2px solid #ddd; padding-bottom: 4px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-  .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .card h3 { font-size: 14px; color: #333; margin-bottom: 2px; }
-  .card .desc { font-size: 12px; color: #888; margin-bottom: 10px; }
-  .card canvas { width: 100% !important; }
-  table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px;
-          overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 8px; }
-  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }
-  th { background: #f8f8f8; font-weight: 600; font-size: 13px; color: #666; }
-  td { font-variant-numeric: tabular-nums; }
-  .num { text-align: right; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; }
-  .better { font-size: 11px; color: #999; }
-  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+         background: #fafafa; color: #222; padding: 24px; max-width: 960px; margin: 0 auto;
+         line-height: 1.5; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
+  .meta { font-size: 12px; color: #666; margin-bottom: 28px; line-height: 1.8; }
+  .meta strong { color: #444; }
+  h2 { font-size: 15px; font-weight: 600; color: #555; margin: 32px 0 16px;
+       text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Key numbers */
+  .kpi-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .kpi { flex: 1; min-width: 180px; background: white; border-radius: 6px; padding: 16px 20px;
+         border: 1px solid #e8e8e8; }
+  .kpi .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .kpi .value { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums;
+                font-family: 'SF Mono', Monaco, Consolas, monospace; color: #222; }
+  .kpi .unit { font-size: 13px; color: #888; font-weight: 400; }
+  .kpi .note { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  /* Latency distribution */
+  .dist { background: white; border-radius: 6px; padding: 20px; border: 1px solid #e8e8e8;
+          margin-bottom: 16px; }
+  .dist h3 { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 2px; }
+  .dist .desc { font-size: 12px; color: #999; margin-bottom: 14px; }
+  .dist-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 13px; }
+  .dist-label { width: 36px; text-align: right; color: #888; font-size: 12px; margin-right: 10px; }
+  .dist-bar-bg { flex: 1; height: 14px; background: #f0f0f0; border-radius: 2px; position: relative; }
+  .dist-bar { height: 100%; background: #4e79a7; border-radius: 2px; min-width: 1px; }
+  .dist-val { width: 70px; text-align: right; font-family: 'SF Mono', Monaco, monospace;
+              font-size: 12px; color: #444; margin-left: 8px; }
+
+  /* Charts */
+  .chart-section { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .chart-card { flex: 1; min-width: 300px; background: white; border-radius: 6px; padding: 16px;
+                border: 1px solid #e8e8e8; }
+  .chart-card h3 { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 2px; }
+  .chart-card .desc { font-size: 12px; color: #999; margin-bottom: 12px; }
+
+  /* Backpressure special */
+  .bp-stat { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .bp-stat .bp-num { font-size: 24px; font-weight: 600; font-family: 'SF Mono', Monaco, monospace; }
+  .bp-stat .bp-label { font-size: 13px; color: #666; }
+  .bp-bar-bg { height: 20px; background: #f0f0f0; border-radius: 3px; position: relative; margin: 8px 0; }
+  .bp-bar { height: 100%; background: #4e79a7; border-radius: 3px; }
+  .bp-bar-text { font-size: 11px; color: #888; margin-top: 2px; }
+
+  /* Server resources */
+  .srv-card { background: white; border-radius: 6px; padding: 16px; border: 1px solid #e8e8e8;
+              margin-bottom: 12px; }
+  .srv-card h3 { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 2px; }
+  .srv-card .desc { font-size: 12px; color: #999; margin-bottom: 10px; }
+
+  @media (max-width: 640px) { .kpi-row { flex-direction: column; } .chart-section { flex-direction: column; } }
 </style>
 </head>
 <body>
@@ -32,203 +67,209 @@
 <h1>websocketd Benchmark Report</h1>
 <div class="meta" id="meta"></div>
 
-<h2>Summary</h2>
-<table id="summary-table">
-  <thead><tr><th>Scenario</th><th>Key Metric</th><th class="num">Value</th><th>Unit</th><th></th></tr></thead>
-  <tbody></tbody>
-</table>
+<h2>Key Numbers</h2>
+<div class="kpi-row" id="kpis"></div>
 
-<h2>Latency</h2>
-<div class="grid">
-  <div class="card">
-    <h3>Echo Latency</h3>
-    <div class="desc">1 connection, 1000 sequential send/recv round-trips. Lower is better.</div>
-    <canvas id="chart-latency"></canvas>
-  </div>
-  <div class="card">
-    <h3>Sustained Load Latency</h3>
-    <div class="desc">50 concurrent connections, continuous traffic for 30s. Lower is better.</div>
-    <canvas id="chart-sustained-latency"></canvas>
-  </div>
-</div>
+<h2>Latency Distribution</h2>
+<div id="latency-dists"></div>
 
-<h2>Throughput</h2>
-<div class="grid">
-  <div class="card">
-    <h3>Throughput</h3>
-    <div class="desc">Echo: max msgs/sec on 1 connection. Churn: connect/send/recv/close cycles per sec. Higher is better.</div>
-    <canvas id="chart-throughput"></canvas>
-  </div>
-  <div class="card">
-    <h3>Connection Storm</h3>
-    <div class="desc">N clients connect simultaneously, each sends 1 message. Full cycle time shown. Lower is better.</div>
-    <canvas id="chart-storm"></canvas>
-  </div>
-</div>
+<h2>Scaling</h2>
+<div class="chart-section" id="scaling-charts"></div>
 
-<h2>Binary &amp; Backpressure</h2>
-<div class="grid">
-  <div class="card">
-    <h3>Binary Throughput</h3>
-    <div class="desc">Binary mode (--binary), 100 round-trips per payload size. Higher is better.</div>
-    <canvas id="chart-binary"></canvas>
-  </div>
-  <div class="card">
-    <h3>Backpressure</h3>
-    <div class="desc">Fast sender vs slow backend (100ms/msg). Shows how many messages are actually delivered. Higher received = better.</div>
-    <canvas id="chart-backpressure"></canvas>
-  </div>
-</div>
+<h2>Binary Throughput</h2>
+<div class="chart-section" id="binary-section"></div>
 
-<h2>Server Resources</h2>
-<div class="grid" id="server-charts"></div>
+<h2>Backpressure</h2>
+<div id="bp-section"></div>
+
+<h2>Memory (RSS)</h2>
+<p style="font-size:12px;color:#999;margin-bottom:12px;">
+  Resident memory of the websocketd process during each scenario. Only scenarios with meaningful
+  duration are shown. Lower is better.
+</p>
+<div id="server-charts"></div>
 
 <script>
 const D = {"meta": {"version": "websocketd DEVBUILD (go1.26.1 darwin-arm64) --", "git_hash": "2f44fb0", "timestamp": "2026-04-26T19:35:51Z", "os": "Darwin", "os_pretty": "macOS 26.2", "arch": "arm64", "cpu": "Apple M4 Max", "cpu_cores": "16", "ram_gb": "64.0", "k6_version": "k6 v1.7.1 (commit/devel, go1.26.1, darwin/arm64)"}, "scenarios": {"backpressure": {"name": "backpressure", "type": "backpressure", "msgs_sent": 9990, "msgs_recv": 138, "delivery_ratio": 0.0138}, "binary_10k": {"name": "binary_10k", "type": "binary", "payload_size": "10k", "bytes_recv": 1024000, "duration_s": 0.01, "mb_per_sec": 70.01}, "binary_1k": {"name": "binary_1k", "type": "binary", "payload_size": "1k", "bytes_recv": 102400, "duration_s": 0.01, "mb_per_sec": 8.8}, "binary_64k": {"name": "binary_64k", "type": "binary", "payload_size": "64k", "bytes_recv": 4784128, "duration_s": 0.02, "mb_per_sec": 296.8}, "connection_churn": {"name": "connection_churn", "type": "churn", "avg": 4.005, "p95": 5, "conns_per_sec": 249.7}, "connection_storm_100": {"name": "connection_storm_100", "type": "storm", "vus": 100, "p95": 86, "avg": 51.46, "max": 89}, "connection_storm_10": {"name": "connection_storm_10", "type": "storm", "vus": 10, "p95": 10.55, "avg": 8.6, "max": 11}, "connection_storm_500": {"name": "connection_storm_500", "type": "storm", "vus": 500, "p95": 493, "avg": 268.642, "max": 514}, "echo_latency": {"name": "echo_latency", "type": "latency", "p50": 0, "p95": 1, "p99": 0, "avg": 0.056, "min": 0, "max": 4}, "echo_throughput": {"name": "echo_throughput", "type": "throughput", "msgs_recv": 998400, "duration_s": 12.0, "msgs_per_sec": 83196.0}, "sustained_load": {"name": "sustained_load", "type": "sustained", "p50": 0, "p95": 1, "p99": 0, "total_msgs": 174952}}, "server_metrics": {"backpressure": [{"t": 0.0, "rss": 11984, "fds": 12}, {"t": 0.6, "rss": 12368, "fds": 12}, {"t": 1.2, "rss": 12736, "fds": 12}, {"t": 1.8, "rss": 13072, "fds": 12}, {"t": 2.4, "rss": 13376, "fds": 12}, {"t": 3.0, "rss": 13824, "fds": 12}, {"t": 3.6, "rss": 14128, "fds": 12}, {"t": 4.2, "rss": 14464, "fds": 12}, {"t": 4.9, "rss": 14736, "fds": 12}, {"t": 5.5, "rss": 14736, "fds": 12}, {"t": 6.1, "rss": 14736, "fds": 12}, {"t": 6.7, "rss": 14736, "fds": 12}, {"t": 7.3, "rss": 14736, "fds": 12}, {"t": 7.9, "rss": 14736, "fds": 12}, {"t": 8.5, "rss": 14736, "fds": 12}, {"t": 9.1, "rss": 14752, "fds": 12}, {"t": 9.7, "rss": 14752, "fds": 12}, {"t": 10.3, "rss": 14752, "fds": 12}, {"t": 10.9, "rss": 14752, "fds": 12}, {"t": 11.5, "rss": 14752, "fds": 12}, {"t": 12.1, "rss": 14752, "fds": 12}, {"t": 12.7, "rss": 14752, "fds": 12}, {"t": 13.3, "rss": 14768, "fds": 12}, {"t": 13.9, "rss": 14768, "fds": 12}, {"t": 14.5, "rss": 14768, "fds": 12}, {"t": 15.1, "rss": 14768, "fds": 12}], "binary_10k": [{"t": 0.0, "rss": 16400, "fds": 8}], "binary_1k": [{"t": 0.0, "rss": 13232, "fds": 8}], "binary_64k": [{"t": 0.0, "rss": 24848, "fds": 8}], "connection_churn": [{"t": 0.0, "rss": 12464, "fds": 12}, {"t": 0.6, "rss": 17904, "fds": 12}], "connection_storm_100": [{"t": 0.0, "rss": 21040, "fds": 175}], "connection_storm_10": [{"t": 0.0, "rss": 14528, "fds": 8}], "connection_storm_500": [{"t": 0.0, "rss": 11584, "fds": 803}, {"t": 0.6, "rss": 37088, "fds": 8}], "echo_latency": [{"t": 0.0, "rss": 12176, "fds": 8}], "echo_throughput": [{"t": 0.0, "rss": 12752, "fds": 12}, {"t": 0.6, "rss": 20080, "fds": 12}, {"t": 1.2, "rss": 20112, "fds": 12}, {"t": 1.8, "rss": 20688, "fds": 12}, {"t": 2.4, "rss": 20720, "fds": 12}, {"t": 3.0, "rss": 20736, "fds": 12}, {"t": 3.6, "rss": 20752, "fds": 12}, {"t": 4.2, "rss": 20752, "fds": 12}, {"t": 4.8, "rss": 20752, "fds": 12}, {"t": 5.4, "rss": 20768, "fds": 12}, {"t": 6.0, "rss": 20768, "fds": 12}, {"t": 6.5, "rss": 20768, "fds": 12}, {"t": 7.1, "rss": 20784, "fds": 12}, {"t": 7.7, "rss": 20800, "fds": 12}, {"t": 8.3, "rss": 20816, "fds": 12}, {"t": 8.9, "rss": 20816, "fds": 12}, {"t": 9.5, "rss": 20832, "fds": 12}, {"t": 10.1, "rss": 20832, "fds": 12}, {"t": 10.7, "rss": 20832, "fds": 12}, {"t": 11.3, "rss": 20832, "fds": 12}, {"t": 11.9, "rss": 20832, "fds": 12}], "sustained_load": [{"t": 0.0, "rss": 19264, "fds": 208}, {"t": 0.6, "rss": 20784, "fds": 208}, {"t": 1.2, "rss": 21232, "fds": 208}, {"t": 1.9, "rss": 21424, "fds": 208}, {"t": 2.5, "rss": 21568, "fds": 208}, {"t": 3.1, "rss": 21920, "fds": 208}, {"t": 3.7, "rss": 22064, "fds": 208}, {"t": 4.3, "rss": 22224, "fds": 208}, {"t": 5.0, "rss": 22480, "fds": 208}, {"t": 5.6, "rss": 22592, "fds": 208}, {"t": 6.2, "rss": 22848, "fds": 208}, {"t": 6.9, "rss": 22960, "fds": 208}, {"t": 7.5, "rss": 23056, "fds": 208}, {"t": 8.1, "rss": 23152, "fds": 208}, {"t": 8.7, "rss": 23312, "fds": 208}, {"t": 9.3, "rss": 23392, "fds": 208}, {"t": 9.9, "rss": 23552, "fds": 208}, {"t": 10.6, "rss": 23648, "fds": 208}, {"t": 11.2, "rss": 23808, "fds": 208}, {"t": 11.8, "rss": 23952, "fds": 208}, {"t": 12.4, "rss": 23952, "fds": 208}, {"t": 13.0, "rss": 24016, "fds": 208}, {"t": 13.7, "rss": 24192, "fds": 208}, {"t": 14.3, "rss": 24288, "fds": 208}, {"t": 14.9, "rss": 24320, "fds": 208}, {"t": 15.5, "rss": 24496, "fds": 208}, {"t": 16.1, "rss": 24656, "fds": 208}, {"t": 16.7, "rss": 24800, "fds": 208}, {"t": 17.4, "rss": 24928, "fds": 208}, {"t": 18.0, "rss": 25024, "fds": 208}, {"t": 18.6, "rss": 25024, "fds": 208}, {"t": 19.2, "rss": 25024, "fds": 208}, {"t": 19.8, "rss": 25120, "fds": 208}, {"t": 20.5, "rss": 25200, "fds": 208}, {"t": 21.1, "rss": 25360, "fds": 208}, {"t": 21.7, "rss": 25424, "fds": 208}, {"t": 22.3, "rss": 25424, "fds": 208}, {"t": 22.9, "rss": 25424, "fds": 208}, {"t": 23.6, "rss": 25568, "fds": 208}, {"t": 24.2, "rss": 25696, "fds": 208}, {"t": 24.8, "rss": 25760, "fds": 208}, {"t": 25.4, "rss": 25760, "fds": 208}, {"t": 26.0, "rss": 25840, "fds": 208}, {"t": 26.6, "rss": 25952, "fds": 208}, {"t": 27.2, "rss": 26000, "fds": 208}, {"t": 27.9, "rss": 26000, "fds": 208}, {"t": 28.5, "rss": 26000, "fds": 208}, {"t": 29.1, "rss": 26000, "fds": 208}, {"t": 29.7, "rss": 26000, "fds": 208}, {"t": 30.3, "rss": 26048, "fds": 208}, {"t": 30.9, "rss": 26128, "fds": 208}, {"t": 31.5, "rss": 26128, "fds": 208}, {"t": 32.2, "rss": 26128, "fds": 208}, {"t": 32.8, "rss": 26128, "fds": 208}, {"t": 33.4, "rss": 26128, "fds": 208}, {"t": 34.0, "rss": 26128, "fds": 208}, {"t": 34.6, "rss": 26128, "fds": 208}]}};
+const S = D.scenarios || {};
+const SM = D.server_metrics || {};
+const C = '#4e79a7';
+const C2 = '#b8cfe0';
 
-// Meta
-const meta = D.meta || {};
-const metaEl = document.getElementById('meta');
-metaEl.innerHTML = [
-  `<strong>Version:</strong> ${meta.version || '?'}`,
-  `<strong>Commit:</strong> ${meta.git_hash || '?'}`,
-  `<strong>Date:</strong> ${meta.timestamp || '?'}`,
-  `<strong>OS:</strong> ${meta.os_pretty || (meta.os + ' ' + meta.arch) || '?'}`,
-  `<strong>CPU:</strong> ${meta.cpu || '?'} (${meta.cpu_cores || '?'} cores)`,
-  `<strong>RAM:</strong> ${meta.ram_gb || '?'} GB`,
-  `<strong>k6:</strong> ${meta.k6_version || '?'}`,
-].join(' &nbsp;|&nbsp; ');
+// --- Meta ---
+const m = D.meta || {};
+document.getElementById('meta').innerHTML = [
+  `<strong>Version:</strong> ${m.version || '?'}`,
+  `<strong>Commit:</strong> ${m.git_hash || '?'}`,
+  `<strong>Date:</strong> ${m.timestamp || '?'}`,
+  `<br><strong>OS:</strong> ${m.os_pretty || m.os || '?'} (${m.arch || '?'})`,
+  `<strong>CPU:</strong> ${m.cpu || '?'} (${m.cpu_cores || '?'} cores)`,
+  `<strong>RAM:</strong> ${m.ram_gb || '?'} GB`,
+].join(' &nbsp;&middot;&nbsp; ');
 
-// Summary table
-const tbody = document.querySelector('#summary-table tbody');
-function addRow(name, metric, value, unit, better) {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${name}</td><td>${metric}</td><td class="num">${value}</td><td>${unit}</td><td class="better">${better}</td>`;
-  tbody.appendChild(tr);
+// --- KPIs ---
+const kpiDiv = document.getElementById('kpis');
+function kpi(label, value, unit, note) {
+  const d = document.createElement('div');
+  d.className = 'kpi';
+  d.innerHTML = `<div class="label">${label}</div>`
+    + `<div class="value">${value} <span class="unit">${unit}</span></div>`
+    + `<div class="note">${note}</div>`;
+  kpiDiv.appendChild(d);
+}
+if (S.echo_latency) kpi('Echo Latency (p95)', S.echo_latency.p95, 'ms',
+  '1 connection, 1000 sequential round-trips &middot; lower is better');
+if (S.echo_throughput) kpi('Echo Throughput', Number(S.echo_throughput.msgs_per_sec).toLocaleString(), 'msgs/sec',
+  '1 connection, 10s fire-hose &middot; higher is better');
+if (S.connection_churn) kpi('Connection Churn', S.connection_churn.conns_per_sec, 'conn/sec',
+  '200 serial connect/send/close cycles &middot; higher is better');
+if (S.sustained_load) kpi('Sustained Load (p95)', S.sustained_load.p95, 'ms',
+  '50 connections, 30s continuous &middot; lower is better');
+
+// --- Latency distributions ---
+const distDiv = document.getElementById('latency-dists');
+function latencyDist(title, desc, percentiles) {
+  // percentiles: [{label, value}] — value in ms
+  const maxVal = Math.max(...percentiles.map(p => p.value), 0.001);
+  const card = document.createElement('div');
+  card.className = 'dist';
+  let html = `<h3>${title}</h3><div class="desc">${desc}</div>`;
+  for (const p of percentiles) {
+    const pct = Math.max((p.value / maxVal) * 100, 0.5);
+    html += `<div class="dist-row">`
+      + `<div class="dist-label">${p.label}</div>`
+      + `<div class="dist-bar-bg"><div class="dist-bar" style="width:${pct}%"></div></div>`
+      + `<div class="dist-val">${p.value} ms</div></div>`;
+  }
+  card.innerHTML = html;
+  distDiv.appendChild(card);
+}
+if (S.echo_latency) {
+  latencyDist('Echo Latency',
+    'Single connection, 1000 sequential message round-trips. Each bar shows where that percentile falls on the distribution. Lower is better.',
+    [{label:'p50', value:S.echo_latency.p50}, {label:'p95', value:S.echo_latency.p95},
+     {label:'p99', value:S.echo_latency.p99}, {label:'max', value:S.echo_latency.max}]);
+}
+if (S.sustained_load) {
+  latencyDist('Sustained Load Latency',
+    '50 concurrent connections sending continuously for 30 seconds. Measures latency under realistic multi-client load. Lower is better.',
+    [{label:'p50', value:S.sustained_load.p50}, {label:'p95', value:S.sustained_load.p95},
+     {label:'p99', value:S.sustained_load.p99}]);
 }
 
-const S = D.scenarios || {};
-if (S.echo_latency) addRow('Echo Latency', 'p95 RTT', S.echo_latency.p95, 'ms', 'lower is better');
-if (S.echo_throughput) addRow('Echo Throughput', 'msgs/sec', S.echo_throughput.msgs_per_sec, 'msgs/sec', 'higher is better');
-if (S.connection_churn) addRow('Connection Churn', 'conn/sec', S.connection_churn.conns_per_sec, 'conn/sec', 'higher is better');
-if (S.sustained_load) addRow('Sustained Load', 'p95 RTT', S.sustained_load.p95, 'ms', 'lower is better');
-if (S.sustained_load) addRow('Sustained Load', 'total msgs (30s)', S.sustained_load.total_msgs, 'msgs', 'higher is better');
-Object.keys(S).filter(k => k.startsWith('connection_storm_')).sort().forEach(k => {
-  addRow(`Storm (${S[k].vus} VUs)`, 'p95 cycle time', S[k].p95, 'ms', 'lower is better');
-});
-Object.keys(S).filter(k => k.startsWith('binary_')).sort().forEach(k => {
-  addRow(`Binary ${S[k].payload_size}`, 'throughput', S[k].mb_per_sec, 'MB/s', 'higher is better');
-});
-if (S.backpressure) addRow('Backpressure', 'msgs delivered', S.backpressure.msgs_recv, 'msgs', 'higher is better');
-if (S.backpressure) addRow('Backpressure', 'delivery ratio', (S.backpressure.delivery_ratio * 100).toFixed(1) + '%', '', '');
+// --- Scaling charts (storm + churn) ---
+const scalingDiv = document.getElementById('scaling-charts');
 
-// Chart helpers
-const COLORS = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948'];
+// Storm: sorted numerically
+const storms = Object.keys(S).filter(k => k.startsWith('connection_storm_'))
+  .sort((a,b) => S[a].vus - S[b].vus);
+if (storms.length) {
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  card.innerHTML = `<h3>Connection Storm</h3>`
+    + `<div class="desc">N clients connect simultaneously, each sends one message and disconnects. `
+    + `Shows how cycle time grows with concurrency. Lower is better.</div>`
+    + `<canvas id="chart-storm"></canvas>`;
+  scalingDiv.appendChild(card);
 
-function barChart(id, labels, datasets, yLabel) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  new Chart(el, {
+  new Chart(document.getElementById('chart-storm'), {
     type: 'bar',
-    data: { labels, datasets },
+    data: {
+      labels: storms.map(k => S[k].vus + ' connections'),
+      datasets: [
+        { label: 'p95', data: storms.map(k => S[k].p95), backgroundColor: C },
+        { label: 'avg', data: storms.map(k => S[k].avg), backgroundColor: C2 }
+      ]
+    },
     options: {
       responsive: true,
-      plugins: { legend: { display: datasets.length > 1 } },
+      plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } },
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: yLabel, font: { size: 12 } } },
-        x: { title: { display: false } }
+        y: { beginAtZero: true, title: { display: true, text: 'Cycle time (ms)', font: { size: 11 } },
+             grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
       }
     }
   });
 }
 
-// Latency chart
-if (S.echo_latency) {
-  barChart('chart-latency',
-    ['p50','p95','p99','avg','max'],
-    [{ label: 'Round-trip time (ms)',
-       data: [S.echo_latency.p50, S.echo_latency.p95, S.echo_latency.p99,
-              S.echo_latency.avg, S.echo_latency.max],
-       backgroundColor: COLORS }],
-    'Milliseconds (ms)');
-}
-
-if (S.sustained_load) {
-  barChart('chart-sustained-latency',
-    ['p50','p95','p99'],
-    [{ label: 'Round-trip time (ms)',
-       data: [S.sustained_load.p50, S.sustained_load.p95, S.sustained_load.p99],
-       backgroundColor: COLORS }],
-    'Milliseconds (ms)');
-}
-
-// Throughput chart
-{
-  const labels = [], values = [], units = [];
-  if (S.echo_throughput) { labels.push('Echo msgs/sec'); values.push(S.echo_throughput.msgs_per_sec); }
-  if (S.connection_churn) { labels.push('Churn conn/sec'); values.push(S.connection_churn.conns_per_sec); }
-  if (labels.length) barChart('chart-throughput', labels,
-    [{ label: 'Operations per second', data: values, backgroundColor: COLORS }],
-    'Per second');
-}
-
-// Storm chart
-{
-  const storms = Object.keys(S).filter(k => k.startsWith('connection_storm_')).sort();
-  if (storms.length) {
-    barChart('chart-storm',
-      storms.map(k => `${S[k].vus} VUs`),
-      [{ label: 'p95 (ms)', data: storms.map(k => S[k].p95), backgroundColor: COLORS[0] },
-       { label: 'avg (ms)', data: storms.map(k => S[k].avg), backgroundColor: COLORS[1] }],
-      'Cycle time (ms)');
-  }
-}
-
-// Binary chart
-{
-  const bins = Object.keys(S).filter(k => k.startsWith('binary_')).sort();
-  if (bins.length) {
-    barChart('chart-binary',
-      bins.map(k => S[k].payload_size),
-      [{ label: 'Throughput (MB/s)', data: bins.map(k => S[k].mb_per_sec), backgroundColor: COLORS[0] }],
-      'MB/s');
-  }
-}
-
-// Backpressure chart
-if (S.backpressure) {
-  barChart('chart-backpressure',
-    ['Sent by client', 'Echoed by backend'],
-    [{ label: 'Messages', data: [S.backpressure.msgs_sent, S.backpressure.msgs_recv],
-       backgroundColor: [COLORS[0], COLORS[1]] }],
-    'Messages');
-}
-
-// Server resource charts
-const serverDiv = document.getElementById('server-charts');
-const SM = D.server_metrics || {};
-
-// Pretty names for scenarios
-const SCENARIO_NAMES = {
-  echo_latency: 'Echo Latency', echo_throughput: 'Echo Throughput',
-  connection_churn: 'Connection Churn', sustained_load: 'Sustained Load',
-  backpressure: 'Backpressure',
-};
-function scenarioLabel(name) {
-  if (SCENARIO_NAMES[name]) return SCENARIO_NAMES[name];
-  if (name.startsWith('connection_storm_')) return 'Storm ' + name.split('_').pop() + ' VUs';
-  if (name.startsWith('binary_')) return 'Binary ' + name.split('_').pop();
-  return name;
-}
-
-Object.keys(SM).forEach(name => {
-  const points = SM[name];
-  if (!points || !points.length) return;
-
+// --- Binary throughput ---
+const binaryDiv = document.getElementById('binary-section');
+const bins = Object.keys(S).filter(k => k.startsWith('binary_'))
+  .sort((a,b) => {
+    const sizeOrder = {'1k':1,'10k':2,'64k':3,'256k':4};
+    return (sizeOrder[S[a].payload_size]||99) - (sizeOrder[S[b].payload_size]||99);
+  });
+if (bins.length) {
   const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `<h3>${scenarioLabel(name)}</h3>`
-    + `<div class="desc">Resident memory (RSS) over time. Lower is better.</div>`
+  card.className = 'chart-card';
+  card.innerHTML = `<h3>Binary Mode Throughput</h3>`
+    + `<div class="desc">websocketd running with --binary flag. 100 round-trips per payload size `
+    + `using a cat backend. Payload sizes sorted smallest to largest. Higher is better.</div>`
+    + `<canvas id="chart-binary"></canvas>`;
+  binaryDiv.appendChild(card);
+
+  new Chart(document.getElementById('chart-binary'), {
+    type: 'bar',
+    data: {
+      labels: bins.map(k => S[k].payload_size.toUpperCase()),
+      datasets: [{ label: 'MB/s', data: bins.map(k => S[k].mb_per_sec), backgroundColor: C }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'Throughput (MB/s)', font: { size: 11 } },
+             grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// --- Backpressure ---
+const bpDiv = document.getElementById('bp-section');
+if (S.backpressure) {
+  const bp = S.backpressure;
+  const pct = (bp.delivery_ratio * 100).toFixed(1);
+  const card = document.createElement('div');
+  card.className = 'dist';
+  card.innerHTML = `<h3>Backpressure Test</h3>`
+    + `<div class="desc">Client sends messages as fast as possible to a backend that processes `
+    + `one message every 100ms. websocketd's pipe-based backpressure limits how many messages `
+    + `actually reach the backend. This is correct behavior, not a bug.</div>`
+    + `<div class="bp-stat"><span class="bp-num">${bp.msgs_sent.toLocaleString()}</span>`
+    + `<span class="bp-label">messages sent by client</span></div>`
+    + `<div class="bp-stat"><span class="bp-num">${bp.msgs_recv.toLocaleString()}</span>`
+    + `<span class="bp-label">messages echoed by backend (${pct}%)</span></div>`
+    + `<div class="bp-bar-bg"><div class="bp-bar" style="width:${Math.max(bp.delivery_ratio*100,0.5)}%"></div></div>`
+    + `<div class="bp-bar-text">${pct}% delivery ratio &mdash; the rest were absorbed by OS pipe backpressure</div>`;
+  bpDiv.appendChild(card);
+}
+
+// --- Server resources ---
+// Only show scenarios that ran long enough to have interesting data (>3 data points)
+const serverDiv = document.getElementById('server-charts');
+const NAMES = {
+  echo_latency: 'Echo Latency', echo_throughput: 'Echo Throughput',
+  connection_churn: 'Connection Churn', sustained_load: 'Sustained Load (50 conns, 30s)',
+  backpressure: 'Backpressure (15s)',
+};
+function srvName(n) {
+  if (NAMES[n]) return NAMES[n];
+  if (n.startsWith('connection_storm_')) return 'Storm (' + n.split('_').pop() + ' conns)';
+  if (n.startsWith('binary_')) return 'Binary ' + n.split('_').pop().toUpperCase();
+  return n;
+}
+
+// Filter to only scenarios with >3 data points (short ones are uninteresting flat lines)
+const interestingSrv = Object.keys(SM).filter(n => SM[n] && SM[n].length > 3);
+for (const name of interestingSrv) {
+  const points = SM[name];
+  const card = document.createElement('div');
+  card.className = 'srv-card';
+  card.innerHTML = `<h3>${srvName(name)}</h3>`
+    + `<div class="desc">Peak: ${Math.max(...points.map(p=>p.rss)).toLocaleString()} KB &middot; Lower is better</div>`
     + `<canvas id="srv-${name}"></canvas>`;
   serverDiv.appendChild(card);
 
@@ -237,17 +278,25 @@ Object.keys(SM).forEach(name => {
     data: {
       labels: points.map(p => p.t + 's'),
       datasets: [{
-        label: 'RSS (KB)', data: points.map(p => p.rss),
-        borderColor: COLORS[0], fill: false, pointRadius: 0, tension: 0.3
+        data: points.map(p => p.rss),
+        borderColor: C, borderWidth: 1.5, fill: true, backgroundColor: C + '18',
+        pointRadius: 0, tension: 0.3
       }]
     },
     options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, title: { display: true, text: 'KB', font: { size: 12 } } } },
-      plugins: { legend: { display: false } }
+      responsive: true, aspectRatio: 3,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'RSS (KB)', font: { size: 11 } },
+             grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 10 } } }
+      }
     }
   });
-});
+}
+if (!interestingSrv.length) {
+  serverDiv.innerHTML = '<p style="color:#999;font-size:13px;">No scenarios ran long enough to capture meaningful memory data.</p>';
+}
 </script>
 </body>
 </html>
