@@ -1,6 +1,6 @@
 // Sustained Load: N connections sending continuously for 30 seconds.
 // Measures steady-state throughput and latency under load.
-// Set SUSTAINED_VUS env var to control concurrency (default 50).
+// Set SUSTAINED_VUS env var to control number of concurrent connections (default 50).
 
 import ws from 'k6/ws';
 import { Trend, Counter } from 'k6/metrics';

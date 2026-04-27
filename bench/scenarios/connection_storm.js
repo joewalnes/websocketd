@@ -1,5 +1,5 @@
 // Connection Storm: N concurrent connections, each sends 1 message and closes.
-// Set STORM_VUS env var to control concurrency (default 100).
+// Set STORM_VUS env var to control number of concurrent connections (default 100).
 
 import ws from 'k6/ws';
 import { Trend } from 'k6/metrics';
