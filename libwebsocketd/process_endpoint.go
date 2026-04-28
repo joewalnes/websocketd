@@ -7,26 +7,31 @@ package libwebsocketd
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"syscall"
+	"sync"
 	"time"
 )
 
 type ProcessEndpoint struct {
-	process   *LaunchedProcess
-	closetime time.Duration
-	output    chan []byte
-	log       *LogScope
-	bin       bool
+	process    *LaunchedProcess
+	closetime  time.Duration
+	output     chan []byte
+	log        *LogScope
+	bin        bool
+	passStderr bool
+	wg         sync.WaitGroup
 }
 
-func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *ProcessEndpoint {
+func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope, passStderr bool) *ProcessEndpoint {
 	return &ProcessEndpoint{
-		process: process,
-		output:  make(chan []byte),
-		log:     log,
-		bin:     bin,
+		process:    process,
+		output:     make(chan []byte),
+		log:        log,
+		bin:        bin,
+		passStderr: passStderr,
 	}
 }
 
@@ -89,12 +94,24 @@ func (pe *ProcessEndpoint) Send(msg []byte) bool {
 }
 
 func (pe *ProcessEndpoint) StartReading() {
-	go pe.logStderr()
-	if pe.bin {
-		go pe.readBinaryOutput()
+	if pe.passStderr {
+		pe.wg.Add(2)
+		go pe.readStderrTagged()
+		go pe.readStdoutTagged()
+		go pe.closeOutputWhenDone()
 	} else {
-		go pe.readTextOutput()
+		go pe.logStderr()
+		if pe.bin {
+			go pe.readBinaryOutput()
+		} else {
+			go pe.readTextOutput()
+		}
 	}
+}
+
+func (pe *ProcessEndpoint) closeOutputWhenDone() {
+	pe.wg.Wait()
+	close(pe.output)
 }
 
 func (pe *ProcessEndpoint) readTextOutput() {
@@ -129,6 +146,68 @@ func (pe *ProcessEndpoint) readBinaryOutput() {
 		pe.output <- append(make([]byte, 0, n), buf[:n]...) // cloned buffer
 	}
 	close(pe.output)
+}
+
+func (pe *ProcessEndpoint) readStdoutTagged() {
+	defer pe.wg.Done()
+	bufin := bufio.NewReader(pe.process.stdout)
+	for {
+		buf, err := bufin.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				pe.log.Error("process", "Unexpected error while reading STDOUT from process: %s", err)
+			} else {
+				pe.log.Debug("process", "Process STDOUT closed")
+			}
+			break
+		}
+		pe.output <- tagMessage("stdout", string(trimEOL(buf)))
+	}
+}
+
+func (pe *ProcessEndpoint) readStderrTagged() {
+	defer pe.wg.Done()
+	bufin := bufio.NewReader(pe.process.stderr)
+	for {
+		buf, err := bufin.ReadSlice('\n')
+		if err != nil {
+			if err != io.EOF {
+				pe.log.Error("process", "Unexpected error while reading STDERR from process: %s", err)
+			} else {
+				pe.log.Debug("process", "Process STDERR closed")
+			}
+			break
+		}
+		pe.log.Error("stderr", "%s", string(trimEOL(buf)))
+		pe.output <- tagMessage("stderr", string(trimEOL(buf)))
+	}
+}
+
+func tagMessage(stream, data string) []byte {
+	msg := fmt.Sprintf("{\"stream\":\"%s\",\"data\":%s}", stream, jsonQuote(data))
+	return []byte(msg)
+}
+
+func jsonQuote(s string) string {
+	b := make([]byte, 0, len(s)+2)
+	b = append(b, '"')
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		case '\\', '"':
+			b = append(b, '\\', c)
+		case '\n':
+			b = append(b, '\\', 'n')
+		case '\r':
+			b = append(b, '\\', 'r')
+		case '\t':
+			b = append(b, '\\', 't')
+		default:
+			b = append(b, c)
+		}
+	}
+	b = append(b, '"')
+	return string(b)
 }
 
 func (pe *ProcessEndpoint) logStderr() {

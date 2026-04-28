@@ -180,6 +180,7 @@ func parseCommandLine() *Config {
 
 	// lib config options
 	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
+	passStderrFlag := flag.Bool("passstderr", false, "Forward STDERR to WebSocket clients as tagged JSON messages")
 	reverseLookupFlag := flag.Bool("reverselookup", false, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
@@ -253,6 +254,7 @@ func parseCommandLine() *Config {
 	config.CloseMs = *closeMsFlag
 	config.PingInterval = time.Duration(*pingMsFlag) * time.Millisecond
 	config.Binary = *binaryFlag
+	config.PassStderr = *passStderrFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag
 	config.SslCaFile = *sslCaFlag
