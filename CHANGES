@@ -1,5 +1,6 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Added --passstderr flag to forward STDERR to WebSocket clients as tagged JSON messages (#403)
 * Fixed readFrames processing unexpected message types instead of skipping them
 * Fixed pipe file descriptor leak on partial launch failure
 * Fixed high-severity integer overflow vulnerability by upgrading gorilla/websocket v1.4.0 → v1.5.3

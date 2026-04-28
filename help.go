@@ -60,10 +60,17 @@ Options:
                                  passed to executed scripts. Does not work for
                                  Windows since all the variables are kept there.
 
-  --binary={true,false}          Switches communication to binary, process reads
-                                 send to browser as blobs and all reads from the
-                                 browser are immediately flushed to the process.
-                                 Default: false
+--binary={true,false}          Switches communication to binary, process reads
+                                  send to browser as blobs and all reads from the
+                                  browser are immediately flushed to the process.
+                                  Default: false
+
+  --passstderr                   Forward STDERR from process to WebSocket clients.
+                                  Messages are wrapped in JSON:
+                                  {"stream":"stderr","data":"error message"}
+                                  STDOUT messages are also tagged:
+                                  {"stream":"stdout","data":"output line"}
+                                  Default: false
 
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: false

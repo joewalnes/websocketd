@@ -22,6 +22,7 @@ type Config struct {
 
 	// settings
 	Binary         bool     // Use binary communication (send data in chunks they are read from process)
+	PassStderr     bool     // Forward STDERR to WebSocket clients as tagged messages
 	ReverseLookup  bool     // Perform reverse DNS lookups on hostnames (useful, but slower).
 	Ssl            bool     // websocketd works with --ssl which means TLS is in use
 	SslCaFile      string   // CA certificate file for client certificate verification (mutual TLS).
