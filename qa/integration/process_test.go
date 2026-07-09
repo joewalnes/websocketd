@@ -55,17 +55,17 @@ func TestPROC003_StderrToLogs(t *testing.T) {
 	ws.ExpectClosed()
 
 	// Poll for stderr content (process may still be flushing)
-	var stderr string
+	var logs string
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		stderr = s.Stderr()
-		if strings.Contains(stderr, "stderr line") {
+		logs = s.Logs()
+		if strings.Contains(logs, "stderr line") {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	if !strings.Contains(stderr, "stderr line") {
-		t.Logf("Note: stderr line not captured in websocketd output (may be expected based on log level)")
+	if !strings.Contains(logs, "stderr line") {
+		t.Error("child stderr was not relayed to websocketd's log")
 	}
 }
 

@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// syncBuffer is a goroutine-safe bytes.Buffer for capturing stderr.
+// syncBuffer is a goroutine-safe bytes.Buffer for capturing output.
 type syncBuffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer
@@ -94,7 +94,7 @@ type Server struct {
 	Port       int
 	IsHTTPS    bool
 	cmd        *exec.Cmd
-	stderr     syncBuffer
+	logs       syncBuffer // websocketd log output (stdout and stderr combined)
 	stderrDone chan struct{}
 }
 
@@ -136,8 +136,12 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 		stderrDone: make(chan struct{}),
 	}
 
+	// websocketd writes its log (including the access log and relayed child
+	// stderr) to stdout; capture it alongside stderr so tests can assert on it.
+	cmd.Stdout = &s.logs
+
 	go func() {
-		io.Copy(&s.stderr, stderrPipe)
+		io.Copy(&s.logs, stderrPipe)
 		close(s.stderrDone)
 	}()
 
@@ -150,7 +154,7 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 		cmd.Wait()
 		<-s.stderrDone
 		if t.Failed() {
-			t.Logf("websocketd stderr:\n%s", s.stderr.String())
+			t.Logf("websocketd log output:\n%s", s.logs.String())
 		}
 	})
 
@@ -261,9 +265,9 @@ func (s *Server) HTTPGet(path string) (*http.Response, string) {
 	return resp, string(body)
 }
 
-// Stderr returns the captured stderr output from websocketd.
-func (s *Server) Stderr() string {
-	return s.stderr.String()
+// Logs returns websocketd's captured log output (stdout and stderr combined).
+func (s *Server) Logs() string {
+	return s.logs.String()
 }
 
 // HTTPGetFollow makes an HTTP GET that follows redirects and returns response + body.

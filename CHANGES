@@ -21,6 +21,9 @@ Version 0.5.0 (Apr 26, 2026)
   were never unblocked after the relay stopped (up to 10MB held per broken
   binary-mode connection); Terminate now signals readers to exit
 * Fixed Terminate's process-wait goroutine leaking if SIGKILL never reaps
+* Integration harness now captures websocketd's stdout (where the log
+  actually goes); dead-connection test polls the access log instead of
+  sleeping 1.5s, and the child-stderr relay test actually asserts
 * Fixed TestSEC011 integration test false positive when the suite runs as root
   (asserted on the substring "root" instead of evidence of command execution)
 * Fixed readFrames processing unexpected message types instead of skipping them
