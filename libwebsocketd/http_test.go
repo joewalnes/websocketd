@@ -167,12 +167,12 @@ func TestIsWebSocketUpgrade(t *testing.T) {
 
 func TestMatchOrigin(t *testing.T) {
 	tests := []struct {
-		name       string
-		server     string
-		port       string
-		scheme     string
-		allowed    []string
-		wantMatch  bool
+		name      string
+		server    string
+		port      string
+		scheme    string
+		allowed   []string
+		wantMatch bool
 	}{
 		{"exact host match", "example.com", "80", "http", []string{"example.com"}, true},
 		{"host with any port", "example.com", "8080", "http", []string{"example.com"}, true},
