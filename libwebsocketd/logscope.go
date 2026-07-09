@@ -70,11 +70,11 @@ func (l *LogScope) Fatal(category string, msg string, args ...interface{}) {
 	l.LogFunc(l, LogFatal, "FATAL", category, msg, args...)
 }
 
-func (parent *LogScope) NewLevel(logFunc LogFunc) *LogScope {
+func (l *LogScope) NewLevel(logFunc LogFunc) *LogScope {
 	return &LogScope{
-		Parent:     parent,
-		MinLevel:   parent.MinLevel,
-		Mutex:      parent.Mutex,
+		Parent:     l,
+		MinLevel:   l.MinLevel,
+		Mutex:      l.Mutex,
 		Associated: make([]AssocPair, 0),
 		LogFunc:    logFunc}
 }

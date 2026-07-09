@@ -1,3 +1,4 @@
 websocketd
 go-*
 bench/results/
+__pycache__/

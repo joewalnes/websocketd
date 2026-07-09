@@ -105,19 +105,19 @@ func buildParentEnv(passenv string) []string {
 }
 
 // resolveCommand validates and resolves the command to execute.
-// Returns the resolved command path, arguments, and whether it uses a script directory.
-func resolveCommand(args []string, scriptDir string) (commandName string, commandArgs []string, usingScriptDir bool, err error) {
+// Returns the resolved command path and arguments.
+func resolveCommand(args []string, scriptDir string) (commandName string, commandArgs []string, err error) {
 	if len(args) > 0 {
 		if scriptDir != "" {
-			return "", nil, false, fmt.Errorf("ambiguous: provided COMMAND and --dir argument, please only specify one")
+			return "", nil, fmt.Errorf("ambiguous: provided COMMAND and --dir argument, please only specify one")
 		}
 		path, lookErr := exec.LookPath(args[0])
 		if lookErr != nil {
-			return "", nil, false, fmt.Errorf("unable to locate specified COMMAND '%s' in OS path", args[0])
+			return "", nil, fmt.Errorf("unable to locate specified COMMAND '%s' in OS path", args[0])
 		}
-		return path, args[1:], false, nil
+		return path, args[1:], nil
 	}
-	return "", nil, false, nil
+	return "", nil, nil
 }
 
 // resolveScriptDir validates and resolves the script directory path.
@@ -282,7 +282,7 @@ func parseCommandLine() *Config {
 	}
 
 	if len(args) > 0 {
-		commandName, commandArgs, _, err := resolveCommand(args, config.ScriptDir)
+		commandName, commandArgs, err := resolveCommand(args, config.ScriptDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			ShortHelp()

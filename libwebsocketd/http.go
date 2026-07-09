@@ -249,6 +249,7 @@ func (h *WebsocketdServer) noteForkCompleted() {
 		default:
 			// This should never happen — it means noteForkCompleted was called
 			// more times than noteForkCreated. Log rather than crash the server.
+			h.Log.Error("server", "noteForkCompleted called with no active forks")
 			return
 		}
 	}

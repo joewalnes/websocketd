@@ -83,11 +83,9 @@ func TestValidateSSL(t *testing.T) {
 }
 
 func TestBuildParentEnv(t *testing.T) {
-	// Set some env vars for testing
-	os.Setenv("TEST_WSD_VAR1", "value1")
-	os.Setenv("TEST_WSD_VAR2", "value2")
-	defer os.Unsetenv("TEST_WSD_VAR1")
-	defer os.Unsetenv("TEST_WSD_VAR2")
+	// Set some env vars for testing (t.Setenv restores them automatically)
+	t.Setenv("TEST_WSD_VAR1", "value1")
+	t.Setenv("TEST_WSD_VAR2", "value2")
 
 	t.Run("passes specified vars", func(t *testing.T) {
 		env := buildParentEnv("TEST_WSD_VAR1,TEST_WSD_VAR2")
@@ -106,8 +104,7 @@ func TestBuildParentEnv(t *testing.T) {
 	})
 
 	t.Run("skips HTTPS", func(t *testing.T) {
-		os.Setenv("HTTPS", "on")
-		defer os.Unsetenv("HTTPS")
+		t.Setenv("HTTPS", "on")
 		env := buildParentEnv("HTTPS,TEST_WSD_VAR1")
 		for _, e := range env {
 			if e == "HTTPS=on" {
@@ -124,8 +121,7 @@ func TestBuildParentEnv(t *testing.T) {
 	})
 
 	t.Run("strips newlines from values", func(t *testing.T) {
-		os.Setenv("TEST_WSD_NEWLINE", "value\nwith\nnewlines")
-		defer os.Unsetenv("TEST_WSD_NEWLINE")
+		t.Setenv("TEST_WSD_NEWLINE", "value\nwith\nnewlines")
 		env := buildParentEnv("TEST_WSD_NEWLINE")
 		if len(env) != 1 {
 			t.Fatalf("expected 1 env, got %d", len(env))
@@ -139,7 +135,7 @@ func TestBuildParentEnv(t *testing.T) {
 func TestResolveCommand(t *testing.T) {
 	t.Run("valid command", func(t *testing.T) {
 		// "echo" should be in PATH on all platforms
-		name, args, usingDir, err := resolveCommand([]string{"echo", "hello"}, "")
+		name, args, err := resolveCommand([]string{"echo", "hello"}, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -149,27 +145,24 @@ func TestResolveCommand(t *testing.T) {
 		if len(args) != 1 || args[0] != "hello" {
 			t.Errorf("args = %v, want [hello]", args)
 		}
-		if usingDir {
-			t.Error("usingScriptDir should be false")
-		}
 	})
 
 	t.Run("nonexistent command", func(t *testing.T) {
-		_, _, _, err := resolveCommand([]string{"nonexistent_wsd_command_xyz"}, "")
+		_, _, err := resolveCommand([]string{"nonexistent_wsd_command_xyz"}, "")
 		if err == nil {
 			t.Error("expected error for nonexistent command")
 		}
 	})
 
 	t.Run("command with scriptdir is ambiguous", func(t *testing.T) {
-		_, _, _, err := resolveCommand([]string{"echo"}, "/some/dir")
+		_, _, err := resolveCommand([]string{"echo"}, "/some/dir")
 		if err == nil {
 			t.Error("expected error for ambiguous command + dir")
 		}
 	})
 
 	t.Run("no args returns empty", func(t *testing.T) {
-		name, _, _, err := resolveCommand(nil, "")
+		name, _, err := resolveCommand(nil, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
