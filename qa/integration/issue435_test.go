@@ -59,11 +59,26 @@ func skipUnixSocketOnWindows(t *testing.T) {
 	}
 }
 
+// shortSocketPath returns a socket path short enough to survive macOS's
+// 104-byte sockaddr_un.sun_path limit. t.TempDir() is unusable here: on
+// macOS CI, $TMPDIR is already a long random path, and nesting the test
+// name and a "/001/" subdir under it routinely blows past the limit
+// (bind: invalid argument). /tmp itself is always short.
+func shortSocketPath(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("/tmp", "wsd")
+	if err != nil {
+		t.Fatalf("failed to create temp dir for socket: %v", err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	return filepath.Join(dir, "s.sock")
+}
+
 func TestIssue435_UnixSocketEcho(t *testing.T) {
 	skipUnixSocketOnWindows(t)
 	t.Parallel()
 
-	sockPath := filepath.Join(t.TempDir(), "websocketd.sock")
+	sockPath := shortSocketPath(t)
 	args := []string{"--unixsocket=" + sockPath, "--loglevel=access", testcmdBin, "echo"}
 	cmd := startServerRawArgs(t, args)
 	waitForSocket(t, sockPath, 10*time.Second)
@@ -84,7 +99,7 @@ func TestIssue435_StaleSocketCleanup(t *testing.T) {
 	skipUnixSocketOnWindows(t)
 	t.Parallel()
 
-	sockPath := filepath.Join(t.TempDir(), "websocketd.sock")
+	sockPath := shortSocketPath(t)
 
 	// Simulate a leftover socket file from an unclean shutdown (e.g. a
 	// killed process, which never gets to run its own cleanup). A graceful
