@@ -95,7 +95,10 @@ func main() {
 		log.Info("server", "Serving CGI scripts from    : %s", config.CgiDir)
 	}
 
-	rejects := make(chan error, 1)
+	// Buffered for every possible sender (one listener plus one redirect
+	// server per address) so no goroutine blocks on report; main exits on
+	// the first error received.
+	rejects := make(chan error, len(config.Addr)*2)
 	for _, addrSingle := range config.Addr {
 		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, "/"))
 		if config.DevConsole {
@@ -131,7 +134,7 @@ func main() {
 						uri = "http://"
 					}
 					if cpos := strings.IndexByte(r.Host, ':'); cpos > 0 {
-						uri += r.Host[:strings.IndexByte(r.Host, ':')] + addr[pos:] + "/"
+						uri += r.Host[:cpos] + addr[pos:] + "/"
 					} else {
 						uri += r.Host + addr[pos:] + "/"
 					}

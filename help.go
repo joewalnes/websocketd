@@ -148,7 +148,7 @@ Usage:
 `
 )
 
-func get_help_message(content string) string {
+func helpMessage(content string) string {
 	msg := strings.Trim(content, " \n")
 	msg = strings.Replace(msg, "{{binary}}", HelpProcessName(), -1)
 	return strings.Replace(msg, "{{version}}", Version(), -1)
@@ -165,10 +165,10 @@ func HelpProcessName() string {
 }
 
 func PrintHelp() {
-	fmt.Fprintf(os.Stderr, "%s\n", get_help_message(help))
+	fmt.Fprintf(os.Stderr, "%s\n", helpMessage(help))
 }
 
 func ShortHelp() {
 	// Shown after some error
-	fmt.Fprintf(os.Stderr, "\n%s\n", get_help_message(short))
+	fmt.Fprintf(os.Stderr, "\n%s\n", helpMessage(short))
 }

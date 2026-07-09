@@ -124,7 +124,7 @@ func (we *WebSocketEndpoint) readFrames() {
 		}
 
 		p, err := io.ReadAll(rd)
-		if err != nil && err != io.EOF {
+		if err != nil { // io.ReadAll never returns io.EOF
 			we.log.Debug("websocket", "Cannot read received message: %s", err)
 			break
 		}
