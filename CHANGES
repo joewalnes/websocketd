@@ -1,5 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Added PowerShell examples (count, greeter, dump-env) alongside the existing
+  VBScript/JScript ones — cross-platform via PowerShell Core (#423, thanks
+  @kshahar)
 * Release version derivation uses HTTPS instead of SSH for git ls-remote
   (no SSH setup needed for a public repo)
 * Repaired release tooling: release/Makefile now builds 0.5.x (was stuck on

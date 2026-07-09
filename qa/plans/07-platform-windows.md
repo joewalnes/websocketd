@@ -94,6 +94,21 @@ All tests in this file should be run on Windows 10 and Windows 11.
 
 ---
 
+## WIN-007: PowerShell Examples
+
+**Priority**: P2
+
+**Steps**:
+1. Run the provided PowerShell examples from `examples/powershell/` via
+   their `.cmd` wrappers on Windows (or directly via the `pwsh` shebang
+   on Linux/macOS)
+2. Connect and verify functionality
+
+**Expected Result**: PowerShell examples work correctly on Windows and,
+via PowerShell Core, on Linux/macOS.
+
+---
+
 ## WIN-007: Process Termination on Windows
 
 **Priority**: P0
