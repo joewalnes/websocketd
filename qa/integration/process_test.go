@@ -54,18 +54,22 @@ func TestPROC003_StderrToLogs(t *testing.T) {
 	// stderr goes to websocketd logs, not to the client
 	ws.ExpectClosed()
 
-	// Poll for stderr content (process may still be flushing)
-	var logs string
+	// Poll for stderr content (process may still be flushing). The relay
+	// goes through websocketd's logger, which writes to its stdout.
+	var stdout string
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		logs = s.Logs()
-		if strings.Contains(logs, "stderr line") {
+		stdout = s.Stdout()
+		if strings.Contains(stdout, "stderr line") {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	if !strings.Contains(logs, "stderr line") {
-		t.Error("child stderr was not relayed to websocketd's log")
+	if !strings.Contains(stdout, "stderr line") {
+		t.Error("child stderr was not relayed to websocketd's log on stdout")
+	}
+	if strings.Contains(s.Stderr(), "stderr line") {
+		t.Error("child stderr unexpectedly appeared on websocketd's own stderr")
 	}
 }
 

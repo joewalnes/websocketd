@@ -89,13 +89,16 @@ func (b *syncBuffer) String() string {
 }
 
 // Server wraps a running websocketd instance for testing.
+// stdout and stderr are captured separately so tests can assert precisely
+// which stream output appears on (websocketd writes its log, including the
+// access log and relayed child stderr, to its own stdout).
 type Server struct {
-	t          *testing.T
-	Port       int
-	IsHTTPS    bool
-	cmd        *exec.Cmd
-	logs       syncBuffer // websocketd log output (stdout and stderr combined)
-	stderrDone chan struct{}
+	t       *testing.T
+	Port    int
+	IsHTTPS bool
+	cmd     *exec.Cmd
+	stdout  syncBuffer
+	stderr  syncBuffer
 }
 
 // startServer starts websocketd with testcmd <mode> as the backend.
@@ -124,26 +127,17 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 	args = append(args, cmdArgs...)
 
 	cmd := exec.Command(websocketdBin, args...)
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatalf("failed to create stderr pipe: %v", err)
-	}
 
 	s := &Server{
-		t:          t,
-		Port:       port,
-		cmd:        cmd,
-		stderrDone: make(chan struct{}),
+		t:    t,
+		Port: port,
+		cmd:  cmd,
 	}
 
-	// websocketd writes its log (including the access log and relayed child
-	// stderr) to stdout; capture it alongside stderr so tests can assert on it.
-	cmd.Stdout = &s.logs
-
-	go func() {
-		io.Copy(&s.logs, stderrPipe)
-		close(s.stderrDone)
-	}()
+	// Capture each stream separately; cmd.Wait joins exec's copier
+	// goroutines, so both buffers are complete once Wait returns.
+	cmd.Stdout = &s.stdout
+	cmd.Stderr = &s.stderr
 
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("failed to start websocketd: %v", err)
@@ -152,9 +146,9 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 	t.Cleanup(func() {
 		cmd.Process.Kill()
 		cmd.Wait()
-		<-s.stderrDone
 		if t.Failed() {
-			t.Logf("websocketd log output:\n%s", s.logs.String())
+			t.Logf("websocketd stdout:\n%s", s.stdout.String())
+			t.Logf("websocketd stderr:\n%s", s.stderr.String())
 		}
 	})
 
@@ -265,9 +259,15 @@ func (s *Server) HTTPGet(path string) (*http.Response, string) {
 	return resp, string(body)
 }
 
-// Logs returns websocketd's captured log output (stdout and stderr combined).
-func (s *Server) Logs() string {
-	return s.logs.String()
+// Stdout returns websocketd's captured stdout so far. The log — access log
+// and relayed child stderr included — is written here.
+func (s *Server) Stdout() string {
+	return s.stdout.String()
+}
+
+// Stderr returns websocketd's captured stderr so far.
+func (s *Server) Stderr() string {
+	return s.stderr.String()
 }
 
 // HTTPGetFollow makes an HTTP GET that follows redirects and returns response + body.

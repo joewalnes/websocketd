@@ -58,6 +58,12 @@ Before implementing a feature or fix:
 2. Run it — verify it **fails** (if it passes, the test isn't testing the right thing)
 3. Implement until the test passes
 
+## Test precision
+
+When a test captures a process's output, capture stdout and stderr
+separately and assert on the specific stream — never merge them. Which
+stream something is logged to is part of the behavior under test.
+
 ## Pre-commit checks
 
 Before every commit:
