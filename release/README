@@ -25,8 +25,8 @@ To see currently tagged version run tag with -l option.
 
 ## Step 2: Build
 
-release/Makefile contains all required to download pre-verified for build release of Go and cross-compile
-websocketd for all platforms that we release for.
+release/Makefile cross-compiles websocketd for all platforms that we release
+for, using the system Go toolchain (see go.mod for the minimum version).
 
     cd release
     make

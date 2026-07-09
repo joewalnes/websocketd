@@ -1,5 +1,7 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Release version derivation uses HTTPS instead of SSH for git ls-remote
+  (no SSH setup needed for a public repo)
 * Repaired release tooling: release/Makefile now builds 0.5.x (was stuck on
   0.4.x), packages are labeled BSD-2-Clause instead of MIT, the man page is
   installed as websocketd.1.gz (was websocket.1.gz), and packaging recipes
