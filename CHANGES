@@ -25,7 +25,8 @@ Version 0.5.0 (Apr 26, 2026)
   Linux job still validating the go.mod minimum version
 * Fixed goroutine leak: endpoint readers parked on the output channel send
   were never unblocked after the relay stopped (up to 10MB held per broken
-  binary-mode connection); Terminate now signals readers to exit
+  binary-mode connection); Terminate now signals readers to exit, with
+  regression tests covering both the process and WebSocket endpoints
 * Fixed Terminate's process-wait goroutine leaking if SIGKILL never reaps
 * Code cleanup: removed always-false resolveCommand return value and a dead
   io.EOF check, noteForkCompleted's imbalance branch now actually logs,
