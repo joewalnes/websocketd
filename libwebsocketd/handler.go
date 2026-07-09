@@ -23,7 +23,7 @@ type WebsocketdHandler struct {
 	Id string
 	*RemoteInfo
 	*URLInfo
-	Env      []string
+	Env []string
 
 	command string
 }

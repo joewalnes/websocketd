@@ -1,6 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
 * Documented --pingms and --sslca in --help output (both were missing)
+* Added gofmt check to CI lint job and pinned staticcheck/gosec versions;
+  reformatted three files that had drifted
 * Fixed goroutine leak: endpoint readers parked on the output channel send
   were never unblocked after the relay stopped (up to 10MB held per broken
   binary-mode connection); Terminate now signals readers to exit
