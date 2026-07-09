@@ -49,7 +49,10 @@ Latest version goes at the top. Follow the existing format.
 
 Every Go source file starts with the 4-line BSD copyright header. New files
 use the current year ("Copyright 2026 ..."), not the year copied from an
-existing file. Existing files keep their original year.
+existing file. Existing files keep their original year. When adding a
+missing header to an old file, use the year the file first appeared
+(`git log --follow --format=%ad --date=short -- <file> | tail -1`) —
+don't assume 2013.
 
 ## Test-first
 
