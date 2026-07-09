@@ -1,5 +1,14 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Repaired release tooling: release/Makefile now builds 0.5.x (was stuck on
+  0.4.x), packages are labeled BSD-2-Clause instead of MIT, the man page is
+  installed as websocketd.1.gz (was websocket.1.gz), and packaging recipes
+  use bash (brace expansion broke under dash)
+* Removed vendored Go 1.11.5/1.15.7 download from both Makefiles; neither
+  could build the go 1.21 module — builds now use the system Go toolchain
+* Updated man page: added 9 missing flags (--maxforks, --closems, --pingms,
+  --sslca, --redirport, --binary, --header*), fixed --reverselookup default
+  (false, not true), corrected man section and version metadata
 * Fixed Benchmarks CI failing on every run: k6 is now installed from a pinned
   GitHub release instead of a flaky apt keyserver; regression alerts are now
   advisory comments rather than a hard PR gate

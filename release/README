@@ -33,14 +33,13 @@ websocketd for all platforms that we release for.
 
 Is generally recommended but other build options are available:
 
-* go-compile: build cross-platform golang pakages
 * binaries: only create websocketd binaries, do not generate zip distributions
 * deb, rpm: only create particular kind of packages
-* clean-go: remove build files for go
-* clean-out: remove built binaries, zip and linux packages
-* clean: remove everything (go and release files)
+* clean: remove built binaries, zips and linux packages
 
-Building requires to have gcc and other build tools installed. Building rpm/deb files would fail without fpm ("gem install fpm" itself requires ruby devel tools).
+Building uses the system Go toolchain (see go.mod for the minimum version).
+Building rpm/deb files would fail without fpm ("gem install fpm" itself
+requires ruby devel tools).
 
 Create CHECKSUMS.asc file using gpg and key that other developers shared with you:
 
@@ -54,7 +53,7 @@ Create CHECKSUMS.asc file using gpg and key that other developers shared with yo
 In order to make release official following steps required:
 
     # push tags (assuming joewalnes repo is origin):
-    go push --tags origin master:master
+    git push --tags origin master:master
 
 Upload files to github release (to be automated). Use these instructions for now: https://github.com/blog/1547-release-your-software
 

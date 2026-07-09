@@ -3,9 +3,13 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+# Recipes use bash brace expansion; make's default /bin/sh (dash on
+# Debian/Ubuntu) would create literal '{...}' directories.
+SHELL = bash
+
 # Uses Semantic Versioning scheme - http://semver.org/
 VERSION_MAJOR=0
-VERSION_MINOR=4
+VERSION_MINOR=5
 
 # Last part of version number (patch) is incremented automatically from Git tags
 LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
@@ -21,7 +25,9 @@ LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.gi
 VERSION_PATCH:=$(or $(LAST_PATCH_VERSION),0)
 RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 
-GO_VERSION=1.15.7
+# Cross-compiles with the system Go toolchain; see go.mod for the minimum
+# required version. (A vendored Go 1.15.7 was previously downloaded here,
+# but it predates the go.mod language version and cannot build the project.)
 PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
 
 
@@ -40,11 +46,6 @@ ifeq ($(UNAME_SYS),gnu)
 else ifeq ($(UNAME_SYS),sunos)
 	UNAME_SYS=solaris
 endif
-
-
-
-GO_DOWNLOAD_URL=https://dl.google.com/go/go$(GO_VERSION).$(UNAME_SYS)-$(UNAME_ARCH).tar.gz
-GO_DIR=../go-$(GO_VERSION)
 
 # Prevent any global environment polluting the builds
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
@@ -66,25 +67,16 @@ EXTENSION_windows_amd64 = .exe
 
 all: build
 
-localgo: $(GO_DIR)/bin/go
-
-$(GO_DIR)/bin/go:
-	mkdir -p $(GO_DIR)
-	rm -f $@
-	@echo Downloading and unpacking Go $(GO_VERSION) to $(GO_DIR)
-	curl -s $(GO_DOWNLOAD_URL) | tar xzf - --strip-components=1 -C $(GO_DIR)
-
-
 # Cross-compile final applications
-out/$(RELEASE_VERSION)/%/websocketd: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
+out/$(RELEASE_VERSION)/%/websocketd: ../*.go ../libwebsocketd/*.go
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd ..
+	$(FLAGS_$*) go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd ..
 
-out/$(RELEASE_VERSION)/%/websocketd.exe: ../*.go ../libwebsocketd/*.go $(GO_DIR)/bin/go
+out/$(RELEASE_VERSION)/%/websocketd.exe: ../*.go ../libwebsocketd/*.go
 	rm -f $@
 	mkdir -p $(dir $@)
-	$(FLAGS_$*) $(GO_DIR)/bin/go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd.exe ..
+	$(FLAGS_$*) go build -ldflags "-X main.version=$(RELEASE_VERSION)" -o out/$(RELEASE_VERSION)/$*/websocketd.exe ..
 
 out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)-%.zip: out/$(RELEASE_VERSION)/%/websocketd
 	rm -f $@
@@ -109,7 +101,7 @@ out/$(RELEASE_VERSION)/CHECKSUMS: $(BINARIES) $(ZIPS) $(DEBS) $(RPMS)
 
 
 
-BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license MIT  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com"
+BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license BSD-2-Clause  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com"
 
 DEBFPM=""
 RPMFPM=--rpm-os linux
@@ -119,45 +111,43 @@ deb: $(DEBS)
 rpm: $(RPMS)
 
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_386/websocketd
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_i386.deb: out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb32/{usr/bin,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/deb32/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb32/usr/share/doc/websocketd-$(RELEASE_VERSION)
-	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb32/usr/share/man/man1/websocket.1.gz
+	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb32/usr/share/man/man1/websocketd.1.gz
 	fpm -f -s dir -t deb -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb32/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb --deb-no-default-config-files $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb32/
 
-out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_amd64/websocketd
+out/$(RELEASE_VERSION)/websocketd-$(RELEASE_VERSION)_amd64.deb:  out/$(RELEASE_VERSION)/linux_amd64/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/deb64/{usr/bin,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/deb64/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/deb64/usr/share/doc/websocketd-$(RELEASE_VERSION)
-	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb64/usr/share/man/man1/websocket.1.gz
+	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/deb64/usr/share/man/man1/websocketd.1.gz
 	fpm -f -s dir -t deb -a amd64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/deb64/ -p out/$(RELEASE_VERSION)/websocketd-VERSION_ARCH.deb --deb-no-default-config-files $(BASEFPM) $(DEB_FPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/deb64/
 
-out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_amd64/websocketd
+out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).x86_64.rpm: out/$(RELEASE_VERSION)/linux_amd64/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/rpm64/{usr/bin,etc/default,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_amd64/websocketd out/$(RELEASE_VERSION)/rpm64/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm64/usr/share/doc/websocketd-$(RELEASE_VERSION)
-	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm64/usr/share/man/man1/websocket.1.gz
+	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm64/usr/share/man/man1/websocketd.1.gz
 	fpm -f -s dir -t rpm -a x86_64 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm64/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) $(RPMFPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/rpm64/
 
-out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: $(GO_UNPACKED) out/$(RELEASE_VERSION)/linux_386/websocketd
+out/$(RELEASE_VERSION)/websocketd.$(RELEASE_VERSION).i386.rpm: out/$(RELEASE_VERSION)/linux_386/websocketd
 	mkdir -p out/$(RELEASE_VERSION)/rpm32/{usr/bin,etc/default,usr/share/man/man1,usr/share/doc/websocketd-$(RELEASE_VERSION)}
 	cp out/$(RELEASE_VERSION)/linux_386/websocketd out/$(RELEASE_VERSION)/rpm32/usr/bin/
 	cp ../{LICENSE,AUTHORS,CHANGES,README.md} out/$(RELEASE_VERSION)/rpm32/usr/share/doc/websocketd-$(RELEASE_VERSION)
-	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm32/usr/share/man/man1/websocket.1.gz
+	cat websocketd.man | gzip > out/$(RELEASE_VERSION)/rpm32/usr/share/man/man1/websocketd.1.gz
 	fpm -f -s dir -t rpm -a i386 -n websocketd -v $(RELEASE_VERSION) -C out/$(RELEASE_VERSION)/rpm32/ -p out/$(RELEASE_VERSION)/websocketd.VERSION.ARCH.rpm $(BASEFPM) $(RPMFPM) usr/
 	rm -rf out/$(RELEASE_VERSION)/rpm32/
 
 
 # Clean up
 clobber: clean
-	rm -rf $(GO_DIR)
-
 
 clean:
 	rm -rf out
 
-.PHONY: all build deb rpm localgo clobber clean
+.PHONY: all build binaries deb rpm clobber clean
