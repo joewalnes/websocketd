@@ -50,7 +50,7 @@ func TestIssue456_DeadConnectionDetected(t *testing.T) {
 	// log until the server notices the dead connection and ends the session,
 	// rather than sleeping a fixed amount.
 	deadline := time.Now().Add(5 * time.Second)
-	for !strings.Contains(s.Logs(), "DISCONNECT") {
+	for !strings.Contains(s.Stdout(), "DISCONNECT") {
 		if time.Now().After(deadline) {
 			t.Fatal("server did not detect dead connection (no DISCONNECT in access log)")
 		}
