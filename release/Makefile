@@ -11,8 +11,10 @@ SHELL = bash
 VERSION_MAJOR=0
 VERSION_MINOR=5
 
-# Last part of version number (patch) is incremented automatically from Git tags
-LAST_PATCH_VERSION:=$(shell git ls-remote git@github.com:joewalnes/websocketd.git \
+# Last part of version number (patch) is incremented automatically from Git
+# tags. HTTPS needs no SSH setup for a public repo; note that if the remote
+# is unreachable this silently falls back to patch 0.
+LAST_PATCH_VERSION:=$(shell git ls-remote https://github.com/joewalnes/websocketd.git \
 		| grep -e 'refs/tags/v[0-9\.]*$$' \
 		| sed -e 's|^.*refs/tags/v||' \
 		| grep -e "^$(VERSION_MAJOR)\.$(VERSION_MINOR)\.[0-9][0-9]*$$" \
