@@ -7,6 +7,7 @@ package libwebsocketd
 
 import (
 	"io"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -15,6 +16,8 @@ import (
 type WebSocketEndpoint struct {
 	ws           *websocket.Conn
 	output       chan []byte
+	done         chan struct{}
+	doneOnce     sync.Once
 	log          *LogScope
 	mtype        int
 	pingInterval time.Duration
@@ -24,6 +27,7 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInter
 	endpoint := &WebSocketEndpoint{
 		ws:           ws,
 		output:       make(chan []byte),
+		done:         make(chan struct{}),
 		log:          log,
 		mtype:        websocket.TextMessage,
 		pingInterval: pingInterval,
@@ -35,6 +39,9 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInter
 }
 
 func (we *WebSocketEndpoint) Terminate() {
+	// Unblock a readFrames goroutine parked on the output channel send;
+	// closing the connection below only unblocks NextReader.
+	we.doneOnce.Do(func() { close(we.done) })
 	we.ws.Close() // unblocks readFrames goroutine
 	we.log.Trace("websocket", "Terminated websocket connection")
 }
@@ -104,6 +111,7 @@ func (we *WebSocketEndpoint) setupPingPong() {
 }
 
 func (we *WebSocketEndpoint) readFrames() {
+	defer close(we.output)
 	for {
 		mtype, rd, err := we.ws.NextReader()
 		if err != nil {
@@ -121,10 +129,12 @@ func (we *WebSocketEndpoint) readFrames() {
 			break
 		}
 		if we.mtype == websocket.TextMessage {
-			we.output <- append(p, '\n')
-		} else {
-			we.output <- p
+			p = append(p, '\n')
+		}
+		select {
+		case we.output <- p:
+		case <-we.done:
+			return
 		}
 	}
-	close(we.output)
 }
