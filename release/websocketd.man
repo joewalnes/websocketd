@@ -29,6 +29,11 @@ HTTP port to listen on.
 Address to bind to (multiple options allowed). Use square brackets to specify IPv6 address. Default: "" (all)
 .RE
 .PP
+\-\-unixsocket=PATH
+.RS 4
+Path of a Unix domain socket to listen on, in addition to (or instead of) \-\-address/\-\-port. If it's the only listen option given (no \-\-port, \-\-address, or \-\-redirport), no TCP listener is started at all. A leftover socket file from an unclean shutdown at the same path is removed automatically. Default: "" (do not listen on a Unix socket)
+.RE
+.PP
 \-\-sameorigin={true,false}
 .RS 4
 Restrict (HTTP 403) protocol upgrades if the Origin header does not match to requested HTTP Host. Default: false.

@@ -95,7 +95,12 @@ type RemoteInfo struct {
 func GetRemoteInfo(remote string, doLookup bool) (*RemoteInfo, error) {
 	addr, port, err := net.SplitHostPort(remote)
 	if err != nil {
-		return nil, err
+		// Not a "host:port" string — this is expected for Unix domain
+		// socket clients, whose peer address has no port (Go reports the
+		// unnamed peer as "@", or "" in other contexts). Use a clear,
+		// stable placeholder rather than leaking that representation, and
+		// don't refuse the connection.
+		return &RemoteInfo{Addr: "unix-socket", Host: "unix-socket", Port: ""}, nil
 	}
 
 	var host string

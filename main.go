@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -37,9 +38,26 @@ func logfunc(l *libwebsocketd.LogScope, level libwebsocketd.LogLevel, levelName 
 	l.Mutex.Unlock()
 }
 
-// listenAndServeMutualTLS starts an HTTPS server that requires client certificates
-// verified against the given CA file.
-func listenAndServeMutualTLS(addr, certFile, keyFile, caFile string, log *libwebsocketd.LogScope) error {
+// serve listens on the given network ("tcp" or "unix") and address/path and
+// runs an HTTP(S) server on it, honoring the Ssl/mutual-TLS config. It blocks
+// until the listener errors out.
+func serve(network, address string, config *Config, log *libwebsocketd.LogScope) error {
+	listener, err := net.Listen(network, address)
+	if err != nil {
+		return err
+	}
+	if !config.Ssl {
+		return http.Serve(listener, nil)
+	}
+	if config.SslCaFile != "" {
+		return serveMutualTLS(listener, config.CertFile, config.KeyFile, config.SslCaFile, log)
+	}
+	return (&http.Server{}).ServeTLS(listener, config.CertFile, config.KeyFile)
+}
+
+// serveMutualTLS runs an HTTPS server on the given listener that requires
+// client certificates verified against the given CA file.
+func serveMutualTLS(listener net.Listener, certFile, keyFile, caFile string, log *libwebsocketd.LogScope) error {
 	caCert, err := os.ReadFile(caFile)
 	if err != nil {
 		return fmt.Errorf("failed to read CA file %s: %w", caFile, err)
@@ -49,16 +67,26 @@ func listenAndServeMutualTLS(addr, certFile, keyFile, caFile string, log *libweb
 		return fmt.Errorf("failed to parse CA certificates from %s", caFile)
 	}
 
-	tlsConfig := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
-		ClientCAs:  caCertPool,
-	}
 	server := &http.Server{
-		Addr:      addr,
-		TLSConfig: tlsConfig,
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert,
+			ClientCAs:  caCertPool,
+		},
 	}
 	log.Info("server", "Mutual TLS enabled (client certs verified against %s)", caFile)
-	return server.ListenAndServeTLS(certFile, keyFile)
+	return server.ServeTLS(listener, certFile, keyFile)
+}
+
+// serveUnixSocket removes a stale socket file left behind by an unclean
+// shutdown (if any) and then serves on it. It only ever removes a path that
+// is actually a socket, never an arbitrary file that happens to be there.
+func serveUnixSocket(path string, config *Config, log *libwebsocketd.LogScope) error {
+	if info, err := os.Stat(path); err == nil && info.Mode()&os.ModeSocket != 0 {
+		if err := os.Remove(path); err != nil {
+			return fmt.Errorf("failed to remove stale socket %s: %w", path, err)
+		}
+	}
+	return serve("unix", path, config, log)
 }
 
 func main() {
@@ -96,9 +124,13 @@ func main() {
 	}
 
 	// Buffered for every possible sender (one listener plus one redirect
-	// server per address) so no goroutine blocks on report; main exits on
-	// the first error received.
-	rejects := make(chan error, len(config.Addr)*2)
+	// server per address, plus the Unix socket listener if any) so no
+	// goroutine blocks on report; main exits on the first error received.
+	rejectCap := len(config.Addr) * 2
+	if config.UnixSocket != "" {
+		rejectCap++
+	}
+	rejects := make(chan error, rejectCap)
 	for _, addrSingle := range config.Addr {
 		log.Info("server", "Starting WebSocket server   : %s", handler.TellURL("ws", addrSingle, "/"))
 		if config.DevConsole {
@@ -106,21 +138,12 @@ func main() {
 		} else if config.StaticDir != "" || config.CgiDir != "" {
 			log.Info("server", "Serving CGI or static files : %s", handler.TellURL("http", addrSingle, "/"))
 		}
-		// ListenAndServe is blocking function. Let's run it in
-		// go routine, reporting result to control channel.
-		// Since it's blocking it'll never return non-error.
+		// serve is a blocking call. Let's run it in a goroutine, reporting
+		// the result to the control channel. Since it's blocking it'll
+		// never return non-error.
 
 		go func(addr string) {
-			if config.Ssl {
-				if config.SslCaFile != "" {
-					// Mutual TLS: require and verify client certificates
-					rejects <- listenAndServeMutualTLS(addr, config.CertFile, config.KeyFile, config.SslCaFile, log)
-				} else {
-					rejects <- http.ListenAndServeTLS(addr, config.CertFile, config.KeyFile, nil)
-				}
-			} else {
-				rejects <- http.ListenAndServe(addr, nil)
-			}
+			rejects <- serve("tcp", addr, config, log)
 		}(addrSingle)
 
 		if config.RedirPort != 0 {
@@ -147,6 +170,12 @@ func main() {
 				rejects <- redir.ListenAndServe()
 			}(addrSingle)
 		}
+	}
+	if config.UnixSocket != "" {
+		log.Info("server", "Starting WebSocket server   : unix socket at %s", config.UnixSocket)
+		go func(path string) {
+			rejects <- serveUnixSocket(path, config, log)
+		}(config.UnixSocket)
 	}
 	err := <-rejects
 	if err != nil {

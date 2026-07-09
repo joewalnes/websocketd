@@ -1,5 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Added --unixsocket=PATH to listen on a Unix domain socket, in addition to
+  or instead of --address/--port; a leftover socket file from an unclean
+  shutdown is removed automatically (#435, thanks @matvore)
 * Added PowerShell examples (count, greeter, dump-env) alongside the existing
   VBScript/JScript ones — cross-platform via PowerShell Core (#423, thanks
   @kshahar)

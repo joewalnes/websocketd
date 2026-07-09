@@ -20,6 +20,7 @@ import (
 
 type Config struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
+	UnixSocket        string   // Path of a Unix domain socket to listen on, in addition to (or instead of) Addr
 	MaxForks          int      // Number of allowable concurrent forks
 	LogLevel          libwebsocketd.LogLevel
 	RedirPort         int
@@ -71,6 +72,15 @@ func resolvePort(portFlag int, ssl bool) int {
 		return 443
 	}
 	return 80
+}
+
+// wantsUnixSocketOnly reports whether the user asked to serve exclusively
+// over a Unix domain socket, with no TCP listener at all. This holds only
+// when --unixsocket is given and nothing else implies a TCP listener is
+// wanted (--port, --address, or --redirport); otherwise the Unix socket
+// (if any) is served alongside the usual TCP listener(s).
+func wantsUnixSocketOnly(unixSocket string, portFlag int, addrlist []string, redirPort int) bool {
+	return unixSocket != "" && portFlag == 0 && len(addrlist) == 0 && redirPort == 0
 }
 
 // validateSSL checks that SSL-related flags are consistent.
@@ -166,6 +176,7 @@ func parseCommandLine() *Config {
 
 	// server config options
 	portFlag := flag.Int("port", 0, "HTTP port to listen on")
+	unixSocketFlag := flag.String("unixsocket", "", "Path of a Unix domain socket to listen on, in addition to (or instead of) --address/--port")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	licenseFlag := flag.Bool("license", false, "Print license and exit")
 	logLevelFlag := flag.String("loglevel", "access", "Log level, one of: debug, trace, access, info, error, fatal")
@@ -224,9 +235,14 @@ func parseCommandLine() *Config {
 		os.Exit(0)
 	}
 
-	// Resolve port and addresses
-	port := resolvePort(*portFlag, *sslFlag)
-	mainConfig.Addr = resolveAddresses([]string(addrlist), port)
+	// Resolve port and addresses. A bare --unixsocket with no --port,
+	// --address, or --redirport means Unix-socket-only: skip the default
+	// TCP listener entirely rather than also binding ":80".
+	if !wantsUnixSocketOnly(*unixSocketFlag, *portFlag, []string(addrlist), *redirPortFlag) {
+		port := resolvePort(*portFlag, *sslFlag)
+		mainConfig.Addr = resolveAddresses([]string(addrlist), port)
+	}
+	mainConfig.UnixSocket = *unixSocketFlag
 	mainConfig.MaxForks = *maxForksFlag
 	mainConfig.RedirPort = *redirPortFlag
 

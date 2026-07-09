@@ -56,6 +56,32 @@ func TestResolveAddresses(t *testing.T) {
 	}
 }
 
+func TestWantsUnixSocketOnly(t *testing.T) {
+	tests := []struct {
+		name       string
+		unixSocket string
+		portFlag   int
+		addrlist   []string
+		redirPort  int
+		want       bool
+	}{
+		{"no unixsocket flag", "", 0, nil, 0, false},
+		{"unixsocket alone", "/tmp/w.sock", 0, nil, 0, true},
+		{"unixsocket with explicit port", "/tmp/w.sock", 8080, nil, 0, false},
+		{"unixsocket with address", "/tmp/w.sock", 0, []string{"127.0.0.1"}, 0, false},
+		{"unixsocket with redirport", "/tmp/w.sock", 0, nil, 8081, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := wantsUnixSocketOnly(tt.unixSocket, tt.portFlag, tt.addrlist, tt.redirPort)
+			if got != tt.want {
+				t.Errorf("wantsUnixSocketOnly(%q, %d, %v, %d) = %v, want %v",
+					tt.unixSocket, tt.portFlag, tt.addrlist, tt.redirPort, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestValidateSSL(t *testing.T) {
 	tests := []struct {
 		name    string

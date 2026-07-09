@@ -36,6 +36,15 @@ Options:
                                  Use square brackets to specify IPv6 address.
                                  Default: "" (all)
 
+  --unixsocket=PATH              Path of a Unix domain socket to listen on,
+                                 in addition to (or instead of) --address/
+                                 --port. If it's the only listen option given
+                                 (no --port, --address, or --redirport), no
+                                 TCP listener is started at all. A leftover
+                                 socket file from an unclean shutdown at the
+                                 same path is removed automatically.
+                                 Default: "" (do not listen on a Unix socket)
+
   --sameorigin={true,false}      Restrict (HTTP 403) protocol upgrades if the
                                  Origin header does not match to requested HTTP
                                  Host. Default: false.
