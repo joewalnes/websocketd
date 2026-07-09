@@ -25,11 +25,18 @@ jobs:
       # Pinned binary download: the previous apt route fetched the signing
       # key from keyserver.ubuntu.com, which failed intermittently and left
       # this workflow red on every run. A pinned release is also reproducible.
+      # The tarball is verified against the release's published checksums
+      # (integrity, same-origin) and extracted outside the workspace.
       - name: Install k6
         env:
           K6_VERSION: v1.0.0
         run: |
-          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz" | tar xz
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          curl -fsSLO "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz"
+          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-checksums.txt" \
+            | grep "k6-${K6_VERSION}-linux-amd64.tar.gz" | sha256sum -c -
+          tar xzf "k6-${K6_VERSION}-linux-amd64.tar.gz"
           sudo install "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
           k6 version
 
