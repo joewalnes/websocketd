@@ -1,69 +1,73 @@
 # Codebase Scorecard: websocketd
 
-**Audited**: 2026-04-26 | **Size**: 38 files, 6.4 KLOC (2.4K src + 4.0K test) | **Language**: Go | **Deps**: 1 (gorilla/websocket v1.5.3, pinned)
+**Audited**: 2026-07-09 | **Size**: ~2.4 KLOC src + ~4.1 KLOC test | **Language**: Go | **Deps**: 1 (gorilla/websocket v1.5.3, pinned)
 
-| # | Category | Grade | Key Finding |
-|---|----------|-------|-------------|
-| 1 | Architecture | A- | Clean handler chain, bidirectional PipeEndpoints, extracted config validators |
-| 2 | Code Quality | A | No known bugs; readFrames, launcher, and all error paths fixed |
-| 3 | Consistency | A- | All naming idiomatic Go; error vars ErrFoo, methods camelCase, uniform patterns |
-| 4 | Security | A | Symlink boundary, origin hardened, env isolated, mTLS, gosec + staticcheck in CI |
-| 5 | Performance | A- | Regex compiled once, template cached, strings.Builder in hot path, OS pipe backpressure |
-| 6 | DRY | B+ | Signal loop extracted; no meaningful duplication remains |
-| 7 | Testability | A- | Extracted pure functions, Endpoint interface, per-test server isolation |
-| 8 | Test Coverage | A | 217 tests (1.66:1 ratio), CI on 4 platforms with -race, polling-based waits |
-| 9 | Type Safety | A- | Go types used correctly throughout |
-| 10 | Documentation | B | README accurate, CHANGES current; tutorial needs rewrite (#438) |
-| 11 | Error Handling | A | Errors returned not panicked, pipe FDs cleaned up, gosec clean |
-| 12 | Extensibility | B | Handler chain extensible, config validators composable |
-| 13 | Repo Hygiene | A | Clean atomic commits, pinned deps, CI on 4 platforms, -race + lint + security scan |
+This audit re-verified every claim of the 2026-04-26 scorecard against the code,
+CI history, and issue tracker, found drift in several areas, and fixed what it
+found in the same session. Grades below reflect the state *after* those fixes;
+the "found" column records what the audit walked into.
 
-**Overall: A-** (high A-, 6 categories at full A)
+| # | Category | Found | Now | Key Finding |
+|---|----------|-------|-----|-------------|
+| 1 | Architecture | A- | A- | Clean handler chain, bidirectional PipeEndpoints, decomposed config validators — holds up |
+| 2 | Code Quality | B+ | A- | Two goroutine leaks in endpoint readers (fixed); dead code removed |
+| 3 | Consistency | B+ | A | gofmt drift in 3 files, missing license header, snake_case helper (all fixed, gofmt now gated in CI) |
+| 4 | Security | A- | A- | Posture genuinely strong (origin checks, env whitelist, symlink boundary, mTLS); the one "injection" failure was a test artifact |
+| 5 | Testing | A- | A | 217 tests verified accurate; brittle root-env assertion, 1.5s hardcoded sleep, and a dead harness capture all fixed |
+| 6 | CI | B | A- | Tests green on 4 platforms with -race; Benchmarks workflow was red on every run since inception (fixed); linters now pinned, gofmt gated |
+| 7 | Documentation | B- | B+ | --pingms/--sslca were absent from --help (fixed); man page was 12 years stale (rewritten); tutorial #438 and proxy docs #27 remain open |
+| 8 | Release | D | B+ | Built 0.4.x labeled MIT with a Go that can't compile the module — all repaired; deb/rpm path untested against a real fpm install |
+| 9 | Process hygiene | B- | B+ | DIARY/SCORECARD had been abandoned and counts inflated (84 vs actual 111 integration tests); corrected |
 
-**Score history: B- (Apr 25) → B+ (Apr 26 AM) → A- (Apr 26 PM) → A- (Apr 26 EVE, 8 categories improved total)**
+**Overall: A-** (honest A- this time: every grade above is backed by a
+verified check, not aspiration)
 
-## Top Strengths
+## What this audit fixed
 
-- **PipeEndpoints** (endpoint.go:24-56) — bidirectional relay with independent goroutines, natural backpressure, zero application-level buffering
-- **Test suite** — 217 tests across unit + integration, CI on Linux x86/ARM64 + macOS ARM64 + Windows x86_64, regression tests for 6 historical bugs, polling-based waits
-- **Security posture** — symlink boundary check, origin validation, env whitelist, mTLS (--sslca), ping/pong dead connection detection (--pingms), gosec + staticcheck clean
-- **CI pipeline** — 4-platform testing with race detector, staticcheck linter, gosec security scanner; all green
-- **Decomposed architecture** — ServeHTTP is a 20-line handler chain; config parsing delegates to 7 pure testable functions; no god objects
+- **Goroutine leaks** (process_endpoint.go, websocket_endpoint.go): readers
+  parked on the unbuffered output-channel send were never unblocked by
+  Terminate, stranding up to 10MB per broken binary-mode connection.
+  Regression test added (TestTerminateUnblocksParkedReader).
+- **`go test ./...` failed as root**: TestSEC011 asserted no "root" substring
+  in an env dump; PATH containing /root tripped it. Now asserts on output
+  shape (env-assignment lines only).
+- **Benchmarks CI red since creation**: k6 install relied on a flaky
+  keyserver; now a pinned release binary. run.sh also discarded k6's exit
+  code through a pipe and aborted the whole run when one server failed to
+  start (both fixed). Regression alerts are advisory, not a merge gate.
+- **Release tooling**: version 0.4→0.5, MIT→BSD-2-Clause package label,
+  vendored Go 1.11/1.15 removed (cannot build a go 1.21 module), man page
+  installed under its real name, bash required for brace-expansion recipes,
+  man page rewritten with the 9 missing flags and correct defaults.
+- **Docs**: --pingms and --sslca added to --help.
+- **Test harness**: websocketd logs go to stdout, but the harness captured
+  only stderr — two tests silently asserted nothing. Harness now captures
+  both; those tests are real (and the dead-connection test polls instead of
+  sleeping 1.5s).
+- **Counts**: "84 integration tests" was wrong (111 measured; 141 top-level
+  test functions + 76 subtests = 217 total). QA plans contain 321 case IDs,
+  not ~270.
 
-## Improvements This Session
+## Remaining issues
 
-| Category | Start | Now | Key Change |
-|----------|-------|-----|------------|
-| Code Quality | A- | A | Fixed readFrames type-mismatch, launcher pipe leak |
-| Consistency | B+ | A- | Error vars ErrFoo, env.go replacers renamed |
-| Security | A- | A | staticcheck + gosec in CI |
-| Performance | B | A- | Template cached, strings.Builder in appendEnv |
-| Error Handling | A- | A | Pipe FDs cleaned up on partial failure |
-| Repo Hygiene | A- | A | -race, staticcheck, gosec in CI |
-| Test Coverage | A | A | Polling replaces hardcoded sleeps |
+1. **LOW [Docs]** Tutorial rewrite (#438) and reverse-proxy docs (#27) still open.
+2. **LOW [Test]** websocket_endpoint.go, env.go, and console.go still have no
+   dedicated unit tests (integration-only coverage); process_endpoint.go now
+   has one.
+3. **LOW [Bench]** k6 scenarios use the deprecated `k6/ws` module; fine on the
+   pinned k6 v1.0.0, will need migration to `k6/net/websockets` eventually.
+   collect-metrics.sh samples only the parent PID, undercounting per-connection
+   child processes.
+4. **LOW [Test]** QA plans (qa/plans/) have no traceability mapping to the
+   automated suite.
+5. **LOW [Feature]** 9 open issues, no bugs. Most credible: --cgidir inside
+   --staticdir serves CGI source as plain text (#453), stderr streaming (#403),
+   config file (#350), frame size control (#445).
 
-## Remaining Issues
+## Architecture assessment (unchanged)
 
-1. **LOW [Docs]** Tutorial needs rewrite (#438) — detailed user feedback available.
-2. **LOW [Docs]** Reverse proxy documentation (#27) — wiki page may exist but isn't linked from README.
-3. **LOW [Feature]** 8 open issues, all deferred (feature requests and docs, no bugs).
-4. **LOW [Test]** Endpoint and env code (process_endpoint, websocket_endpoint, env.go) only covered by integration tests, no isolated unit tests.
-
-## Architecture Assessment
-
-The architecture is clean across all layers. ServeHTTP delegates to focused handlers. PipeEndpoints runs each direction independently. Config parsing is decomposed into testable functions. The Endpoint interface decouples WebSocket I/O from process I/O. Signal escalation is a single loop over a table.
-
-The main limitation is scope-appropriate: no plugin/middleware system. Adding a new handler type still requires editing ServeHTTP. For a focused CLI tool this is the right tradeoff.
-
-Handler coupling (WebsocketdHandler stores *WebsocketdServer) is a minor concern — injecting Config directly would improve testability, but the current design works well at this scale.
-
-## Documentation vs Reality
-
-- **Tutorial** (#438): User-reported confusion about step ordering and port configuration. Not yet addressed.
-- **URLInfo**: Embedded in WebsocketdHandler but only FilePath and ScriptPath are used externally. Minor over-exposure.
-
-## Quick Wins
-
-1. **Rewrite the 10-minute tutorial** — detailed user feedback in #438. Documentation B → A-.
-2. **Link the nginx wiki page from README** — closes #27. One line.
-3. **Add unit tests for endpoint/env code** — increases isolated coverage. Testability A- → A.
+ServeHTTP delegates to focused handlers; PipeEndpoints runs each direction
+independently with natural backpressure; config parsing is decomposed into
+pure, tested functions. No plugin system — the right tradeoff at this scope.
+Handler coupling (WebsocketdHandler storing *WebsocketdServer) remains the
+only structural nit.

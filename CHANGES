@@ -65,10 +65,10 @@ Version 0.5.0 (Apr 26, 2026)
 * Renamed env.go replacers to idiomatic Go names
 * Added race detector (-race), staticcheck, and gosec to CI lint job
 * Increased test count from 7 to 217
-* Added comprehensive integration test suite (84 tests) covering core WebSocket, process management,
+* Added comprehensive integration test suite (111 tests) covering core WebSocket, process management,
   CLI flags, HTTP routing, security (origin/env isolation/injection), CGI env vars, edge cases, and performance
 * Cross-platform test harness using ephemeral ports and a standalone testcmd binary (no shell dependency)
-* Added QA test plans (qa/plans/) documenting ~270 manual and automated test cases across 14 categories
+* Added QA test plans (qa/plans/) documenting 321 manual and automated test cases across 14 categories
 * Added k6 performance benchmarking system (bench/) with 7 scenarios, HTML reports, and CI regression detection
 
 Version 0.4.1 (Jan 24, 2021)
