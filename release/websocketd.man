@@ -1,6 +1,6 @@
 .\" Manpage for websocketd.
 .\" Contact abc@alexsergeyev.com to correct errors or typos.
-.TH websocketd 8 "28 Sep 2014" "0.0" "websocketd man page"
+.TH websocketd 1 "9 Jul 2026" "0.5.0" "websocketd man page"
 .SH NAME
 websocketd \- turns any program that uses STDIN/STDOUT into a WebSocket server.
 .SH SYNOPSIS
@@ -44,14 +44,59 @@ Restrict (HTTP 403) protocol upgrades if the Origin header does not match to one
 Listen for HTTPS socket instead of HTTP. All three options must be used or all of them should be omitted.
 .RE
 .PP
+\-\-sslca=FILE
+.RS 4
+Require clients to present a certificate signed by this CA (mutual TLS). Only takes effect together with \-\-ssl.
+.RE
+.PP
+\-\-redirport=PORT
+.RS 4
+Open alternative port and redirect HTTP traffic from it to canonical address (mostly useful for HTTPS-only configurations to redirect HTTP traffic).
+.RE
+.PP
 \-\-passenv VAR[,VAR...]
 .RS 4
-Lists environment variables allowed to be passed to executed scripts.
+Lists environment variables allowed to be passed to executed scripts. Does not work for Windows since all the variables are kept there.
+.RE
+.PP
+\-\-binary={true,false}
+.RS 4
+Switches communication to binary: process reads are sent to the browser as blobs and all reads from the browser are immediately flushed to the process. Default: false
 .RE
 .PP
 \-\-reverselookup={true,false}
 .RS 4
-Perform DNS reverse lookups on remote clients. Default: true
+Perform DNS reverse lookups on remote clients. Default: false
+.RE
+.PP
+\-\-maxforks=N
+.RS 4
+Limit number of processes that websocketd is able to execute with WS and CGI handlers. When maxforks is reached the server will reject requests that require executing another process (unlimited when 0 or negative). Default: 0
+.RE
+.PP
+\-\-closems=milliseconds
+.RS 4
+Specifies additional time a process needs to gracefully finish before websocketd sends termination signals to it. Default: 0 (signals sent after 100ms, 250ms, and 500ms of waiting)
+.RE
+.PP
+\-\-pingms=milliseconds
+.RS 4
+Send WebSocket pings at this interval and drop connections that miss pongs for twice that long, detecting dead clients. Default: 0 (disabled)
+.RE
+.PP
+\-\-header="..."
+.RS 4
+Set custom HTTP header on each response. For example: \-\-header="Server: someserver/0.0.1"
+.RE
+.PP
+\-\-header\-ws="..."
+.RS 4
+Same as \-\-header, but applies only to responses that upgrade the TCP connection to the WebSocket protocol.
+.RE
+.PP
+\-\-header\-http="..."
+.RS 4
+Same as \-\-header, but applies only to plain HTTP responses that do not upgrade to WebSocket.
 .RE
 .PP
 \-\-dir=DIR
