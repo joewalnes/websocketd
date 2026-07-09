@@ -1,5 +1,7 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Fixed TestSEC011 integration test false positive when the suite runs as root
+  (asserted on the substring "root" instead of evidence of command execution)
 * Fixed readFrames processing unexpected message types instead of skipping them
 * Fixed pipe file descriptor leak on partial launch failure
 * Fixed high-severity integer overflow vulnerability by upgrading gorilla/websocket v1.4.0 → v1.5.3
