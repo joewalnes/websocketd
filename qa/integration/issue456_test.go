@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -45,8 +46,16 @@ func TestIssue456_DeadConnectionDetected(t *testing.T) {
 	// Kill the TCP connection silently (no close frame — simulates browser crash)
 	ws.conn.UnderlyingConn().Close()
 
-	// Wait for ping timeout (200ms interval * 2 = 400ms deadline, plus margin)
-	time.Sleep(1500 * time.Millisecond)
+	// The 200ms ping interval implies a 400ms pong deadline. Poll the access
+	// log until the server notices the dead connection and ends the session,
+	// rather than sleeping a fixed amount.
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(s.Logs(), "DISCONNECT") {
+		if time.Now().After(deadline) {
+			t.Fatal("server did not detect dead connection (no DISCONNECT in access log)")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	// Server should have cleaned up. Verify by connecting again.
 	ws2 := s.Connect("/")
