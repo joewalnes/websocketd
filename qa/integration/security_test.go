@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -185,15 +186,25 @@ func TestSEC011_CommandInjectionViaURL(t *testing.T) {
 		"/`id`",
 		"/|cat",
 	}
+	// The backend is `testcmd env`, so every output line must be an
+	// environment assignment. Any other shape means something else ran
+	// (`ls` prints filenames, `whoami` a bare username, `id` "uid=...").
+	// Checking line shape rather than substrings like "root" keeps the
+	// test independent of the user account running it.
+	envLine := regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_()]*=`)
 	for _, path := range dangerousPaths {
 		ws, _, err := s.TryConnect(path, nil)
 		if err != nil {
 			continue // rejected is fine
 		}
 		// If connected, just verify no command injection happened
-		output := strings.Join(collectMessages(ws, 2*time.Second), "\n")
-		if strings.Contains(output, "uid=") || strings.Contains(output, "root") {
-			t.Errorf("SECURITY: possible command injection via path %q", path)
+		for _, line := range collectMessages(ws, 2*time.Second) {
+			if line == "" {
+				continue
+			}
+			if !envLine.MatchString(line) || strings.HasPrefix(line, "uid=") {
+				t.Errorf("SECURITY: possible command injection via path %q: unexpected output line %q", path, line)
+			}
 		}
 	}
 }
