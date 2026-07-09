@@ -51,6 +51,10 @@ Options:
   --sslcert=FILE                 All three options must be used or all of
   --sslkey=FILE                  them should be omitted.
 
+  --sslca=FILE                   Require clients to present a certificate
+                                 signed by this CA (mutual TLS). Only takes
+                                 effect together with --ssl.
+
   --redirport=PORT               Open alternative port and redirect HTTP traffic
                                  from it to canonical address (mostly useful
                                  for HTTPS-only configurations to redirect HTTP
@@ -88,6 +92,10 @@ Options:
                                  finish before websocketd will send termination signals
                                  to it. Default: 0 (signals sent after 100ms, 250ms,
                                  and 500ms of waiting)
+
+  --pingms=milliseconds          Send WebSocket pings at this interval and drop
+                                 connections that miss pongs for twice that long,
+                                 detecting dead clients. Default: 0 (disabled)
 
   --header="..."                 Set custom HTTP header to each answer. For
                                  example: --header="Server: someserver/0.0.1"
