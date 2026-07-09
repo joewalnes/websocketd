@@ -173,23 +173,25 @@ run_scenario() {
   if ! wait_for_port "$port" 10; then
     kill "$ws_pid" 2>/dev/null; wait "$ws_pid" 2>/dev/null
     echo "SKIP: $name (server failed to start)"
-    return 1
+    FAILED_SCENARIOS="$FAILED_SCENARIOS $name"
+    return 0 # returning non-zero would abort the whole run under set -e
   fi
 
   # Start metrics collector
   "$SCRIPT_DIR/lib/collect-metrics.sh" "$ws_pid" "$OUTPUT_DIR/${name}_server.ndjson" &
   local collector_pid=$!
 
-  # Run k6
+  # Run k6. Output goes to a log first: piping k6 straight into sed would
+  # make $? report sed's status, silently discarding k6 failures.
+  local k6_exit=0
   $K6 run \
     --summary-export="$OUTPUT_DIR/${name}_summary.json" \
     --out "json=$OUTPUT_DIR/${name}_k6.json" \
     -e "WS_PORT=$port" \
     $k6_env \
     --quiet \
-    "$SCRIPT_DIR/scenarios/$script" 2>&1 | sed "s/^/  /"
-
-  local k6_exit=$?
+    "$SCRIPT_DIR/scenarios/$script" >"$OUTPUT_DIR/${name}_k6.log" 2>&1 || k6_exit=$?
+  sed "s/^/  /" "$OUTPUT_DIR/${name}_k6.log"
 
   # Stop websocketd and collector (suppress exit-on-signal noise)
   kill "$ws_pid" 2>/dev/null
@@ -197,14 +199,19 @@ run_scenario() {
   kill "$collector_pid" 2>/dev/null
   wait "$collector_pid" 2>/dev/null || true
 
-  if [ "$k6_exit" -ne 0 ]; then
-    echo "  WARN: k6 exited with code $k6_exit"
+  if [ "$k6_exit" -eq 99 ]; then
+    # k6 exits 99 when thresholds are crossed — advisory on shared hardware.
+    echo "  WARN: $name crossed k6 thresholds"
+  elif [ "$k6_exit" -ne 0 ]; then
+    echo "  ERROR: k6 exited with code $k6_exit"
+    FAILED_SCENARIOS="$FAILED_SCENARIOS $name"
   fi
   echo ""
 }
 
 # --- Define default scenarios ---
 
+FAILED_SCENARIOS=""
 ALL_SCENARIOS="echo_latency echo_throughput connection_storm_10 connection_storm_100 connection_storm_500 connection_churn sustained_load binary_1k binary_10k binary_64k backpressure"
 
 if [ -n "$SCENARIOS" ]; then
@@ -266,3 +273,9 @@ echo ""
 echo "Done! Results in $OUTPUT_DIR/"
 echo "  report.html          — open in browser"
 echo "  benchmark-data.json  — for CI regression detection"
+
+if [ -n "$FAILED_SCENARIOS" ]; then
+  echo ""
+  echo "FAILED scenarios:$FAILED_SCENARIOS" >&2
+  exit 1
+fi
