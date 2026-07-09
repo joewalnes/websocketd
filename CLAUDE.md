@@ -45,6 +45,12 @@ Update `CHANGES` before committing if the change affects:
 
 Latest version goes at the top. Follow the existing format.
 
+## License headers
+
+Every Go source file starts with the 4-line BSD copyright header. New files
+use the current year ("Copyright 2026 ..."), not the year copied from an
+existing file. Existing files keep their original year.
+
 ## Test-first
 
 Before implementing a feature or fix:
