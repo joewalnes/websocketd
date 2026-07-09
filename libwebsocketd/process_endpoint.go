@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -17,6 +18,8 @@ type ProcessEndpoint struct {
 	process   *LaunchedProcess
 	closetime time.Duration
 	output    chan []byte
+	done      chan struct{}
+	doneOnce  sync.Once
 	log       *LogScope
 	bin       bool
 }
@@ -25,13 +28,21 @@ func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *Proc
 	return &ProcessEndpoint{
 		process: process,
 		output:  make(chan []byte),
+		done:    make(chan struct{}),
 		log:     log,
 		bin:     bin,
 	}
 }
 
 func (pe *ProcessEndpoint) Terminate() {
-	terminated := make(chan struct{})
+	// Unblock a stdout reader parked on the output channel send: killing the
+	// process only unblocks reads, so without this the reader goroutine (and
+	// its buffer) leaks whenever the relay stopped draining Output().
+	pe.doneOnce.Do(func() { close(pe.done) })
+
+	// Buffered so the waiter goroutine can exit even if the process never
+	// gets reaped and this method gives up after SIGKILL.
+	terminated := make(chan struct{}, 1)
 	go func() {
 		if err := pe.process.cmd.Wait(); err != nil {
 			pe.log.Debug("process", "Process exit: %s", err)
@@ -98,6 +109,7 @@ func (pe *ProcessEndpoint) StartReading() {
 }
 
 func (pe *ProcessEndpoint) readTextOutput() {
+	defer close(pe.output)
 	bufin := bufio.NewReader(pe.process.stdout)
 	for {
 		buf, err := bufin.ReadBytes('\n')
@@ -109,12 +121,16 @@ func (pe *ProcessEndpoint) readTextOutput() {
 			}
 			break
 		}
-		pe.output <- trimEOL(buf)
+		select {
+		case pe.output <- trimEOL(buf):
+		case <-pe.done:
+			return
+		}
 	}
-	close(pe.output)
 }
 
 func (pe *ProcessEndpoint) readBinaryOutput() {
+	defer close(pe.output)
 	buf := make([]byte, 10*1024*1024)
 	for {
 		n, err := pe.process.stdout.Read(buf)
@@ -126,9 +142,12 @@ func (pe *ProcessEndpoint) readBinaryOutput() {
 			}
 			break
 		}
-		pe.output <- append(make([]byte, 0, n), buf[:n]...) // cloned buffer
+		select {
+		case pe.output <- append(make([]byte, 0, n), buf[:n]...): // cloned buffer
+		case <-pe.done:
+			return
+		}
 	}
-	close(pe.output)
 }
 
 func (pe *ProcessEndpoint) logStderr() {
