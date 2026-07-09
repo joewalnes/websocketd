@@ -4,17 +4,27 @@ jobs:
   test:
     strategy:
       matrix:
+        # Current stable Go on every platform: recent macOS dyld rejects
+        # binaries built by pre-1.22 toolchains (missing LC_UUID), so the
+        # EOL go.mod minimum can't run there. One Linux job stays on the
+        # go.mod minimum to keep validating it.
         include:
           - os: ubuntu-latest        # Linux x86_64
+            go: 'stable'
+          - os: ubuntu-latest        # Linux x86_64, go.mod minimum version
+            go: '1.21'
           - os: ubuntu-24.04-arm     # Linux ARM64
+            go: 'stable'
           - os: macos-latest         # macOS ARM64
+            go: 'stable'
           - os: windows-latest       # Windows x86_64
+            go: 'stable'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: ${{ matrix.go }}
       - run: go test -race ./... -timeout=120s
 
   lint:
@@ -23,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: 'stable'
       - run: go vet ./...
       - name: gofmt
         run: |

@@ -139,7 +139,9 @@ func main() {
 						uri += r.Host + addr[pos:] + "/"
 					}
 
-					http.Redirect(w, r, uri, http.StatusMovedPermanently)
+					// Not an open redirect: the target is the host the client itself
+					// sent, switched to the canonical scheme and port.
+					http.Redirect(w, r, uri, http.StatusMovedPermanently) // #nosec G710
 				})}
 				log.Info("server", "Starting redirect server   : http://%s/", rediraddr)
 				rejects <- redir.ListenAndServe()
