@@ -99,3 +99,36 @@ func TestParsePathExplicitScript(t *testing.T) {
 		t.Error("filePath")
 	}
 }
+
+func TestGetRemoteInfo(t *testing.T) {
+	t.Run("TCP address", func(t *testing.T) {
+		info, err := GetRemoteInfo("127.0.0.1:54321", false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if info.Addr != "127.0.0.1" || info.Port != "54321" {
+			t.Errorf("got Addr=%q Port=%q, want 127.0.0.1/54321", info.Addr, info.Port)
+		}
+	})
+
+	t.Run("Unix domain socket peer", func(t *testing.T) {
+		// Go's net/http sets req.RemoteAddr from the accepted conn's
+		// RemoteAddr().String(); for a Unix listener the client side is
+		// normally unnamed, which Go represents as "@" (or "" in other
+		// contexts) - never a "host:port" string. This must not be
+		// treated as an error - doing so would refuse every connection
+		// over a Unix domain socket.
+		for _, remote := range []string{"@", ""} {
+			info, err := GetRemoteInfo(remote, false)
+			if err != nil {
+				t.Fatalf("unexpected error for unix socket peer %q: %v", remote, err)
+			}
+			if info.Addr != "unix-socket" || info.Host != "unix-socket" {
+				t.Errorf("remote %q: got Addr=%q Host=%q, want unix-socket placeholder", remote, info.Addr, info.Host)
+			}
+			if info.Port != "" {
+				t.Errorf("remote %q: expected empty Port for a unix socket peer, got %q", remote, info.Port)
+			}
+		}
+	})
+}

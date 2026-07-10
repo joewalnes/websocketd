@@ -112,7 +112,8 @@ func startServerOpts(t *testing.T, wsFlags []string, mode string, modeArgs ...st
 	return startServerRaw(t, wsFlags, testcmdBin, cmdArgs...)
 }
 
-// startServerRaw starts websocketd with arbitrary flags and command.
+// startServerRaw starts websocketd with arbitrary flags and command,
+// listening on a free TCP port.
 func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...string) *Server {
 	t.Helper()
 	port := freePort(t)
@@ -126,12 +127,23 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 	args = append(args, command)
 	args = append(args, cmdArgs...)
 
+	s := startServerRawArgs(t, args)
+	s.Port = port
+	waitForPort(t, port, 10*time.Second)
+	return s
+}
+
+// startServerRawArgs starts websocketd with a fully custom argument list —
+// e.g. for --unixsocket-only tests, which must not have a --port/--address
+// injected. Callers are responsible for waiting on readiness themselves
+// (waitForPort, waitForSocket, ...).
+func startServerRawArgs(t *testing.T, args []string) *Server {
+	t.Helper()
 	cmd := exec.Command(websocketdBin, args...)
 
 	s := &Server{
-		t:    t,
-		Port: port,
-		cmd:  cmd,
+		t:   t,
+		cmd: cmd,
 	}
 
 	// Capture each stream separately; cmd.Wait joins exec's copier
@@ -152,7 +164,6 @@ func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...s
 		}
 	})
 
-	waitForPort(t, port, 10*time.Second)
 	return s
 }
 
