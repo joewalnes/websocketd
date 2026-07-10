@@ -158,35 +158,35 @@ Full documentation at http://websocketd.com/
 
 <script>
 
-	var ws = null;
+	let ws = null;
 
 	function ready() {
 		select('.connect').style.display = 'block';
 		select('.disconnect').style.display = 'none';
 
-		select('.connect').addEventListener('click', function() {
+		select('.connect').addEventListener('click', () => {
 			connect(select('.url').value);
 		});
-		select('.disconnect').addEventListener('click', function() {
+		select('.disconnect').addEventListener('click', () => {
 			disconnect();
 		});
 
 		select('.url').focus();
-		select('.url').addEventListener('keydown', function(ev) {
-			var code = ev.which || ev.keyCode;
+		select('.url').addEventListener('keydown', (ev) => {
+			const code = ev.which || ev.keyCode;
 			// Enter key pressed
-			if (code  == 13) { 			
+			if (code == 13) {
 				updatePageUrl();
 				connect(select('.url').value);
 			}
 		});
 		select('.url').addEventListener('change', updatePageUrl);
 
-		select('.send-input').addEventListener('keydown', function(ev) {
-			var code = ev.which || ev.keyCode;
+		select('.send-input').addEventListener('keydown', (ev) => {
+			const code = ev.which || ev.keyCode;
 			// Enter key pressed
-			if (code == 13) { 
-				var msg = select('.send-input').value;
+			if (code == 13) {
+				const msg = select('.send-input').value;
 				select('.send-input').value = '';
 				send(msg);
 			}
@@ -204,9 +204,9 @@ Full documentation at http://websocketd.com/
 	}
 
 	function updatePageUrl() {
-		var match = select('.url').value.match(new RegExp('^(ws)(s)?://([^/]*)(/.*)$'));
+		const match = select('.url').value.match(new RegExp('^(ws)(s)?://([^/]*)(/.*)$'));
 		if (match) {
-			var pageUrlSuffix = match[4];
+			const pageUrlSuffix = match[4];
 			if (history.state != pageUrlSuffix) {
 				history.pushState(pageUrlSuffix, pageUrlSuffix, pageUrlSuffix);
 			}
@@ -214,16 +214,16 @@ Full documentation at http://websocketd.com/
 	}
 
 	function updateWebSocketUrl() {
-		var match = location.href.match(new RegExp('^(http)(s)?://([^/]*)(/.*)$'));
+		const match = location.href.match(new RegExp('^(http)(s)?://([^/]*)(/.*)$'));
 		if (match) {
-			var wsUrl = 'ws' + (match[2] || '') + '://' + match[3] + match[4];
+			const wsUrl = 'ws' + (match[2] || '') + '://' + match[3] + match[4];
 			select('.url').value = wsUrl;
 		}
 	}
 
 	function appendMessage(type, data) {
-		var template = select('.message.template');
-		var el = template.parentElement.insertBefore(template.cloneNode(true), select('.message.type-input'));
+		const template = select('.message.template');
+		const el = template.parentElement.insertBefore(template.cloneNode(true), select('.message.type-input'));
 		el.classList.remove('template');
 		el.classList.add('type-' + type.toLowerCase());
 		el.querySelector('.message-type').textContent = type;
@@ -245,28 +245,28 @@ Full documentation at http://websocketd.com/
 			select('.connect').style.display = 'none';
 			select('.disconnect').style.display = 'block';
 
-			ws.addEventListener('open', function(ev) {
+			ws.addEventListener('open', (ev) => {
 				appendMessage('onopen');
 			});
-			ws.addEventListener('close', function(ev) {
+			ws.addEventListener('close', (ev) => {
 				select('.connect').style.display = 'block';
 				select('.disconnect').style.display = 'none';
 				appendMessage('onclose', '[Clean: ' + ev.wasClean + ', Code: ' + ev.code + ', Reason: ' + (ev.reason || 'none') + ']');
 				ws = null;
 				select('.url').focus();
 			});
-			ws.addEventListener('message', function(ev) {
-				if (typeof(ev.data) == "object") { 
-					var rd = new FileReader();
-					rd.onload = function(ev){
-						appendMessage('onmessage', "BLOB: "+rd.result);
+			ws.addEventListener('message', (ev) => {
+				if (typeof(ev.data) == "object") {
+					const rd = new FileReader();
+					rd.onload = (ev) => {
+						appendMessage('onmessage', 'BLOB: ' + rd.result);
 					};
 					rd.readAsBinaryString(ev.data);
 				} else {
 					appendMessage('onmessage', ev.data);
 				}
 			});
-			ws.addEventListener('error', function(ev) {
+			ws.addEventListener('error', (ev) => {
 				appendMessage('onerror');
 			});
 
@@ -274,7 +274,7 @@ Full documentation at http://websocketd.com/
 		}
 
 		if (ws) {
-			ws.addEventListener('close', function(ev) {
+			ws.addEventListener('close', (ev) => {
 				action();
 			});
 			disconnect();
@@ -308,14 +308,14 @@ Full documentation at http://websocketd.com/
 		return document.querySelector(selector);
 	}
 
-	var maxSendHistorySize = 100;
-		currentSendHistoryPosition = -1,
-		sendHistoryRollback = '';
+	const maxSendHistorySize = 100;
+	let currentSendHistoryPosition = -1;
+	let sendHistoryRollback = '';
 
 	function appendToSendHistory(msg) {
 		currentSendHistoryPosition = -1;
 		sendHistoryRollback = '';
-		var sendHistory = JSON.parse(localStorage['websocketdconsole.sendhistory'] || '[]');
+		const sendHistory = JSON.parse(localStorage['websocketdconsole.sendhistory'] || '[]');
 		if (sendHistory[0] !== msg) {
 			sendHistory.unshift(msg);
 			while (sendHistory.length > maxSendHistorySize) {
@@ -329,15 +329,15 @@ Full documentation at http://websocketd.com/
 		if (currentSendHistoryPosition == -1) {
 			sendHistoryRollback = select('.send-input').value;
 		}
-		var sendHistory = JSON.parse(localStorage['websocketdconsole.sendhistory'] || '[]');
+		const sendHistory = JSON.parse(localStorage['websocketdconsole.sendhistory'] || '[]');
 		currentSendHistoryPosition += offset;
 		currentSendHistoryPosition = Math.max(-1, Math.min(sendHistory.length - 1, currentSendHistoryPosition));
 
-		var el = select('.send-input');
+		const el = select('.send-input');
 		el.value = currentSendHistoryPosition == -1
 			? sendHistoryRollback
 			: sendHistory[currentSendHistoryPosition];
-		setTimeout(function() {
+		setTimeout(() => {
 			el.setSelectionRange(el.value.length, el.value.length);
 		}, 0);
 	}
