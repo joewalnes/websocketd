@@ -238,10 +238,10 @@ Use line breaks as message delimiters.
                 <p>Start websocketd and tell it about your program:</p>
 <pre class="code"><code class="language-bash"><span class="light">$</span> websocketd --port=8080 <em>my-program</em></code></pre>
                 <p>Now connect to your program from JavaScript in a web-page using a WebSocket:</p>
-<pre class="code"><code class="language-javascript">var ws = new WebSocket('ws://localhost:8080/');
+<pre class="code"><code class="language-javascript">const ws = new WebSocket('ws://localhost:8080/');
 
-ws.onmessage = function(event) {
-  console.log('Count is: ' + event.data);
+ws.onmessage = (event) => {
+  console.log(`Count is: ${event.data}`);
 };</code></pre>
                 <p>See... WebSocket servers are simple!</p>
             </div>
