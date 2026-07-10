@@ -225,33 +225,6 @@ h3 {
 }
 .section-features {
 }
-.section-subscribe {
-    background-color: #ecf0f1;
-    color: #333;
-}
-.section-subscribe input[type=submit] {
-    border: 0;
-    background-color: #e67e22;
-    color: #fff;
-    padding: 5px 20px;
-}
-.section-subscribe input[type=submit]:hover {
-    background-color: #d35400;
-}
-.section-subscribe input[type=submit]:focus {
-    outline: none;
-    background-color: #7f8c8d;
-}
-.section-subscribe input[type=email] {
-    border: 0;
-    background-color: #fff;
-    color: #000;
-    padding: 5px 5px;
-    width: 170px;
-}
-.section-subscribe input[type=email]:focus {
-    outline: 2px solid #3498db;
-}
 .section-footer {
     background-color: #7f8c8d;
     color: #ccc;
