@@ -1,5 +1,9 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Modernized the dev console's embedded JS (var -> const/let, function
+  expressions -> arrows); also fixes a scoping bug where a stray
+  semicolon left currentSendHistoryPosition/sendHistoryRollback as
+  accidental implicit globals instead of properly scoped variables (#466)
 * Modernized JS in examples/nodejs and examples/html and the README
   tutorial snippet (var -> const, function expressions -> arrows,
   string concatenation -> template literals); behavior unchanged (#465)
