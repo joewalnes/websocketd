@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783640829845,
+  "lastUpdate": 1783642248128,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -387,6 +387,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16096,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e40012e5ed06bd49c167ee7534540d9f61bc85e1",
+          "message": "Add --unixsocket to listen on a Unix domain socket\n\n* Add --unixsocket to listen on a Unix domain socket\n\nRebase and rework of #435 (by @matvore), renamed from --uds to\n--unixsocket to match this codebase's flag naming (no hyphens:\n--staticdir, --cgidir, --reverselookup, etc).\n\nServes alongside --address/--port by default; given alone (no --port,\n--address, or --redirport), no TCP listener is started at all - for\nexposing websocketd only to processes on the same host, e.g. behind\nan SSH-forwarded or reverse-proxied socket.\n\nChanges from the original PR:\n- TCP and Unix listeners now share one serve() helper (also handling\n  plain HTTP, TLS, and mutual TLS) instead of duplicating the\n  Ssl/SslCaFile branch inline; avoids a merge conflict with the\n  mutual-TLS support added after this PR was opened\n- GetRemoteInfo returns a stable unix-socket placeholder instead of\n  erroring on a Unix peer address (which has no host:port to parse),\n  fixed in the shared function itself rather than special-cased at\n  the handler.go call site, so every caller benefits\n- A stale socket file left behind by an unclean shutdown (a killed\n  process never gets to unlink it) is now removed automatically\n  before binding, rather than failing with address already in use\n- Added unit tests (wantsUnixSocketOnly, GetRemoteInfo) and two\n  integration tests (echo round-trip over a real socket, stale-socket\n  recovery), plus a QA plan entry and docs (--help, README, man page)\n\nVerified manually end-to-end: real WebSocket handshake + echo over a\nUnix socket, unixsocket-only mode confirmed to skip the TCP listener,\nand stale-socket cleanup after a simulated SIGKILL crash.\n\nCo-Authored-By: matvore <matvore@users.noreply.github.com>\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01M882UWfvyaq5KGvaV37idr\n\n* Fix UDS integration tests on macOS: sun_path 104-byte limit\n\nt.TempDir() on macOS CI nests under a long $TMPDIR plus the test\nname and a /001/ subdir, routinely exceeding sockaddr_un.sun_path's\n104-byte limit (108 on Linux) and failing bind with EINVAL. Use a\nshort path under /tmp directly instead.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01M882UWfvyaq5KGvaV37idr\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>\nCo-authored-by: matvore <matvore@users.noreply.github.com>",
+          "timestamp": "2026-07-09T17:09:25-07:00",
+          "tree_id": "11d0d9bcc644f022261aa4ecf82da8cb5d35bb93",
+          "url": "https://github.com/joewalnes/websocketd/commit/e40012e5ed06bd49c167ee7534540d9f61bc85e1"
+        },
+        "date": 1783642247798,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 12976,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 13508,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 13464,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 13456,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.5,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 666.7,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 10872,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 66,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 45.46,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8552,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 8.55,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 7,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 10872,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 370,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 286.768,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8552,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.14,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 10840,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 30.664,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 32611,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 15412,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174950,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16120,
             "unit": "KB"
           }
         ]
