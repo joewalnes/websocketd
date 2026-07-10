@@ -82,6 +82,28 @@ func TestWantsUnixSocketOnly(t *testing.T) {
 	}
 }
 
+func TestValidateBinaryPassStderr(t *testing.T) {
+	tests := []struct {
+		name       string
+		binary     bool
+		passStderr bool
+		wantErr    bool
+	}{
+		{"neither set", false, false, false},
+		{"binary only", true, false, false},
+		{"passstderr only", false, true, false},
+		{"both set", true, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateBinaryPassStderr(tt.binary, tt.passStderr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateBinaryPassStderr(%v, %v) error = %v, wantErr %v", tt.binary, tt.passStderr, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestValidateSSL(t *testing.T) {
 	tests := []struct {
 		name    string

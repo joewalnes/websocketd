@@ -366,3 +366,22 @@ while IFS= read -r line; do echo "$line"; done
 2. Open many connections (50+)
 
 **Expected Result**: All connections are accepted (0 means no limit). System resources are the only constraint.
+
+---
+
+## PROC-022: --passstderr Forwards STDERR to Clients
+
+**Priority**: P2
+
+**Steps**:
+1. Start websocketd: `websocketd --port=8080 --passstderr ./script-writing-to-both.sh`
+2. Connect and collect messages
+3. Repeat without `--passstderr`
+4. `websocketd --port=8080 --binary --passstderr cat`
+
+**Expected Result**: With `--passstderr`, both STDOUT and STDERR lines arrive
+as JSON messages tagged `{"stream":"stdout",...}` / `{"stream":"stderr",...}`;
+STDERR is still written to the server log either way. Without the flag,
+only STDOUT reaches the client, untagged (unchanged from prior versions).
+Step 4 fails at startup with an error naming both flags — `--binary` and
+`--passstderr` are mutually exclusive.

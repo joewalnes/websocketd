@@ -103,6 +103,7 @@ More Features
 *   Server side scripts can access details about the WebSocket HTTP request (e.g. remote host, query parameters, cookies, path, etc) via standard [CGI environment variables](https://github.com/joewalnes/websocketd/wiki/Environment-variables).
 *   As well as serving websocket daemons it also includes a static file server and classic CGI server for convenience.
 *   Can listen on a Unix domain socket (`--unixsocket`) instead of, or alongside, a TCP address — useful for exposing websocketd only to processes on the same host, e.g. behind an SSH-forwarded or reverse-proxied socket.
+*   STDERR can optionally be forwarded to WebSocket clients (`--passstderr`), tagged alongside STDOUT as JSON so a client can tell the two apart.
 *   Command line help available via `websocketd --help`.
 *   Includes [WebSocket developer console](https://github.com/joewalnes/websocketd/wiki/Developer-console) to make it easy to test your scripts before you've built a JavaScript frontend.
 *   [Examples in many programming languages](https://github.com/joewalnes/websocketd/tree/master/examples) are available to help you getting started.

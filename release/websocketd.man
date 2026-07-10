@@ -69,6 +69,11 @@ Lists environment variables allowed to be passed to executed scripts. Does not w
 Switches communication to binary: process reads are sent to the browser as blobs and all reads from the browser are immediately flushed to the process. Default: false
 .RE
 .PP
+\-\-passstderr
+.RS 4
+Forward the process's STDERR to WebSocket clients, tagged (alongside STDOUT) as JSON: {"stream":"stdout","data":"..."} or {"stream":"stderr","data":"..."}. STDERR is still logged server-side either way. Cannot be combined with \-\-binary. Default: false
+.RE
+.PP
 \-\-reverselookup={true,false}
 .RS 4
 Perform DNS reverse lookups on remote clients. Default: false
