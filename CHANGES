@@ -1,5 +1,11 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Benchmark suite now runs each scenario 3 times and reports the median
+  (bench/run.sh --runs=N), cutting shared-CI-runner noise that was
+  producing false-positive regression alerts; alert threshold raised
+  from 15% to 25% to match. Also fixed the CI Integration docs, which
+  still claimed regressions block merges (they've been advisory-only
+  since the earlier k6-install fix)
 * Added --passstderr to forward STDERR to WebSocket clients, tagged
   alongside STDOUT as JSON ({"stream":"stdout"|"stderr","data":"..."});
   STDERR is still logged server-side either way. Mutually exclusive with

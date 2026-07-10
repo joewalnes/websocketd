@@ -52,14 +52,20 @@ The benchmark tool works with any websocketd binary — use it to compare versio
 
 ## Output
 
+Each scenario runs 3 times by default (`--runs=N` to change) and the results
+are merged into a single median before reporting — see "Repeated Runs"
+below.
+
 ```
 bench/results/
   meta.json                    # Version, git hash, timestamp, OS
-  *_summary.json               # k6 summary per scenario
-  *_k6.json                    # k6 detailed output per scenario
-  *_server.ndjson              # Server metrics per scenario
+  *_summary.json               # Median across all runs of this scenario
+  *_summary.run{N}.json        # k6 summary for one run
+  *_k6.run{N}.json             # k6 detailed output for one run
+  *_server.ndjson              # The run whose peak RSS is closest to the median
+  *_server.run{N}.ndjson       # Server metrics for one run
   report.html                  # Visual report (open in browser)
-  benchmark-data.json          # CI regression detection format
+  benchmark-data.json          # CI regression detection format, from the median
 ```
 
 ## Running a Subset
@@ -68,14 +74,33 @@ bench/results/
 ./bench/run.sh ./websocketd --scenarios=echo_latency,echo_throughput
 ```
 
+## Repeated Runs
+
+A single k6 run on shared hardware (like GitHub Actions runners) can vary
+20%+ between otherwise-identical commits, which used to produce false
+regression alerts. `run.sh` now repeats each scenario 3 times (`--runs=N`
+to change; `--runs=1` restores the old single-run behavior) and reports
+the median:
+
+- **k6 metrics** (latency, throughput, etc.): the per-metric median across
+  all N runs' `--summary-export` output.
+- **Server RSS/FDs**: rather than merge the time series (which wouldn't
+  produce a real one), the run whose peak RSS is closest to the group's
+  median is used as-is, so the report's memory chart still shows one
+  genuine, representative run.
+
+If any of the N runs fails outright, the whole scenario is reported as
+failed rather than silently averaging over fewer, "surviving" runs.
+
 ## CI Integration
 
 The `bench.yml` GitHub Actions workflow:
-- Runs all scenarios on every push to master and on PRs
+- Runs all scenarios (median of 3 runs each) on every push to master and on PRs
 - Uploads `report.html` as a workflow artifact
 - Tracks metrics over time on [the dashboard](https://websocketd.com/dev/bench/)
-- Posts comparison comments on PRs
-- Blocks merges on >15% regression
+- Posts comparison comments on PRs when a metric regresses >25%; this is
+  advisory only and does not block merging (shared-runner noise is too
+  high for a hard gate)
 
 ## Design Decisions
 

@@ -7,6 +7,11 @@
 #   --scenarios=LIST   Comma-separated scenario names (default: all)
 #   --output=DIR       Output directory (default: bench/results)
 #   --k6=PATH          Path to k6 binary (default: k6)
+#   --runs=N           Repeat each scenario N times and report the median
+#                      (default: 3). Shared CI hardware is noisy enough that
+#                      a single k6 run can vary 20%+ between otherwise-
+#                      identical commits; the median of a few runs is far
+#                      more stable.
 #
 # Examples:
 #   ./bench/run.sh ./websocketd
@@ -19,6 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 K6="${K6:-k6}"
 OUTPUT_DIR=""
 SCENARIOS=""
+RUNS_PER_SCENARIO=3
 
 # --- Argument parsing ---
 
@@ -28,6 +34,7 @@ for arg in "$@"; do
     --scenarios=*) SCENARIOS="${arg#--scenarios=}" ;;
     --output=*)    OUTPUT_DIR="${arg#--output=}" ;;
     --k6=*)        K6="${arg#--k6=}" ;;
+    --runs=*)      RUNS_PER_SCENARIO="${arg#--runs=}" ;;
     --help|-h)
       sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
       exit 0
@@ -134,7 +141,66 @@ wait_for_port() {
   done
 }
 
-# Run a single scenario.
+# Run one iteration of a scenario, writing to run-suffixed output files.
+# Usage: run_scenario_once <run_index> <name> <script> <backend> <ws_flags> <k6_env>
+run_scenario_once() {
+  local run_index="$1"
+  local name="$2"
+  local script="$3"
+  local backend="$4"
+  local ws_flags="$5"
+  local k6_env="$6"
+
+  local port=$(find_free_port)
+  echo "--- $name run $run_index/$RUNS_PER_SCENARIO (port $port) ---"
+
+  # Start websocketd
+  $WEBSOCKETD_BIN --port="$port" --address=127.0.0.1 $ws_flags "$backend" \
+    >/dev/null 2>"$OUTPUT_DIR/${name}_ws_stderr.run${run_index}.log" &
+  local ws_pid=$!
+
+  if ! wait_for_port "$port" 10; then
+    kill "$ws_pid" 2>/dev/null; wait "$ws_pid" 2>/dev/null
+    echo "SKIP: $name run $run_index (server failed to start)"
+    return 1
+  fi
+
+  # Start metrics collector
+  "$SCRIPT_DIR/lib/collect-metrics.sh" "$ws_pid" "$OUTPUT_DIR/${name}_server.run${run_index}.ndjson" &
+  local collector_pid=$!
+
+  # Run k6. Output goes to a log first: piping k6 straight into sed would
+  # make $? report sed's status, silently discarding k6 failures.
+  local k6_exit=0
+  $K6 run \
+    --summary-export="$OUTPUT_DIR/${name}_summary.run${run_index}.json" \
+    --out "json=$OUTPUT_DIR/${name}_k6.run${run_index}.json" \
+    -e "WS_PORT=$port" \
+    $k6_env \
+    --quiet \
+    "$SCRIPT_DIR/scenarios/$script" >"$OUTPUT_DIR/${name}_k6.run${run_index}.log" 2>&1 || k6_exit=$?
+  sed "s/^/  /" "$OUTPUT_DIR/${name}_k6.run${run_index}.log"
+
+  # Stop websocketd and collector (suppress exit-on-signal noise)
+  kill "$ws_pid" 2>/dev/null
+  wait "$ws_pid" 2>/dev/null || true
+  kill "$collector_pid" 2>/dev/null
+  wait "$collector_pid" 2>/dev/null || true
+
+  if [ "$k6_exit" -eq 99 ]; then
+    # k6 exits 99 when thresholds are crossed — advisory on shared hardware.
+    echo "  WARN: $name run $run_index crossed k6 thresholds"
+  elif [ "$k6_exit" -ne 0 ]; then
+    echo "  ERROR: $name run $run_index exited with code $k6_exit"
+    return 1
+  fi
+  return 0
+}
+
+# Run a scenario RUNS_PER_SCENARIO times and merge the results into a single
+# median (see lib/merge-runs.py). A single k6 run on shared CI hardware is
+# noisy enough to produce false-positive regression alerts; repeating and
+# taking the median is far more stable without needing dedicated hardware.
 # Usage: run_scenario <name> <k6_script> [extra_ws_flags...] [-- k6_env_args...]
 run_scenario() {
   local name="$1"
@@ -162,51 +228,23 @@ run_scenario() {
     fi
   done
 
-  local port=$(find_free_port)
-  echo "--- $name (port $port) ---"
+  local run_index=1
+  local any_failed=0
+  while [ "$run_index" -le "$RUNS_PER_SCENARIO" ]; do
+    if ! run_scenario_once "$run_index" "$name" "$script" "$backend" "$ws_flags" "$k6_env"; then
+      any_failed=1
+    fi
+    run_index=$((run_index + 1))
+  done
+  echo ""
 
-  # Start websocketd
-  $WEBSOCKETD_BIN --port="$port" --address=127.0.0.1 $ws_flags "$backend" \
-    >/dev/null 2>"$OUTPUT_DIR/${name}_ws_stderr.log" &
-  local ws_pid=$!
-
-  if ! wait_for_port "$port" 10; then
-    kill "$ws_pid" 2>/dev/null; wait "$ws_pid" 2>/dev/null
-    echo "SKIP: $name (server failed to start)"
+  if [ "$any_failed" -eq 1 ]; then
+    echo "  FAILED: $name (at least one of $RUNS_PER_SCENARIO runs failed)"
     FAILED_SCENARIOS="$FAILED_SCENARIOS $name"
     return 0 # returning non-zero would abort the whole run under set -e
   fi
 
-  # Start metrics collector
-  "$SCRIPT_DIR/lib/collect-metrics.sh" "$ws_pid" "$OUTPUT_DIR/${name}_server.ndjson" &
-  local collector_pid=$!
-
-  # Run k6. Output goes to a log first: piping k6 straight into sed would
-  # make $? report sed's status, silently discarding k6 failures.
-  local k6_exit=0
-  $K6 run \
-    --summary-export="$OUTPUT_DIR/${name}_summary.json" \
-    --out "json=$OUTPUT_DIR/${name}_k6.json" \
-    -e "WS_PORT=$port" \
-    $k6_env \
-    --quiet \
-    "$SCRIPT_DIR/scenarios/$script" >"$OUTPUT_DIR/${name}_k6.log" 2>&1 || k6_exit=$?
-  sed "s/^/  /" "$OUTPUT_DIR/${name}_k6.log"
-
-  # Stop websocketd and collector (suppress exit-on-signal noise)
-  kill "$ws_pid" 2>/dev/null
-  wait "$ws_pid" 2>/dev/null || true
-  kill "$collector_pid" 2>/dev/null
-  wait "$collector_pid" 2>/dev/null || true
-
-  if [ "$k6_exit" -eq 99 ]; then
-    # k6 exits 99 when thresholds are crossed — advisory on shared hardware.
-    echo "  WARN: $name crossed k6 thresholds"
-  elif [ "$k6_exit" -ne 0 ]; then
-    echo "  ERROR: k6 exited with code $k6_exit"
-    FAILED_SCENARIOS="$FAILED_SCENARIOS $name"
-  fi
-  echo ""
+  python3 "$SCRIPT_DIR/lib/merge-runs.py" "$OUTPUT_DIR" "$name" "$RUNS_PER_SCENARIO"
 }
 
 # --- Define default scenarios ---

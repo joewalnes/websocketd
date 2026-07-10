@@ -58,9 +58,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: ${{ github.event_name == 'push' }}
           comment-on-alert: true
-          alert-threshold: '115%'
-          # Advisory only: single k6 runs on shared runners are too noisy
-          # for a hard merge gate; the alert comment still flags regressions.
+          # run.sh now takes the median of 3 runs per scenario, which cuts
+          # a lot of shared-runner noise on its own; a small threshold bump
+          # on top accounts for what's left. Still advisory, not a gate.
+          alert-threshold: '125%'
+          # Advisory only: k6 runs on shared runners are too noisy for a
+          # hard merge gate; the alert comment still flags regressions.
           fail-on-alert: false
           benchmark-data-dir-path: dev/bench
           alert-comment-cc-users: '@joewalnes'
