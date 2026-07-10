@@ -1,5 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Modernized JS in examples/nodejs and examples/html and the README
+  tutorial snippet (var -> const, function expressions -> arrows,
+  string concatenation -> template literals); behavior unchanged (#465)
 * Benchmark suite now runs each scenario 3 times and reports the median
   (bench/run.sh --runs=N), cutting shared-CI-runner noise that was
   producing false-positive regression alerts; alert threshold raised

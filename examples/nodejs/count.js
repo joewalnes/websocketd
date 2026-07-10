@@ -1,16 +1,8 @@
-(function(){
-	var counter = 0;
-	var echo = function(){
-		if (counter === 10){
-			return;
-		}
+async function main() {
+  for (let counter = 1; counter <= 10; counter++) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    process.stdout.write(`${counter}\n`);
+  }
+}
 
-		setTimeout(function(){
-			counter++;
-			echo();
-			process.stdout.write(counter.toString() + "\n");
-		}, 500);
-	}
-
-	echo();
-})();
+main();

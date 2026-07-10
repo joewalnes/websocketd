@@ -81,15 +81,15 @@ __count.html__:
   }
 
   // setup websocket with callbacks
-  var ws = new WebSocket('ws://localhost:8080/');
-  ws.onopen = function() {
+  const ws = new WebSocket('ws://localhost:8080/');
+  ws.onopen = () => {
     log('CONNECT');
   };
-  ws.onclose = function() {
+  ws.onclose = () => {
     log('DISCONNECT');
   };
-  ws.onmessage = function(event) {
-    log('MESSAGE: ' + event.data);
+  ws.onmessage = (event) => {
+    log(`MESSAGE: ${event.data}`);
   };
 </script>
 ```
