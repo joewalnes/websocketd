@@ -97,6 +97,17 @@ func validateSSL(ssl bool, certFile, keyFile string) error {
 	return nil
 }
 
+// validateBinaryPassStderr checks that --binary and --passstderr aren't both
+// set. Tagging binary chunks as JSON isn't implemented (--passstderr always
+// reads line by line), so combining the two would silently discard --binary
+// instead of behaving as either flag alone.
+func validateBinaryPassStderr(binary, passStderr bool) error {
+	if binary && passStderr {
+		return fmt.Errorf("please only specify one of --binary and --passstderr")
+	}
+	return nil
+}
+
 // buildParentEnv constructs the filtered parent environment variable list.
 func buildParentEnv(passenv string) []string {
 	env := make([]string, 0)
@@ -191,6 +202,7 @@ func parseCommandLine() *Config {
 
 	// lib config options
 	binaryFlag := flag.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
+	passStderrFlag := flag.Bool("passstderr", false, "Forward STDERR to WebSocket clients as tagged JSON messages, alongside tagged STDOUT (mutually exclusive with --binary)")
 	reverseLookupFlag := flag.Bool("reverselookup", false, "Perform reverse DNS lookups on remote clients")
 	scriptDirFlag := flag.String("dir", "", "Base directory for WebSocket scripts")
 	staticDirFlag := flag.String("staticdir", "", "Serve static content from this directory over HTTP")
@@ -262,6 +274,12 @@ func parseCommandLine() *Config {
 	mainConfig.CertFile = *sslCert
 	mainConfig.KeyFile = *sslKey
 
+	// Validate --binary / --passstderr
+	if err := validateBinaryPassStderr(*binaryFlag, *passStderrFlag); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
 	// Build lib config
 	config.Headers = []string(headers)
 	config.HeadersWs = []string(headersWs)
@@ -269,6 +287,7 @@ func parseCommandLine() *Config {
 	config.CloseMs = *closeMsFlag
 	config.PingInterval = time.Duration(*pingMsFlag) * time.Millisecond
 	config.Binary = *binaryFlag
+	config.PassStderr = *passStderrFlag
 	config.ReverseLookup = *reverseLookupFlag
 	config.Ssl = *sslFlag
 	config.SslCaFile = *sslCaFlag

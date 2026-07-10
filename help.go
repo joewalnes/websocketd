@@ -78,6 +78,13 @@ Options:
                                  browser are immediately flushed to the process.
                                  Default: false
 
+  --passstderr                   Forward the process's STDERR to WebSocket
+                                 clients, tagged (alongside STDOUT) as JSON:
+                                 {"stream":"stdout","data":"..."} or
+                                 {"stream":"stderr","data":"..."}. STDERR is
+                                 still logged server-side either way. Cannot
+                                 be combined with --binary. Default: false
+
   --reverselookup={true,false}   Perform DNS reverse lookups on remote clients.
                                  Default: false
 

@@ -7,6 +7,7 @@ package libwebsocketd
 
 import (
 	"bufio"
+	"encoding/json"
 	"io"
 	"os"
 	"sync"
@@ -15,22 +16,25 @@ import (
 )
 
 type ProcessEndpoint struct {
-	process   *LaunchedProcess
-	closetime time.Duration
-	output    chan []byte
-	done      chan struct{}
-	doneOnce  sync.Once
-	log       *LogScope
-	bin       bool
+	process    *LaunchedProcess
+	closetime  time.Duration
+	output     chan []byte
+	done       chan struct{}
+	doneOnce   sync.Once
+	log        *LogScope
+	bin        bool
+	passStderr bool
+	wg         sync.WaitGroup
 }
 
-func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope) *ProcessEndpoint {
+func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope, passStderr bool) *ProcessEndpoint {
 	return &ProcessEndpoint{
-		process: process,
-		output:  make(chan []byte),
-		done:    make(chan struct{}),
-		log:     log,
-		bin:     bin,
+		process:    process,
+		output:     make(chan []byte),
+		done:       make(chan struct{}),
+		log:        log,
+		bin:        bin,
+		passStderr: passStderr,
 	}
 }
 
@@ -100,12 +104,29 @@ func (pe *ProcessEndpoint) Send(msg []byte) bool {
 }
 
 func (pe *ProcessEndpoint) StartReading() {
+	if pe.passStderr {
+		// Both streams feed the same output channel, tagged by source, so
+		// it must close only once both readers are done - never while
+		// either might still send. (--binary is rejected together with
+		// --passstderr at config-validation time, so only line-based
+		// reading is needed here.)
+		pe.wg.Add(2)
+		go pe.readStdoutTagged()
+		go pe.readStderrTagged()
+		go pe.closeOutputWhenDone()
+		return
+	}
 	go pe.logStderr()
 	if pe.bin {
 		go pe.readBinaryOutput()
 	} else {
 		go pe.readTextOutput()
 	}
+}
+
+func (pe *ProcessEndpoint) closeOutputWhenDone() {
+	pe.wg.Wait()
+	close(pe.output)
 }
 
 func (pe *ProcessEndpoint) readTextOutput() {
@@ -144,6 +165,64 @@ func (pe *ProcessEndpoint) readBinaryOutput() {
 		}
 		select {
 		case pe.output <- append(make([]byte, 0, n), buf[:n]...): // cloned buffer
+		case <-pe.done:
+			return
+		}
+	}
+}
+
+// taggedMessage is the JSON envelope sent to WebSocket clients when
+// --passstderr is enabled, so they can distinguish the two streams.
+type taggedMessage struct {
+	Stream string `json:"stream"`
+	Data   string `json:"data"`
+}
+
+func tagMessage(stream string, data []byte) []byte {
+	// json.Marshal cannot fail here: the struct holds only plain strings
+	// (invalid UTF-8 is replaced, not rejected).
+	msg, _ := json.Marshal(taggedMessage{Stream: stream, Data: string(data)})
+	return msg
+}
+
+func (pe *ProcessEndpoint) readStdoutTagged() {
+	defer pe.wg.Done()
+	bufin := bufio.NewReader(pe.process.stdout)
+	for {
+		buf, err := bufin.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				pe.log.Error("process", "Unexpected error while reading STDOUT from process: %s", err)
+			} else {
+				pe.log.Debug("process", "Process STDOUT closed")
+			}
+			break
+		}
+		select {
+		case pe.output <- tagMessage("stdout", trimEOL(buf)):
+		case <-pe.done:
+			return
+		}
+	}
+}
+
+func (pe *ProcessEndpoint) readStderrTagged() {
+	defer pe.wg.Done()
+	bufstderr := bufio.NewReader(pe.process.stderr)
+	for {
+		buf, err := bufstderr.ReadSlice('\n')
+		if err != nil {
+			if err != io.EOF {
+				pe.log.Error("process", "Unexpected error while reading STDERR from process: %s", err)
+			} else {
+				pe.log.Debug("process", "Process STDERR closed")
+			}
+			break
+		}
+		line := trimEOL(buf)
+		pe.log.Error("stderr", "%s", string(line)) // still logged server-side, same as without --passstderr
+		select {
+		case pe.output <- tagMessage("stderr", line):
 		case <-pe.done:
 			return
 		}

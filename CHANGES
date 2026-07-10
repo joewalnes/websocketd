@@ -1,5 +1,9 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Added --passstderr to forward STDERR to WebSocket clients, tagged
+  alongside STDOUT as JSON ({"stream":"stdout"|"stderr","data":"..."});
+  STDERR is still logged server-side either way. Mutually exclusive with
+  --binary (#459, thanks @Formatted)
 * Added --unixsocket=PATH to listen on a Unix domain socket, in addition to
   or instead of --address/--port; a leftover socket file from an unclean
   shutdown is removed automatically (#435, thanks @matvore)
