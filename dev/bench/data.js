@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783642248128,
+  "lastUpdate": 1783643792238,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -581,6 +581,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16120,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "16d3db0fe81e4346d18fce8949df3d12f0539db4",
+          "message": "Add --passstderr to forward STDERR to WebSocket clients as tagged JSON\n\nRebase and rework of #459 (by @Formatted) onto current master.\n\nForwards STDERR to WebSocket clients as tagged JSON, alongside tagged\nSTDOUT, so a client can tell the two apart:\n  {\"stream\":\"stdout\",\"data\":\"...\"}\n  {\"stream\":\"stderr\",\"data\":\"...\"}\nSTDERR is still logged server-side either way, same as without the\nflag. Addresses #403 (open since 2021).\n\nChanges from the original PR:\n- The tagged stdout/stderr readers now integrate with the done-channel\n  leak fix from the earlier goroutine-leak PR: each select{}s on the\n  output send against Terminate's done signal, same as the plain text\n  and binary readers, instead of blocking unconditionally. Verified\n  by temporarily reverting just that part and watching the new\n  regression test fail (3 leaked goroutines), then restoring it.\n- --binary and --passstderr are now mutually exclusive, rejected at\n  startup with a clear error. The original PR silently dropped\n  --binary whenever --passstderr was set (StartReading branched on\n  passStderr before bin), which would corrupt binary output instead\n  of erroring - tagging arbitrary binary chunks as JSON string data\n  isn't implemented, so refusing the combination is safer than a\n  partial implementation.\n- JSON encoding now goes through encoding/json (a small taggedMessage\n  struct) instead of a hand-rolled escaper, so it can't emit invalid\n  JSON for control characters or non-UTF8 bytes the original escaper\n  didn't handle.\n- Added a --binary/--passstderr validation unit test, a goroutine-leak\n  regression test mirroring the process-endpoint one, an integration\n  test asserting the tagged JSON over a real WebSocket connection (and\n  that STDERR still reaches the server log), and a QA plan entry.\n\n\n\nClaude-Session: https://claude.ai/code/session_01M882UWfvyaq5KGvaV37idr\n\nCo-authored-by: Claude <noreply@anthropic.com>\nCo-authored-by: Formatted <14853553+Formatted@users.noreply.github.com>",
+          "timestamp": "2026-07-09T17:35:10-07:00",
+          "tree_id": "cfeaf6e01dd4d51a979499956894217b7fc7d88b",
+          "url": "https://github.com/joewalnes/websocketd/commit/16d3db0fe81e4346d18fce8949df3d12f0539db4"
+        },
+        "date": 1783643791958,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 10952,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 13620,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 13552,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 13620,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.6,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 625,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 10964,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 72.1,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 51.39,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8580,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 8,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 6.2,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 8588,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 304.05,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 175.692,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8576,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.139,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 8580,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 29.466,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 33937,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 15168,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174951,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16252,
             "unit": "KB"
           }
         ]
