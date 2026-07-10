@@ -16,14 +16,14 @@
     <div id="count"></div>
 
     <script>
-      var ws = new WebSocket('ws://' + (location.host ? location.host : "localhost:8080") + "/");
-      ws.onopen = function() {
+      const ws = new WebSocket(`ws://${location.host || 'localhost:8080'}/`);
+      ws.onopen = () => {
         document.body.style.backgroundColor = '#cfc';
       };
-      ws.onclose = function() {
+      ws.onclose = () => {
         document.body.style.backgroundColor = null;
       };
-      ws.onmessage = function(event) {
+      ws.onmessage = (event) => {
         document.getElementById('count').textContent = event.data;
       };
     </script>
