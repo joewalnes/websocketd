@@ -178,8 +178,13 @@ h3 {
     }
 }
 .section {
-    padding: 50px;
+    padding: 50px 20px;
     text-align: center;
+}
+@media only screen and (min-width: 480px) {
+    .section {
+        padding: 50px;
+    }
 }
 .section-hero {
     background-color: #3d566f;
@@ -194,8 +199,13 @@ h3 {
     color: #333;
 }
 .section-philosophy blockquote {
-    font-size: 34px;
+    font-size: 22px;
     font-style: italic;
+}
+@media only screen and (min-width: 480px) {
+    .section-philosophy blockquote {
+        font-size: 34px;
+    }
 }
 .section-philosophy i {
     margin-left: 10px;
@@ -236,6 +246,8 @@ pre.code {
     text-align: left;
     max-width: 600px;
     margin: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .tab-box {
     text-align: left;
@@ -280,11 +292,18 @@ pre[class*="language-"] {
 .language-ticker {
     display: inline-block;
     position: relative;
-    top: -10px;
-    width: 240px;
+    top: -6px;
+    width: 170px;
     white-space: nowrap;
-    font-size: 50px;
+    font-size: 28px;
     border-bottom: 1px solid #333;
+}
+@media only screen and (min-width: 480px) {
+    .language-ticker {
+        top: -10px;
+        width: 240px;
+        font-size: 50px;
+    }
 }
 .language-options > li {
     display: inline-block;
