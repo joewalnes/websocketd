@@ -260,12 +260,27 @@ pre[class*="language-"] {
     border: none;
     background-color: #333;
     padding: 10px;
+    font-size: 11px;
+}
+@media only screen and (min-width: 480px) {
+    pre[class*="language-"] {
+        font-size: 15px;
+    }
 }
 .tab-box {
 }
 .tab-box .tabs {
     margin: 0;
     padding: 0;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+@media only screen and (min-width: 480px) {
+    .tab-box .tabs {
+        white-space: normal;
+        overflow-x: visible;
+    }
 }
 .tab-box .tabs > li {
     display: inline-block;
