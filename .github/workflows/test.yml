@@ -3,6 +3,11 @@ on: [push, pull_request]
 jobs:
   test:
     strategy:
+      # One platform failing must not cancel the others. With the default
+      # (fail-fast: true) a flake on the first runner to go red hides every
+      # other platform's result, which is exactly when the cross-platform
+      # matrix is most worth having.
+      fail-fast: false
       matrix:
         # Current stable Go on every platform: recent macOS dyld rejects
         # binaries built by pre-1.22 toolchains (missing LC_UUID), so the

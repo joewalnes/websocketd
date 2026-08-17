@@ -44,6 +44,11 @@ port, which beats the failure mode this replaced. The four tests that build
 their own `exec.Cmd` and call `waitForPort` directly still have the weaker
 check — they benefit from the port de-duplication but not the identity proof.
 
+Also set `fail-fast: false` on the test matrix. This flake cancelled the
+Windows job 57s in, so the run said nothing about the platform being waited
+on. A matrix that stops at the first red runner is least informative exactly
+when it matters.
+
 ---
 
 ## 2026-08-17 — The Windows CGI test asserted the wrong thing (not a hole)

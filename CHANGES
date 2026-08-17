@@ -18,6 +18,9 @@ Version 0.5.0 (Apr 26, 2026)
   for a unique probe request in the server's own access log, a lost port
   race is retried on a fresh port, and a server that exits during startup
   reports its own log instead of timing out
+* CI test matrix no longer cancels the remaining platforms when one fails
+  (fail-fast: false), so a flake on one runner cannot hide every other
+  platform's result
 * Fixed the Windows-only CGI path test, which had been failing CI since the
   --cgidir confinement landed. It asserted that a backslash dot segment is
   refused, but filepath.ToSlash folds "..\" into "../" before the path is
