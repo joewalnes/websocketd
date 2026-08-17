@@ -56,16 +56,52 @@ func TestResolveCgiPath(t *testing.T) {
 	}
 }
 
-// TestResolveCgiPathBackslash covers Windows, where a backslash separates
-// path elements and so would survive a clean performed in slash space.
+// TestResolveCgiPathBackslash covers Windows, where a backslash also
+// separates path elements. filepath.ToSlash rewrites those backslashes
+// before path.Clean runs, so a "..\" segment folds back inside cgiDir just
+// like "../" does above rather than being refused — the security property
+// is containment, not rejection. (An earlier version of this test asserted
+// refusal and failed on Windows CI while the resolved paths it printed were
+// in fact inside the CGI directory.)
 func TestResolveCgiPathBackslash(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("backslash is an ordinary filename character outside Windows")
 	}
-	for _, urlPath := range []string{`/..\..\..\windows\system32\cmd.exe`, `/sub\..\..\evil.bat`} {
-		if got, err := resolveCgiPath(`C:\srv\cgi`, urlPath); err == nil {
-			t.Errorf("SECURITY: resolveCgiPath(%q) = %q, want refusal", urlPath, got)
-		}
+	cgiDir := `C:\srv\cgi`
+
+	tests := []struct {
+		name    string
+		urlPath string
+		want    string // "" means the request must be refused
+	}{
+		{"nested script", `/sub\hello.bat`, `C:\srv\cgi\sub\hello.bat`},
+		{"leading dot segments", `/..\..\..\windows\system32\cmd.exe`, `C:\srv\cgi\windows\system32\cmd.exe`},
+		{"dot segments after prefix", `/sub\..\..\evil.bat`, `C:\srv\cgi\evil.bat`},
+		{"reduces to the directory itself", `/sub\..`, ""},
+		{"bare separator", `/\`, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveCgiPath(cgiDir, tt.urlPath)
+			if tt.want == "" {
+				if err == nil {
+					t.Errorf("SECURITY: resolveCgiPath(%q, %q) = %q, want refusal", cgiDir, tt.urlPath, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveCgiPath(%q, %q) = error %v, want %q", cgiDir, tt.urlPath, err, tt.want)
+			}
+			if got != tt.want {
+				t.Errorf("resolveCgiPath(%q, %q) = %q, want %q", cgiDir, tt.urlPath, got, tt.want)
+			}
+			// The property that actually matters, asserted independently of
+			// the exact expected string above.
+			if err := containsPath(cgiDir, got); err != nil {
+				t.Errorf("SECURITY: resolveCgiPath(%q, %q) = %q, which escapes %q", cgiDir, tt.urlPath, got, cgiDir)
+			}
+		})
 	}
 }
 

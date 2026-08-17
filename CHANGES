@@ -9,6 +9,12 @@ Version 0.5.0 (Apr 26, 2026)
   script is run, and scripts reached through a symlink out of the
   directory are refused (thanks @truxton for the report)
 
+* Fixed the Windows-only CGI path test, which had been failing CI since the
+  --cgidir confinement landed. It asserted that a backslash dot segment is
+  refused, but filepath.ToSlash folds "..\" into "../" before the path is
+  cleaned, so such a request lands inside the CGI directory exactly like a
+  "../" one does. No behavior change and no security impact — the resolved
+  paths were always contained; only the test's expectation was wrong
 * Renamed the default branch from master to main. The Benchmarks workflow
   only triggered on master, so it stopped running entirely after the
   rename; it now triggers on main. Documentation links that pointed at

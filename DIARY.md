@@ -4,6 +4,40 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — The Windows CGI test asserted the wrong thing (not a hole)
+
+`TestResolveCgiPathBackslash` was red on Windows CI from the moment the CGI
+confinement landed. It looked like a traversal gap, but reading the failure
+output carefully says otherwise: the paths it complained about were
+`C:\srv\cgi\windows\system32\cmd.exe` and `C:\srv\cgi\evil.bat` — both
+*inside* the CGI directory. Nothing escaped.
+
+The mistaken premise was that a `..\` segment survives a clean performed in
+slash space. It doesn't: `filepath.ToSlash` on Windows rewrites every `\` to
+`/` *before* `path.Clean` runs, so backslash dot segments fold back inside
+CgiDir exactly like `../` does — which is the accepted, deliberate behavior
+for the slash cases in the same table. The test demanded refusal for the one
+spelling and fold-back for the other.
+
+Fixed the test to assert what actually matters — containment, checked with
+`containsPath` on every accepted result, independent of the expected string —
+and corrected the comment in `resolveCgiPath` (and the diary entry below)
+that described the nonexistent mechanism. The `containsPath` call stays: it
+is genuinely not load-bearing today, and is now commented as a fail-closed
+guard rather than as the thing catching Windows separators.
+
+Lesson worth keeping: a red security test is not self-evidently a real
+finding. This one encoded a wrong belief about the platform and then failed
+loudly enough to look like proof of the bug it was wrong about. Read what the
+assertion actually printed before believing its name.
+
+Note: the corrected expectations for the two pre-existing cases come straight
+from the Windows CI output, so they are confirmed; the three cases I added
+are derived from `path.Clean` semantics and still need a Windows CI run to be
+observed green.
+
+---
+
 ## 2026-08-17 — Default branch renamed master -> main
 
 The rename is silent in most places but not all: GitHub Actions `branches:`
@@ -67,8 +101,9 @@ library is supposed to own.
 Fix (`resolveCgiPath`): normalize the request path ourselves with
 `path.Clean("/"+…)` — a rooted clean path can never keep a leading `..`, so
 anything trying to climb out folds back to the root and lands inside CgiDir —
-then `filepath.Rel`-check that the joined path is still contained (this also
-catches an interior `..\` on Windows that slash-space cleaning never sees).
+then `filepath.Rel`-check that the joined path is still contained. (This
+entry originally claimed the Rel check was what caught an interior `..\` on
+Windows; that was wrong — see the 2026-08-17 entry above.)
 Symlink escapes are handled separately by reusing `checkPathBoundary`
 (EvalSymlinks + prefix check), the same guard the ScriptDir path already
 uses. Kept the two checks distinct because they defend different things:

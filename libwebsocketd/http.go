@@ -191,9 +191,10 @@ func resolveCgiPath(cgiDir, urlPath string) (string, error) {
 	filePath := filepath.Join(cgiDir, filepath.FromSlash(clean))
 
 	// Belt and suspenders: confirm the lexical result really is contained.
-	// On Windows filepath.FromSlash turns an interior backslash from the
-	// (undecoded-by-us) path into a separator that slash-space cleaning
-	// never saw, so verify against the final OS path too.
+	// The rooted clean above should already guarantee this on every OS
+	// (including Windows, where ToSlash folds "..\" into "../" before the
+	// clean sees it), so this check is not load-bearing today — it is here
+	// to fail closed if the normalization above is ever weakened.
 	if err := containsPath(cgiDir, filePath); err != nil {
 		return "", err
 	}
