@@ -59,7 +59,15 @@ func serve(network, address string, config *Config, log *libwebsocketd.LogScope)
 	if config.SslCaFile != "" {
 		return serveMutualTLS(listener, config.CertFile, config.KeyFile, config.SslCaFile, log)
 	}
-	return (&http.Server{ReadHeaderTimeout: readHeaderTimeout}).ServeTLS(listener, config.CertFile, config.KeyFile)
+	server := &http.Server{ReadHeaderTimeout: readHeaderTimeout, TLSConfig: tlsConfig()}
+	return server.ServeTLS(listener, config.CertFile, config.KeyFile)
+}
+
+// tlsConfig returns the base TLS settings shared by all HTTPS servers. It pins
+// a minimum protocol version explicitly rather than relying on the Go default,
+// which has drifted across releases.
+func tlsConfig() *tls.Config {
+	return &tls.Config{MinVersion: tls.VersionTLS12}
 }
 
 // serveMutualTLS runs an HTTPS server on the given listener that requires
@@ -74,12 +82,12 @@ func serveMutualTLS(listener net.Listener, certFile, keyFile, caFile string, log
 		return fmt.Errorf("failed to parse CA certificates from %s", caFile)
 	}
 
+	cfg := tlsConfig()
+	cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	cfg.ClientCAs = caCertPool
 	server := &http.Server{
 		ReadHeaderTimeout: readHeaderTimeout,
-		TLSConfig: &tls.Config{
-			ClientAuth: tls.RequireAndVerifyClientCert,
-			ClientCAs:  caCertPool,
-		},
+		TLSConfig:         cfg,
 	}
 	log.Info("server", "Mutual TLS enabled (client certs verified against %s)", caFile)
 	return server.ServeTLS(listener, certFile, keyFile)

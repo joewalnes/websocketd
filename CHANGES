@@ -1,5 +1,7 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Security: HTTPS/mutual-TLS servers now pin a minimum TLS version of 1.2
+  explicitly instead of relying on the Go default
 * Security: HTTP servers now set ReadHeaderTimeout (10s) so a client can no
   longer hold a connection open by dribbling request headers (slowloris);
   the --redirport redirect server, which only emits tiny responses, also gets
