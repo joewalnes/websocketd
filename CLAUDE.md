@@ -16,6 +16,14 @@ go test ./...
 
 Unit tests are in `libwebsocketd/`. Integration tests are in `qa/integration/`. No linter is currently configured.
 
+The `qa/integration` tests build the `websocketd` binary from source in
+`TestMain`, but `go test` caches the result on that package's own inputs.
+Changing `libwebsocketd/`, `main.go`, or `config.go` does **not** invalidate
+the integration cache even though the built binary's behavior changes — a
+cached green can hide a real break. After changing any non-`qa/integration`
+package, re-run with `go test -count=1 ./...` (and `-race` for concurrency
+changes).
+
 ## Mistake retrospectives
 
 When you make a mistake (especially forgetting something the user asked for):
