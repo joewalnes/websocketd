@@ -5,6 +5,9 @@ Version 0.5.0 (Apr 26, 2026)
   by opening connections. High-concurrency deployments should raise it; set 0
   for the old unlimited behavior. It gates only WS upgrades and CGI execs, not
   static/redirect requests
+* Security: when --ssl is set, websocketd now warns at startup about any
+  scheme-less --origin entry, which also accepts insecure http origins; prefix
+  "https://" to require TLS. Match behavior is unchanged
 * Security: HTTPS/mutual-TLS servers now pin a minimum TLS version of 1.2
   explicitly instead of relying on the Go default
 * Security: HTTP servers now set ReadHeaderTimeout (10s) so a client can no

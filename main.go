@@ -110,6 +110,10 @@ func main() {
 
 	log := libwebsocketd.RootLogScope(config.LogLevel, logfunc)
 
+	for _, o := range schemelessOriginWarnings(config.Ssl, config.AllowOrigins) {
+		log.Error("server", "--origin=%q has no scheme, so it also accepts insecure http origins; use \"https://%s\" to require TLS", o, o)
+	}
+
 	if config.DevConsole {
 		if config.StaticDir != "" {
 			log.Fatal("server", "Invalid parameters: --devconsole cannot be used with --staticdir. Pick one.")

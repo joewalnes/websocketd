@@ -58,6 +58,23 @@ var defaultPassEnv = map[string]string{
 	"windows": "PATH,SystemRoot,COMSPEC,PATHEXT,WINDIR",
 }
 
+// schemelessOriginWarnings returns the --origin entries that carry no scheme
+// and therefore also match insecure http origins. It only reports when the
+// server itself runs with TLS (--ssl), the case where accepting an http origin
+// is usually unintended; the operator can prefix "https://" to require TLS.
+func schemelessOriginWarnings(ssl bool, allowOrigins []string) []string {
+	if !ssl {
+		return nil
+	}
+	var out []string
+	for _, o := range allowOrigins {
+		if !strings.Contains(o, "://") {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
 // resolveAddresses builds the list of TCP addresses to listen on.
 func resolveAddresses(addrlist []string, port int) []string {
 	if len(addrlist) > 0 {

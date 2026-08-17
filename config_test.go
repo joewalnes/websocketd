@@ -15,6 +15,35 @@ func TestDefaultMaxForksIsFinite(t *testing.T) {
 	}
 }
 
+func TestSchemelessOriginWarnings(t *testing.T) {
+	tests := []struct {
+		name    string
+		ssl     bool
+		origins []string
+		want    []string
+	}{
+		{"no ssl, no warning", false, []string{"trusted.com"}, nil},
+		{"ssl, scheme-less warns", true, []string{"trusted.com"}, []string{"trusted.com"}},
+		{"ssl, https scheme no warning", true, []string{"https://trusted.com"}, nil},
+		{"ssl, http scheme no warning (explicit choice)", true, []string{"http://trusted.com"}, nil},
+		{"ssl, mixed", true, []string{"https://a.com", "b.com", "c.com:8443"}, []string{"b.com", "c.com:8443"}},
+		{"ssl, empty list", true, nil, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := schemelessOriginWarnings(tt.ssl, tt.origins)
+			if len(got) != len(tt.want) {
+				t.Fatalf("got %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("got %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
 func TestResolvePort(t *testing.T) {
 	tests := []struct {
 		name     string
