@@ -28,6 +28,21 @@ a user-visible behavior change, but the DoS was the default and the flag lets
 large-frame users opt back out. Over-limit frames make NextReader return
 ErrReadLimit; readFrames breaks and closes output, gorilla sends 1009.
 
+Timeouts (#2): set ReadHeaderTimeout on all three servers. Deliberately NOT
+ReadTimeout/WriteTimeout on the main server — those would kill long-lived
+WebSocket and streaming-CGI responses. ReadHeaderTimeout only bounds the
+header read before the handler runs and before the WS hijack, so it is safe
+everywhere. The redirect server emits only tiny responses, so it gets the
+full set.
+
+TLS min version (#4) and the two doc-only findings (#5 unlimited --maxforks
+default, #6 scheme-less --origin matching both schemes): #4 is a one-liner
+via a shared tlsConfig() helper. #5 and #6 are operator-configuration choices,
+not bugs — changing either default would break existing deployments
+(high-concurrency users; anyone relying on scheme-less origin matching both),
+so documented loudly in --help instead of changed. This matches the auditor's
+own "document loudly" option.
+
 ## 2026-08-17 — Readiness that proved the wrong thing
 
 `TestENV008_UniqueID` failed once on the ARM64 runner with `connection reset
