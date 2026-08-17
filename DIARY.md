@@ -4,6 +4,40 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — CGI directory escape (unauthenticated RCE)
+
+serveCGI built the script path as
+`path.Join(CgiDir, "."+FromSlash(req.URL.Path))`. `req.URL.Path` is already
+percent-decoded and this handler is not behind a ServeMux at the library
+layer, so `../` segments arrived verbatim. `path.Join` *collapses* `..`
+rather than rejecting it, so a request path could name any file on the host,
+which `cgi.Handler` would then execute with the request body on stdin — an
+unauthenticated RCE for anyone running `--cgidir`.
+
+Why the top-level binary partly masked it: `main.go` registers the handler
+via `http.Handle("/", …)`, and current Go's `ServeMux` lexically cleans the
+path and 301-redirects literal `..`, so the raw traversal PoC gets bounced
+before reaching us. That is incidental defense — it does not cover the
+symlink escape (a link inside CgiDir pointing out executed fine, confirmed
+live), and it is fragile to rely on the mux for a security boundary the
+library is supposed to own.
+
+Fix (`resolveCgiPath`): normalize the request path ourselves with
+`path.Clean("/"+…)` — a rooted clean path can never keep a leading `..`, so
+anything trying to climb out folds back to the root and lands inside CgiDir —
+then `filepath.Rel`-check that the joined path is still contained (this also
+catches an interior `..\` on Windows that slash-space cleaning never sees).
+Symlink escapes are handled separately by reusing `checkPathBoundary`
+(EvalSymlinks + prefix check), the same guard the ScriptDir path already
+uses. Kept the two checks distinct because they defend different things:
+lexical containment vs. real-path containment.
+
+Tests: unit table in `http_security_test.go` drives `resolveCgiPath`
+directly (leading/interior/trailing dot segments, dup slashes, Windows
+backslash, symlink); integration `cgi_test.go` sends *raw* request lines
+(Go's client, like curl, rewrites dot segments before sending, which would
+hide the bug) and asserts nothing outside `--cgidir` executes.
+
 ## 2026-07-09 — Full repo audit; fixed the things the last audit missed
 
 Re-audited everything against the April scorecard and found the drift you'd

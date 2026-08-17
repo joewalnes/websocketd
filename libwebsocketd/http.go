@@ -168,14 +168,70 @@ func (h *WebsocketdServer) serveDevConsole(w http.ResponseWriter, req *http.Requ
 	return true
 }
 
+// resolveCgiPath maps a request URL path to a file inside cgiDir, refusing
+// any path that would escape the directory.
+//
+// req.URL.Path arrives already percent-decoded, and this handler is not
+// mounted behind a ServeMux that would normalize it, so "../" segments and
+// (on Windows) "..\" segments reach us verbatim. Naively joining such a
+// path lets a request name any file on the host, which cgi.Handler would
+// then execute — an unauthenticated RCE. We normalize the request path
+// ourselves and require the result to stay within cgiDir. checkPathBoundary
+// (applied by the caller) additionally defends against symlinks that point
+// out of the directory.
+func resolveCgiPath(cgiDir, urlPath string) (string, error) {
+	// Normalize in slash space, then map to the OS separator. path.Clean
+	// collapses "." and ".." lexically; a rooted clean path can never
+	// retain a leading "..", so anything that tried to climb out is folded
+	// back to the root and lands inside cgiDir.
+	clean := path.Clean("/" + filepath.ToSlash(urlPath))
+	if clean == "/" {
+		return "", fmt.Errorf("no CGI script named in path %q", urlPath)
+	}
+	filePath := filepath.Join(cgiDir, filepath.FromSlash(clean))
+
+	// Belt and suspenders: confirm the lexical result really is contained.
+	// On Windows filepath.FromSlash turns an interior backslash from the
+	// (undecoded-by-us) path into a separator that slash-space cleaning
+	// never saw, so verify against the final OS path too.
+	if err := containsPath(cgiDir, filePath); err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
+
+// containsPath reports an error unless child is dir itself or lies beneath it,
+// comparing lexically (no filesystem access, no symlink resolution).
+func containsPath(dir, child string) error {
+	rel, err := filepath.Rel(dir, child)
+	if err != nil {
+		return err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("path %q escapes directory %q", child, dir)
+	}
+	return nil
+}
+
 // serveCGI executes CGI scripts from the configured directory. Returns true if handled.
 func (h *WebsocketdServer) serveCGI(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
 	if h.Config.CgiDir == "" {
 		return false
 	}
-	filePath := path.Join(h.Config.CgiDir, fmt.Sprintf(".%s", filepath.FromSlash(req.URL.Path)))
+	filePath, err := resolveCgiPath(h.Config.CgiDir, req.URL.Path)
+	if err != nil {
+		log.Access("http", "CGI: %s", err)
+		return false
+	}
 	fi, err := os.Stat(filePath)
 	if err != nil || fi.IsDir() {
+		return false
+	}
+
+	// Reject scripts reached through a symlink that leaves the CGI
+	// directory — the lexical check above cannot see those.
+	if err := checkPathBoundary(filePath, h.Config.CgiDir); err != nil {
+		log.Access("http", "CGI: %s", err)
 		return false
 	}
 
