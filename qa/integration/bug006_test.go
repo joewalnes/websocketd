@@ -14,7 +14,9 @@ import (
 // - nobody drains either pipe → deadlock
 func TestBUG006_BinaryDeadlock(t *testing.T) {
 	t.Parallel()
-	s := startServerOpts(t, []string{"--binary"}, "binary-echo")
+	// --maxframesize=0 disables the inbound frame cap; this test deliberately
+	// sends a 2 MiB frame to exercise the pipe-deadlock path, not the limit.
+	s := startServerOpts(t, []string{"--binary", "--maxframesize=0"}, "binary-echo")
 	ws := s.Connect("/")
 	defer ws.Close()
 

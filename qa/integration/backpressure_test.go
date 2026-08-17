@@ -16,7 +16,9 @@ func TestBACKPRESSURE001_BinaryLargePayload(t *testing.T) {
 	// Previously required goroutine-per-Send hack; now works because
 	// stdin and stdout are drained by independent goroutines.
 	t.Parallel()
-	s := startServerOpts(t, []string{"--binary"}, "binary-echo")
+	// --maxframesize=0 disables the inbound frame cap; this test deliberately
+	// sends a 2 MiB frame to exercise backpressure, not the limit.
+	s := startServerOpts(t, []string{"--binary", "--maxframesize=0"}, "binary-echo")
 	ws := s.Connect("/")
 	defer ws.Close()
 
