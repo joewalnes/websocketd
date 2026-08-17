@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786993282411,
+  "lastUpdate": 1787006895138,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -1939,6 +1939,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16248,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "distinct": true,
+          "id": "618423b032298c24ea95d4f5a68a76611d26dc86",
+          "message": "Note the qa/integration test-cache gotcha in CLAUDE.md\n\nA 1 MiB --maxframesize default silently broke two 2 MiB integration tests, and\n`go test ./...` reported them cached-green because changing libwebsocketd/main\ndoes not invalidate the qa/integration cache (it keys on that package's own\nsources, not the websocketd binary those tests build). Document the -count=1\nrequirement so the next cross-package change does not ship on a stale pass.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-08-17T15:43:52-07:00",
+          "tree_id": "2d61a36164f8b29b2a03e79d24c0805faac00f51",
+          "url": "https://github.com/joewalnes/websocketd/commit/618423b032298c24ea95d4f5a68a76611d26dc86"
+        },
+        "date": 1787006893883,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 13044,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 13600,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 13540,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 13604,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.61,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 621.1,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 10908,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 66,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 44.62,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8540,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 8.55,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 6.9,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 10968,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 339.25,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 248.636,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8548,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.15,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 10888,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 30.23,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 33079,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 13912,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174951,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16192,
             "unit": "KB"
           }
         ]
