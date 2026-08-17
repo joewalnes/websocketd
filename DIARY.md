@@ -4,6 +4,28 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — Static file server followed symlinks out of --staticdir
+
+Follow-up to the CGI fix below. While auditing the sibling path handlers, the
+static server (`http.FileServer(http.Dir(StaticDir))`) turned out to serve the
+contents of any symlink placed inside StaticDir that points outside it —
+standard Go stdlib behavior. `http.Dir` blocks `..` traversal but does not
+resolve symlinks, so a link is followed wherever it leads. Read-only
+disclosure, not RCE, and it needs a symlink to already exist inside the
+served directory, so lower severity than the CGI hole — but still a boundary
+the server should hold.
+
+The two other handlers were already fine: the ScriptDir/WebSocket path runs
+`checkPathBoundary` (EvalSymlinks + prefix), and CGI now does too.
+
+Fix: a small `boundedDir` http.FileSystem wrapping `http.Dir`. It defers to
+http.Dir for the normal cleaning/`..`-rejection and correct os error
+semantics (so missing files stay 404, not 500), then reuses
+`checkPathBoundary` on the resolved path and returns os.ErrNotExist if it
+escapes. Chose to wrap the FileSystem rather than pre-check in serveStatic so
+every Open the FileServer performs (index.html, directory entries) is guarded
+uniformly, not just the top-level request path.
+
 ## 2026-08-17 — CGI directory escape (unauthenticated RCE)
 
 serveCGI built the script path as

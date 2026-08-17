@@ -262,13 +262,41 @@ func (h *WebsocketdServer) serveCGI(w http.ResponseWriter, req *http.Request, lo
 	return true
 }
 
+// boundedDir is an http.FileSystem that serves files from a directory but
+// refuses any file reached through a symlink that leaves it. http.Dir alone
+// rejects ".." traversal but still follows symlinks out of the root, which
+// would disclose arbitrary file contents.
+type boundedDir struct {
+	root string
+	fs   http.FileSystem
+}
+
+func (d boundedDir) Open(name string) (http.File, error) {
+	// http.Dir cleans name, rejects "..", and returns proper os errors
+	// (so FileServer maps missing files to 404, not 500).
+	f, err := d.fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	// The file exists; confirm its real path is still within root before
+	// handing it back. filepath.Join(root, clean-name) mirrors how
+	// http.Dir maps the request to disk.
+	full := filepath.Join(d.root, filepath.FromSlash(path.Clean("/"+name)))
+	if err := checkPathBoundary(full, d.root); err != nil {
+		f.Close()
+		return nil, os.ErrNotExist
+	}
+	return f, nil
+}
+
 // serveStatic serves static files from the configured directory. Returns true if handled.
 func (h *WebsocketdServer) serveStatic(w http.ResponseWriter, req *http.Request, log *LogScope) bool {
 	if h.Config.StaticDir == "" {
 		return false
 	}
 	log.Access("http", "STATIC")
-	http.FileServer(http.Dir(h.Config.StaticDir)).ServeHTTP(w, req)
+	fs := boundedDir{root: h.Config.StaticDir, fs: http.Dir(h.Config.StaticDir)}
+	http.FileServer(fs).ServeHTTP(w, req)
 	return true
 }
 

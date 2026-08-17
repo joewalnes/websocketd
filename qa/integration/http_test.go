@@ -3,6 +3,7 @@ package integration
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -75,6 +76,46 @@ func TestHTTP003_StaticFilePathTraversal(t *testing.T) {
 	resp, body = s.HTTPGet("/..%2F..%2F..%2Fetc%2Fpasswd")
 	if resp.StatusCode == 200 && strings.Contains(body, "root:") {
 		t.Error("SECURITY: encoded path traversal succeeded")
+	}
+}
+
+// TestHTTP003b_StaticSymlinkEscape verifies that a symlink inside the static
+// directory pointing outside it is not followed. Go's http.FileServer follows
+// such links by default, disclosing arbitrary file contents; websocketd wraps
+// the filesystem to refuse them. A symlink that stays inside the directory
+// must still resolve.
+func TestHTTP003b_StaticSymlinkEscape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks require admin on Windows")
+	}
+	t.Parallel()
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "public.html"), []byte("PUBLIC"), 0644)
+
+	// A secret file outside the static directory, and a link to it inside.
+	secretDir := t.TempDir()
+	secret := filepath.Join(secretDir, "secret.txt")
+	os.WriteFile(secret, []byte("SECRET-CONTENTS"), 0644)
+	os.Symlink(secret, filepath.Join(dir, "leak"))
+
+	// A link that stays within the static directory.
+	os.Symlink(filepath.Join(dir, "public.html"), filepath.Join(dir, "inside-link.html"))
+
+	s := startServerOpts(t, []string{"--staticdir=" + dir}, "echo")
+
+	resp, body := s.HTTPGet("/leak")
+	if resp.StatusCode == 200 && strings.Contains(body, "SECRET-CONTENTS") {
+		t.Errorf("SECURITY: symlink escaping the static directory disclosed %q (status %d)", body, resp.StatusCode)
+	}
+
+	resp, body = s.HTTPGetFollow("/inside-link.html")
+	if resp.StatusCode != 200 || !strings.Contains(body, "PUBLIC") {
+		t.Errorf("symlink within the static directory should still resolve, got %d %q", resp.StatusCode, body)
+	}
+
+	resp, body = s.HTTPGetFollow("/public.html")
+	if resp.StatusCode != 200 || !strings.Contains(body, "PUBLIC") {
+		t.Errorf("normal static file should still resolve, got %d %q", resp.StatusCode, body)
 	}
 }
 

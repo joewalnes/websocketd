@@ -1,5 +1,9 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Security: the --staticdir file server no longer follows a symlink that
+  points out of the static directory (Go's default http.FileServer does),
+  which could disclose arbitrary file contents; links that stay inside the
+  directory still resolve
 * Security: confine --cgidir CGI execution to the configured directory.
   Request paths are now normalized and boundary-checked before a CGI
   script is run, and scripts reached through a symlink out of the
