@@ -9,6 +9,11 @@ Version 0.5.0 (Apr 26, 2026)
   script is run, and scripts reached through a symlink out of the
   directory are refused (thanks @truxton for the report)
 
+* Renamed the default branch from master to main. The Benchmarks workflow
+  only triggered on master, so it stopped running entirely after the
+  rename; it now triggers on main. Documentation links that pointed at
+  github.com/joewalnes/websocketd/tree/master/... (which 404 now that the
+  branch is gone) were updated to tree/main/...
 * Modernized the dev console's embedded JS (var -> const/let, function
   expressions -> arrows); also fixes a scoping bug where a stray
   semicolon left currentSendHistoryPosition/sendHistoryRollback as

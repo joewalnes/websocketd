@@ -106,7 +106,7 @@ More Features
 *   STDERR can optionally be forwarded to WebSocket clients (`--passstderr`), tagged alongside STDOUT as JSON so a client can tell the two apart.
 *   Command line help available via `websocketd --help`.
 *   Includes [WebSocket developer console](https://github.com/joewalnes/websocketd/wiki/Developer-console) to make it easy to test your scripts before you've built a JavaScript frontend.
-*   [Examples in many programming languages](https://github.com/joewalnes/websocketd/tree/master/examples) are available to help you getting started.
+*   [Examples in many programming languages](https://github.com/joewalnes/websocketd/tree/main/examples) are available to help you getting started.
 
 User Manual
 -----------

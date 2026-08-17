@@ -95,7 +95,7 @@ failed rather than silently averaging over fewer, "surviving" runs.
 ## CI Integration
 
 The `bench.yml` GitHub Actions workflow:
-- Runs all scenarios (median of 3 runs each) on every push to master and on PRs
+- Runs all scenarios (median of 3 runs each) on every push to main and on PRs
 - Uploads `report.html` as a workflow artifact
 - Tracks metrics over time on [the dashboard](https://websocketd.com/dev/bench/)
 - Posts comparison comments on PRs when a metric regresses >25%; this is

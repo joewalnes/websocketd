@@ -4,6 +4,26 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — Default branch renamed master -> main
+
+The rename is silent in most places but not all: GitHub Actions `branches:`
+filters are literal, so the Benchmarks workflow (`push`/`pull_request` on
+`[master]`) simply stopped firing rather than failing loudly — the kind of
+breakage that only shows up as a gap in the benchmark history weeks later.
+The Tests workflow was unaffected because it uses bare `on: [push,
+pull_request]` with no branch filter, which is the more rename-proof form.
+
+Also fixed: hardcoded `tree/master/` links in README and the per-language
+example READMEs (GitHub does not redirect a deleted branch name, so those
+404), and the `git push --tags origin master:master` line in the release
+runbook. The gh-pages branch that the benchmark action publishes to is
+untouched by the rename.
+
+Worth remembering for future workflows: prefer no branch filter, or accept
+that any filter is a hardcoded branch name that needs auditing on rename.
+
+---
+
 ## 2026-08-17 — Static file server followed symlinks out of --staticdir
 
 Follow-up to the CGI fix below. While auditing the sibling path handlers, the

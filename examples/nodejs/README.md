@@ -10,4 +10,4 @@ Run `websocketd --port=8080 --devconsole node greeter.js` and then go to `http:/
 
 ##### 3. Start a server: counter
 
-Run `websocketd --port=8080 node count.js` to start the server, then go to [examples/html](https://github.com/joewalnes/websocketd/tree/master/examples/html) directory and double click **count.html** to open in a browser
+Run `websocketd --port=8080 node count.js` to start the server, then go to [examples/html](https://github.com/joewalnes/websocketd/tree/main/examples/html) directory and double click **count.html** to open in a browser

@@ -53,7 +53,7 @@ Create CHECKSUMS.asc file using gpg and key that other developers shared with yo
 In order to make release official following steps required:
 
     # push tags (assuming joewalnes repo is origin):
-    git push --tags origin master:master
+    git push --tags origin main:main
 
 Upload files to github release (to be automated). Use these instructions for now: https://github.com/blog/1547-release-your-software
 
