@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1783694451966,
+  "lastUpdate": 1786991508218,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -1357,6 +1357,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16244,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "distinct": false,
+          "id": "1393cbf5e95c341a60af1e0e473ecdc9d06de308",
+          "message": "Stop the static file server following symlinks out of --staticdir\n\nhttp.FileServer(http.Dir(StaticDir)) blocks \"..\" traversal but still\nfollows a symlink placed inside StaticDir that points outside it, serving\nthe target's contents — read-only disclosure of arbitrary files. It needs a\nsymlink to already exist inside the served directory, so this is lower\nseverity than the CGI escape, but the server should still hold the boundary.\n\nWrap the filesystem in a boundedDir that defers to http.Dir for cleaning,\n\"..\" rejection, and os error semantics (missing files stay 404), then reuses\ncheckPathBoundary on the resolved path and returns os.ErrNotExist if it\nescapes. Wrapping the FileSystem rather than pre-checking in serveStatic\nguards every Open the FileServer performs (index.html, directory entries),\nnot just the top-level request path. Symlinks that stay within the directory\nstill resolve.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+          "timestamp": "2026-08-17T11:21:07-07:00",
+          "tree_id": "90b15ffbae8ba65ad08b10e1fd80652aa239b9bc",
+          "url": "https://github.com/joewalnes/websocketd/commit/1393cbf5e95c341a60af1e0e473ecdc9d06de308"
+        },
+        "date": 1786991507123,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 13160,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 13660,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 13648,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 9132,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.235,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 809.7,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 11016,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 50,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 36.7,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8600,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 7,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 6.6,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 11064,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 264.05,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 181.166,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8600,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.104,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 11016,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 25.921,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 38579,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 15688,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174951,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16392,
             "unit": "KB"
           }
         ]
