@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -99,6 +100,17 @@ type Server struct {
 	cmd     *exec.Cmd
 	stdout  syncBuffer
 	stderr  syncBuffer
+
+	// exited is closed once cmd.Wait has returned, which is also the point
+	// at which the captured output is complete (Wait joins exec's copier
+	// goroutines). A single goroutine owns Wait so that readiness checks
+	// and cleanup can both observe the process without calling it twice.
+	exited chan struct{}
+
+	// abandoned marks a start attempt that lost the port race and was
+	// replaced, so its cleanup does not log a bind error that has nothing
+	// to do with whatever later failed the test.
+	abandoned bool
 }
 
 // startServer starts websocketd with testcmd <mode> as the backend.
@@ -114,23 +126,45 @@ func startServerOpts(t *testing.T, wsFlags []string, mode string, modeArgs ...st
 
 // startServerRaw starts websocketd with arbitrary flags and command,
 // listening on a free TCP port.
+//
+// freePort must close its probe listener before websocketd can bind the
+// port, so something else can take it in the gap. websocketd exits when that
+// happens, so a lost race is retried on a fresh port rather than failing a
+// test that has nothing to do with port allocation.
 func startServerRaw(t *testing.T, wsFlags []string, command string, cmdArgs ...string) *Server {
 	t.Helper()
-	port := freePort(t)
 
-	args := []string{
-		"--port=" + strconv.Itoa(port),
-		"--address=127.0.0.1",
-		"--loglevel=access",
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		port := freePort(t)
+
+		args := []string{
+			"--port=" + strconv.Itoa(port),
+			"--address=127.0.0.1",
+			"--loglevel=access",
+		}
+		args = append(args, wsFlags...)
+		args = append(args, command)
+		args = append(args, cmdArgs...)
+
+		s := startServerRawArgs(t, args)
+		s.Port = port
+		// The readiness probe speaks to the server directly, so it has to
+		// know whether to start with a TLS handshake. startServerSSL sets
+		// this too, but only once the server is already up.
+		for _, f := range wsFlags {
+			if f == "--ssl" {
+				s.IsHTTPS = true
+			}
+		}
+		lastErr = s.waitReady(port, 10*time.Second)
+		if lastErr == nil {
+			return s
+		}
+		s.abandon()
 	}
-	args = append(args, wsFlags...)
-	args = append(args, command)
-	args = append(args, cmdArgs...)
-
-	s := startServerRawArgs(t, args)
-	s.Port = port
-	waitForPort(t, port, 10*time.Second)
-	return s
+	t.Fatalf("websocketd did not start after 3 attempts: %v", lastErr)
+	return nil
 }
 
 // startServerRawArgs starts websocketd with a fully custom argument list —
@@ -142,8 +176,9 @@ func startServerRawArgs(t *testing.T, args []string) *Server {
 	cmd := exec.Command(websocketdBin, args...)
 
 	s := &Server{
-		t:   t,
-		cmd: cmd,
+		t:      t,
+		cmd:    cmd,
+		exited: make(chan struct{}),
 	}
 
 	// Capture each stream separately; cmd.Wait joins exec's copier
@@ -155,16 +190,99 @@ func startServerRawArgs(t *testing.T, args []string) *Server {
 		t.Fatalf("failed to start websocketd: %v", err)
 	}
 
+	// One goroutine owns Wait, so that waiting for readiness and cleanup can
+	// both learn the process has exited by selecting on s.exited. Calling
+	// Wait twice fails, and leaving it uncalled would let the buffers be read
+	// while the copier goroutines are still writing.
+	go func() {
+		cmd.Wait()
+		close(s.exited)
+	}()
+
 	t.Cleanup(func() {
 		cmd.Process.Kill()
-		cmd.Wait()
-		if t.Failed() {
+		<-s.exited
+		if t.Failed() && !s.abandoned {
 			t.Logf("websocketd stdout:\n%s", s.stdout.String())
 			t.Logf("websocketd stderr:\n%s", s.stderr.String())
 		}
 	})
 
 	return s
+}
+
+// probeCounter makes each readiness probe path unique, so one server can
+// never be fooled by another server's access log.
+var probeCounter atomic.Int64
+
+// waitReady blocks until the server is accepting connections on port, or
+// returns an error saying why it never will.
+//
+// Dialing the port proves only that *something* is listening. If websocketd
+// lost the port to another process it exits, and the dial then succeeds
+// against whoever took it — which used to be reported as ready, so the test
+// failed later with a bare connection reset and no output to explain it.
+// Worse, the dial can win that race before our own process has even reached
+// its bind, so watching for the exit is not enough on its own.
+//
+// So prove identity: request a path unique to this server and wait for it to
+// appear in *our* captured access log. Only the process we started can put it
+// there. A server started at a log level that suppresses ACCESS lines would
+// time out here — no caller does that today, and the timeout names the port,
+// which is a legible failure rather than a mysterious one.
+func (s *Server) waitReady(port int, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	probePath := fmt.Sprintf("/__websocketd_ready_%d__", probeCounter.Add(1))
+
+	for time.Now().Before(deadline) {
+		if strings.Contains(s.stdout.String(), probePath) {
+			return nil
+		}
+		select {
+		case <-s.exited:
+			// Wait has returned, so the captured output is complete.
+			out := strings.TrimSpace(s.stdout.String() + s.stderr.String())
+			return fmt.Errorf("websocketd exited during startup:\n%s", out)
+		default:
+		}
+		s.probe(port, probePath)
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("websocketd did not answer on port %d within %v", port, timeout)
+}
+
+// probe sends one plain HTTP request for probePath. Any reply is fine — the
+// point is the access-log line it leaves behind, not the response, which is a
+// 404 in most server modes. Errors are ignored: waitReady simply tries again.
+func (s *Server) probe(port int, probePath string) {
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	dialer := &net.Dialer{Timeout: 200 * time.Millisecond}
+
+	var conn net.Conn
+	var err error
+	if s.IsHTTPS {
+		conn, err = tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{InsecureSkipVerify: true})
+	} else {
+		conn, err = dialer.Dial("tcp", addr)
+	}
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	conn.SetDeadline(time.Now().Add(500 * time.Millisecond))
+	if _, err := fmt.Fprintf(conn, "GET %s HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n", probePath); err != nil {
+		return
+	}
+	io.Copy(io.Discard, conn)
+}
+
+// abandon stops a start attempt that lost the port race, so its cleanup stays
+// quiet and the retry gets a clean slate.
+func (s *Server) abandon() {
+	s.abandoned = true
+	s.cmd.Process.Kill()
+	<-s.exited
 }
 
 // startServerSSL starts websocketd with TLS using a generated self-signed cert.
@@ -389,15 +507,38 @@ func (c *WSClient) Close() {
 }
 
 // freePort finds an available TCP port.
+// issuedPorts records every port freePort has handed out. The probe listener
+// has to be closed before the caller can use the port, so the kernel is free
+// to return the same one to a concurrent probe; tests run in parallel, so
+// without this two servers could be told to bind the same port. It only
+// covers this test binary — a collision with an unrelated process is handled
+// by the retry in startServerRaw.
+var (
+	issuedPortsMu sync.Mutex
+	issuedPorts   = map[int]bool{}
+)
+
 func freePort(t *testing.T) int {
 	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("failed to find free port: %v", err)
+	for attempt := 0; attempt < 20; attempt++ {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("failed to find free port: %v", err)
+		}
+		port := l.Addr().(*net.TCPAddr).Port
+		l.Close()
+
+		issuedPortsMu.Lock()
+		reissued := issuedPorts[port]
+		issuedPorts[port] = true
+		issuedPortsMu.Unlock()
+
+		if !reissued {
+			return port
+		}
 	}
-	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
-	return port
+	t.Fatal("failed to find a free port not already issued to another test")
+	return 0
 }
 
 // waitForPort polls until a TCP connection succeeds on the given port.

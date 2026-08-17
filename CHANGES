@@ -9,6 +9,15 @@ Version 0.5.0 (Apr 26, 2026)
   script is run, and scripts reached through a symlink out of the
   directory are refused (thanks @truxton for the report)
 
+* Fixed a flaky integration test (TestENV008_UniqueID and any other test
+  could fail with an unexplained "connection reset by peer"). The harness
+  treated "something is listening on the port" as proof its own server had
+  started, so when the ephemeral port was taken between being picked and
+  being bound, readiness was satisfied by the process holding it while
+  websocketd had already exited. Readiness now proves identity by looking
+  for a unique probe request in the server's own access log, a lost port
+  race is retried on a fresh port, and a server that exits during startup
+  reports its own log instead of timing out
 * Fixed the Windows-only CGI path test, which had been failing CI since the
   --cgidir confinement landed. It asserted that a backslash dot segment is
   refused, but filepath.ToSlash folds "..\" into "../" before the path is

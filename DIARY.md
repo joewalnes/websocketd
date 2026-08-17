@@ -4,6 +4,48 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — Readiness that proved the wrong thing
+
+`TestENV008_UniqueID` failed once on the ARM64 runner with `connection reset
+by peer` and — the useful clue — *empty* captured stdout and stderr. It passed
+on rerun. Empty output was the thing worth chasing: websocketd logs a startup
+banner immediately, so a server that had actually run would have left
+something behind. Ours had barely started, yet `waitForPort` had already said
+it was ready.
+
+The mechanism: `freePort` binds :0, reads the port, closes the listener, and
+returns. The port is then only reserved by convention until websocketd binds
+it. When something else takes it in that gap, websocketd exits (`bind: address
+already in use`, exit 3) — but the readiness check was a bare TCP dial, which
+happily connects to whoever *is* holding the port. So the harness returned a
+"ready" server that was not running; the test then hit the squatter as it went
+away and got an RST, and cleanup killed our still-initializing process before
+it had flushed a single line. Every part of the confusing symptom follows from
+readiness proving "someone is listening" instead of "our server is listening".
+
+First attempt at a fix was to also watch for the process exiting. The new test
+immediately showed why that is not enough: the dial can succeed against the
+squatter *before* our process has even reached its bind, so the check returns
+ready before there is any exit to observe. Ordering, not detection, was the
+problem.
+
+What actually works is proving identity. `waitReady` now sends a GET for a
+path unique to that server and waits for it to appear in *our own* captured
+access log — only the process we started can put it there. Around that:
+`freePort` never reissues a port within the binary, a lost race is retried on
+a fresh port, and a server that exits during startup surfaces its own log
+(so "address already in use" is now the error message rather than a mystery
+reset two calls later).
+
+Tradeoff accepted: the probe leaves a few 404 access-log lines in the capture,
+and readiness now depends on ACCESS-level logging. Every current caller uses
+`--loglevel=access`; one that didn't would time out with a message naming the
+port, which beats the failure mode this replaced. The four tests that build
+their own `exec.Cmd` and call `waitForPort` directly still have the weaker
+check — they benefit from the port de-duplication but not the identity proof.
+
+---
+
 ## 2026-08-17 — The Windows CGI test asserted the wrong thing (not a hole)
 
 `TestResolveCgiPathBackslash` was red on Windows CI from the moment the CGI
