@@ -1,5 +1,9 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Security: HTTP servers now set ReadHeaderTimeout (10s) so a client can no
+  longer hold a connection open by dribbling request headers (slowloris);
+  the --redirport redirect server, which only emits tiny responses, also gets
+  full Read/Write/Idle timeouts
 * Security: added --maxframesize to bound inbound WebSocket message size,
   defaulting to 1 MiB (0 disables). Previously a single client could stream
   an unbounded frame that websocketd buffered whole in memory (DoS). Clients
