@@ -1,5 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Security: the --devconsole page now HTML-escapes the request-derived
+  WebSocket address it echoes back, fixing a reflected XSS reachable when a
+  crafted request path was sent to an exposed dev console
 * Security: the --staticdir file server no longer follows a symlink that
   points out of the static directory (Go's default http.FileServer does),
   which could disclose arbitrary file contents; links that stay inside the

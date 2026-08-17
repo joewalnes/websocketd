@@ -152,6 +152,28 @@ func TestHTTP005_DevConsoleServing(t *testing.T) {
 	}
 }
 
+// TestHTTP005b_DevConsoleXSS verifies the dev console HTML-escapes the
+// request-derived WebSocket address it echoes into the page. Go's net/http
+// surfaces a raw '"' in the request target verbatim in req.RequestURI, so an
+// unescaped substitution would break out of the value="..." attribute and
+// execute injected script. The request is sent raw because Go's HTTP client
+// (like curl) percent-encodes these characters before sending, hiding the bug.
+func TestHTTP005b_DevConsoleXSS(t *testing.T) {
+	t.Parallel()
+	s := startServerOpts(t, []string{"--devconsole"}, "echo")
+
+	resp := rawHTTPGet(t, s.Port, `/"><script>alert(1)</script>`)
+	body := readBody(t, resp)
+
+	if strings.Contains(body, `"><script>alert(1)</script>`) {
+		t.Errorf("SECURITY: dev console reflected an unescaped request path (XSS):\n%s", body)
+	}
+	// The escaped form should be present, proving the value was echoed but neutralized.
+	if !strings.Contains(body, "&lt;script&gt;") && !strings.Contains(body, "&#34;&gt;&lt;script") {
+		t.Errorf("expected the injected path to appear HTML-escaped, body:\n%s", body)
+	}
+}
+
 func TestHTTP006_DevConsoleAndWebSocket(t *testing.T) {
 	t.Parallel()
 	s := startServerOpts(t, []string{"--devconsole"}, "echo")

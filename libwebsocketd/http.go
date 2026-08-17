@@ -8,6 +8,7 @@ package libwebsocketd
 import (
 	"errors"
 	"fmt"
+	"html"
 	"net"
 	"net/http"
 	"net/http/cgi"
@@ -163,7 +164,12 @@ func (h *WebsocketdServer) serveDevConsole(w http.ResponseWriter, req *http.Requ
 		return false
 	}
 	log.Access("http", "DEVCONSOLE")
-	content := strings.Replace(ConsoleContent, "{{addr}}", h.TellURL("ws", req.Host, req.RequestURI), -1)
+	// req.Host and req.RequestURI are attacker-controlled and echoed into
+	// the page inside a double-quoted HTML attribute. net/http surfaces a
+	// raw '"' in the request target verbatim, so escape before substituting
+	// to prevent the value from breaking out of the attribute (reflected XSS).
+	addr := html.EscapeString(h.TellURL("ws", req.Host, req.RequestURI))
+	content := strings.Replace(ConsoleContent, "{{addr}}", addr, -1)
 	http.ServeContent(w, req, ".html", h.Config.StartupTime, strings.NewReader(content))
 	return true
 }

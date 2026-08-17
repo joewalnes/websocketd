@@ -4,6 +4,21 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — Second-model audit follow-ups (XSS, DoS, TLS hardening)
+
+A second model ran a security audit after the CGI/static fixes. Reviewed and
+empirically confirmed all six findings (no false positives); working through
+them as atomic commits, test-first. Notes on the non-obvious calls:
+
+Reflected XSS in the dev console (#3): serveDevConsole substitutes
+`h.TellURL("ws", req.Host, req.RequestURI)` into `value="{{addr}}"` with no
+escaping. net/http surfaces a raw `"` in the request target verbatim in
+RequestURI, so `GET /"><script>…` broke out of the attribute and executed on
+load — confirmed live. Fixed with html.EscapeString, *not* by switching to
+req.URL.Path: the console intentionally echoes the query string into the ws
+URL, and URL.Path would silently drop it. EscapeString turns `"` into `&#34;`,
+which is sufficient inside a double-quoted attribute.
+
 ## 2026-08-17 — Readiness that proved the wrong thing
 
 `TestENV008_UniqueID` failed once on the ARM64 runner with `connection reset
