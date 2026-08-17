@@ -197,6 +197,7 @@ func parseCommandLine() *Config {
 	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
 	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
 	pingMsFlag := flag.Uint("pingms", 0, "WebSocket ping interval in milliseconds (0 disables)")
+	maxFrameSizeFlag := flag.Int64("maxframesize", 1<<20, "Max inbound WebSocket message size in bytes (0 = unlimited)")
 	redirPortFlag := flag.Int("redirport", 0, "HTTP port to redirect to canonical --port address")
 	sslCaFlag := flag.String("sslca", "", "CA certificate file for client certificate verification (mutual TLS)")
 
@@ -286,6 +287,7 @@ func parseCommandLine() *Config {
 	config.HeadersHTTP = []string(headersHttp)
 	config.CloseMs = *closeMsFlag
 	config.PingInterval = time.Duration(*pingMsFlag) * time.Millisecond
+	config.MaxFrameSize = *maxFrameSizeFlag
 	config.Binary = *binaryFlag
 	config.PassStderr = *passStderrFlag
 	config.ReverseLookup = *reverseLookupFlag

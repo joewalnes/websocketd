@@ -23,7 +23,7 @@ type WebSocketEndpoint struct {
 	pingInterval time.Duration
 }
 
-func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInterval time.Duration) *WebSocketEndpoint {
+func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInterval time.Duration, maxFrameSize int64) *WebSocketEndpoint {
 	endpoint := &WebSocketEndpoint{
 		ws:           ws,
 		output:       make(chan []byte),
@@ -34,6 +34,12 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInter
 	}
 	if bin {
 		endpoint.mtype = websocket.BinaryMessage
+	}
+	// Bound how much a single client can buffer in memory. When exceeded,
+	// gorilla returns ErrReadLimit from NextReader and closes the connection
+	// with 1009 (message too big). Zero leaves gorilla's default: unlimited.
+	if maxFrameSize > 0 {
+		ws.SetReadLimit(maxFrameSize)
 	}
 	return endpoint
 }

@@ -19,6 +19,15 @@ req.URL.Path: the console intentionally echoes the query string into the ws
 URL, and URL.Path would silently drop it. EscapeString turns `"` into `&#34;`,
 which is sufficient inside a double-quoted attribute.
 
+Unbounded inbound frame (#1): readFrames does io.ReadAll(rd) and
+SetReadLimit was never called, so gorilla's default (unlimited) let one
+client buffer an arbitrarily large message in memory. Added --maxframesize
+(int64 bytes) plumbed to WebSocketEndpoint, which calls ws.SetReadLimit when
+>0. Chose a finite 1 MiB *default* (0 disables) over preserving unlimited —
+a user-visible behavior change, but the DoS was the default and the flag lets
+large-frame users opt back out. Over-limit frames make NextReader return
+ErrReadLimit; readFrames breaks and closes output, gorilla sends 1009.
+
 ## 2026-08-17 — Readiness that proved the wrong thing
 
 `TestENV008_UniqueID` failed once on the ARM64 runner with `connection reset

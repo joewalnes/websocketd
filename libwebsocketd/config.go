@@ -19,6 +19,7 @@ type Config struct {
 
 	HandshakeTimeout time.Duration // time to finish handshake (default 1500ms)
 	PingInterval     time.Duration // interval between WebSocket pings (0 = disabled)
+	MaxFrameSize     int64         // Max inbound WebSocket message size in bytes (0 = unlimited)
 
 	// settings
 	Binary         bool     // Use binary communication (send data in chunks they are read from process)

@@ -31,7 +31,7 @@ func TestWebSocketTerminateUnblocksParkedReader(t *testing.T) {
 		if err != nil {
 			return
 		}
-		we := NewWebSocketEndpoint(conn, false, quietLogScope(), 0)
+		we := NewWebSocketEndpoint(conn, false, quietLogScope(), 0, 0)
 		we.StartReading()
 		endpoints <- we
 	}))
@@ -66,4 +66,69 @@ func TestWebSocketTerminateUnblocksParkedReader(t *testing.T) {
 	}
 	t.Fatalf("goroutine leak: %d goroutines before, %d after Terminate (readFrames parked on output send?)",
 		before, runtime.NumGoroutine())
+}
+
+// TestWebSocketReadLimit verifies that maxFrameSize bounds inbound messages:
+// a frame within the limit is delivered, and one over it closes the
+// connection instead of being buffered whole (memory-DoS protection). Without
+// SetReadLimit gorilla reads an unbounded message into memory.
+func TestWebSocketReadLimit(t *testing.T) {
+	const limit = 16
+
+	endpoints := make(chan *WebSocketEndpoint, 1)
+	upgrader := websocket.Upgrader{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		we := NewWebSocketEndpoint(conn, false, quietLogScope(), 0, limit)
+		we.StartReading()
+		endpoints <- we
+	}))
+	defer srv.Close()
+
+	client, _, err := websocket.DefaultDialer.Dial(
+		"ws"+strings.TrimPrefix(srv.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial failed: %v", err)
+	}
+	defer client.Close()
+	we := <-endpoints
+
+	// A message within the limit is delivered (text mode appends a newline).
+	if err := client.WriteMessage(websocket.TextMessage, []byte("small")); err != nil {
+		t.Fatalf("client send failed: %v", err)
+	}
+	select {
+	case msg, ok := <-we.Output():
+		if !ok {
+			t.Fatal("output channel closed before delivering the within-limit message")
+		}
+		if string(msg) != "small\n" {
+			t.Fatalf("got %q, want %q", msg, "small\n")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for within-limit message")
+	}
+
+	// A message over the limit must not be delivered; readFrames hits
+	// ErrReadLimit, closes the output channel, and the connection is torn down.
+	oversized := make([]byte, limit+1)
+	for i := range oversized {
+		oversized[i] = 'x'
+	}
+	if err := client.WriteMessage(websocket.TextMessage, oversized); err != nil {
+		t.Fatalf("client send failed: %v", err)
+	}
+	select {
+	case msg, ok := <-we.Output():
+		if ok {
+			t.Fatalf("SECURITY: oversized message (%d > %d) was delivered instead of rejected: %d bytes",
+				len(oversized), limit, len(msg))
+		}
+		// channel closed — the oversized frame was refused, as intended.
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out; oversized frame neither delivered nor rejected")
+	}
 }

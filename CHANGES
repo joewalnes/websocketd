@@ -1,5 +1,9 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Security: added --maxframesize to bound inbound WebSocket message size,
+  defaulting to 1 MiB (0 disables). Previously a single client could stream
+  an unbounded frame that websocketd buffered whole in memory (DoS). Clients
+  that legitimately send larger frames must raise or disable the limit
 * Security: the --devconsole page now HTML-escapes the request-derived
   WebSocket address it echoes back, fixing a reflected XSS reachable when a
   crafted request path was sent to an exposed dev console

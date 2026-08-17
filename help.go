@@ -102,7 +102,17 @@ Options:
                                  When maxforks reached the server will be
                                  rejecting requests that require executing
                                  another process (unlimited when 0 or negative).
-                                 Default: 0
+                                 Default: 0. SECURITY: the default is unlimited,
+                                 so a public deployment should set a finite cap
+                                 to bound fork/memory use. Note it gates only WS
+                                 upgrades and CGI execs, not static/redirect
+                                 requests.
+
+  --maxframesize=bytes           Reject inbound WebSocket messages larger than
+                                 this, closing the connection (bounds per-client
+                                 memory use). Default: 1048576 (1 MiB). Set 0 to
+                                 disable the limit; raise it if clients legitimately
+                                 send larger frames.
 
   --closems=milliseconds         Specifies additional time process needs to gracefully
                                  finish before websocketd will send termination signals
