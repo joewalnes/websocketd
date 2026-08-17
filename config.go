@@ -18,6 +18,13 @@ import (
 	"github.com/joewalnes/websocketd/libwebsocketd"
 )
 
+// defaultMaxForks is a finite runaway backstop, not a capacity plan. Each fork
+// is a full subprocess, so unlimited (0) lets one client fork-bomb the host by
+// opening connections. A casual deployment never legitimately needs this many
+// concurrent long-lived connections; high-concurrency operators set --maxforks
+// (or 0 for unlimited) explicitly. See DIARY 2026-08-17.
+const defaultMaxForks = 1024
+
 type Config struct {
 	Addr              []string // TCP addresses to listen on. e.g. ":1234", "1.2.3.4:1234" or "[::1]:1234"
 	UnixSocket        string   // Path of a Unix domain socket to listen on, in addition to (or instead of) Addr
@@ -194,7 +201,7 @@ func parseCommandLine() *Config {
 	sslFlag := flag.Bool("ssl", false, "Use TLS on listening socket (see also --sslcert and --sslkey)")
 	sslCert := flag.String("sslcert", "", "Should point to certificate PEM file when --ssl is used")
 	sslKey := flag.String("sslkey", "", "Should point to certificate private key file when --ssl is used")
-	maxForksFlag := flag.Int("maxforks", 0, "Max forks, zero means unlimited")
+	maxForksFlag := flag.Int("maxforks", defaultMaxForks, "Max forks, zero means unlimited")
 	closeMsFlag := flag.Uint("closems", 0, "Time to start sending signals (0 never)")
 	pingMsFlag := flag.Uint("pingms", 0, "WebSocket ping interval in milliseconds (0 disables)")
 	maxFrameSizeFlag := flag.Int64("maxframesize", 1<<20, "Max inbound WebSocket message size in bytes (0 = unlimited)")

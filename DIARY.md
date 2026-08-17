@@ -35,13 +35,25 @@ header read before the handler runs and before the WS hijack, so it is safe
 everywhere. The redirect server emits only tiny responses, so it gets the
 full set.
 
-TLS min version (#4) and the two doc-only findings (#5 unlimited --maxforks
-default, #6 scheme-less --origin matching both schemes): #4 is a one-liner
-via a shared tlsConfig() helper. #5 and #6 are operator-configuration choices,
-not bugs — changing either default would break existing deployments
-(high-concurrency users; anyone relying on scheme-less origin matching both),
-so documented loudly in --help instead of changed. This matches the auditor's
-own "document loudly" option.
+TLS min version (#4) via a shared tlsConfig() helper — a one-liner.
+
+#5/#6 revisited: initially documented-only, then changed after discussing what
+sensible defaults should be. #5: flipped --maxforks default from 0 (unlimited)
+to 1024. The default's job is a runaway backstop, not right-sizing — per-fork
+cost is program-dependent (2 MB shell vs 40 MB Python), so no number is
+"correct" as a capacity plan. 1024 protects the casual majority who never set
+the flag (websocketd's whole ethos is one-liner deployments) while the
+high-concurrency operators who'd notice are exactly the ones who set it
+explicitly. 0 still means unlimited. Guarded by a test asserting the default
+stays finite, since the mechanism itself is already tested.
+
+#6: kept the scheme-agnostic match semantics (consistent with the existing
+"unspecified port = any port" rule, and --origin's syntax is host-centric;
+requiring a scheme would break every existing --origin=host config for a
+narrow gain). Instead closed the sharp edge with a startup warning fired only
+when --ssl is set AND a scheme-less --origin is given — the one configuration
+where silently accepting http origins is surprising and the operator can act
+on it.
 
 ## 2026-08-17 — Readiness that proved the wrong thing
 

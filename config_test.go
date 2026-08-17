@@ -6,6 +6,15 @@ import (
 	"testing"
 )
 
+// TestDefaultMaxForksIsFinite guards the security intent: the fork limit must
+// default to a finite value so an unconfigured, network-facing deployment
+// cannot be fork-bombed. A revert to 0 (unlimited) should fail this test.
+func TestDefaultMaxForksIsFinite(t *testing.T) {
+	if defaultMaxForks <= 0 {
+		t.Fatalf("defaultMaxForks = %d; must be finite (> 0) so the default is not a fork-bomb", defaultMaxForks)
+	}
+}
+
 func TestResolvePort(t *testing.T) {
 	tests := []struct {
 		name     string

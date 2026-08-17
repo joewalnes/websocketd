@@ -1,9 +1,10 @@
 Version 0.5.0 (Apr 26, 2026)
 
-* Docs: --help now flags two security-relevant defaults explicitly — that
-  --maxforks defaults to unlimited (public deployments should cap it) and
-  that a scheme-less --origin entry matches both http and https (prefix
-  "https://" to require TLS). Behavior unchanged
+* Security: --maxforks now defaults to 1024 instead of unlimited, a runaway
+  backstop so an unconfigured, network-facing deployment cannot be fork-bombed
+  by opening connections. High-concurrency deployments should raise it; set 0
+  for the old unlimited behavior. It gates only WS upgrades and CGI execs, not
+  static/redirect requests
 * Security: HTTPS/mutual-TLS servers now pin a minimum TLS version of 1.2
   explicitly instead of relying on the Go default
 * Security: HTTP servers now set ReadHeaderTimeout (10s) so a client can no
