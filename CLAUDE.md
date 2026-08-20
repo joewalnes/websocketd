@@ -43,6 +43,12 @@ Update `README.md` (and any relevant docs) before committing if the change affec
 - Setup/installation steps
 - Feature behavior visible to users
 
+The public website (websocketd.com) lives in `website/` on this branch and
+deploys via `.github/workflows/pages.yml`. It is not a separate branch, so
+check it alongside `README.md` for the same changes — the tutorial and feature
+list there go stale in exactly the same way. `website/CNAME` carries the custom
+domain and must not be deleted or renamed.
+
 ## Changelog
 
 Update `CHANGES` before committing if the change affects:

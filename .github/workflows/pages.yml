@@ -1,0 +1,50 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/pages.yml'
+  # Manual runs are useful to redeploy without touching the site, e.g. after
+  # changing Pages settings.
+  workflow_dispatch:
+
+# Read-only on contents; the Pages deployment uses its own OIDC token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Queued runs are not cancelled, so a deploy that is
+# already publishing is allowed to finish rather than leaving the site in a
+# half-updated state.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The custom domain lives in website/CNAME. It must be part of the
+      # artifact: Pages reads it from the deployed site, and publishing
+      # without it can clear the custom domain (and with it the TLS cert).
+      - name: Verify CNAME is present
+        run: |
+          test -f website/CNAME || { echo "website/CNAME is missing"; exit 1; }
+          echo "custom domain: $(cat website/CNAME)"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
