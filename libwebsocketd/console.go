@@ -20,7 +20,7 @@ const (
 <!--
 websocketd console
 
-Full documentation at http://websocketd.com/
+Full documentation at https://websocketd.com/
 
 {{license}}
 -->

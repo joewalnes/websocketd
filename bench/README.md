@@ -97,7 +97,10 @@ failed rather than silently averaging over fewer, "surviving" runs.
 The `bench.yml` GitHub Actions workflow:
 - Runs all scenarios (median of 3 runs each) on every push to main and on PRs
 - Uploads `report.html` as a workflow artifact
-- Tracks metrics over time on [the dashboard](https://websocketd.com/dev/bench/)
+- Tracks metrics over time, committing results to `dev/bench/` on the
+  `gh-pages` branch. That branch is no longer published, so the dashboard has
+  no public URL; view it by checking the branch out and opening
+  `dev/bench/index.html`
 - Posts comparison comments on PRs when a metric regresses >25%; this is
   advisory only and does not block merging (shared-runner noise is too
   high for a hard gate)

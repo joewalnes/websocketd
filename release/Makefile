@@ -103,7 +103,7 @@ out/$(RELEASE_VERSION)/CHECKSUMS: $(BINARIES) $(ZIPS) $(DEBS) $(RPMS)
 
 
 
-BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url http://websocketd.com/ --license BSD-2-Clause  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com"
+BASEFPM=--description "WebSockets server that converts STDIO scripts to powerful HTML5 applications." --url https://websocketd.com/ --license BSD-2-Clause  --vendor "websocketd team <joe@walnes.com>" --maintainer "abc@alexsergeyev.com"
 
 DEBFPM=""
 RPMFPM=--rpm-os linux

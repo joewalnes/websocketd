@@ -14,7 +14,7 @@ websocketd [options] --dir=SOMEDIR
 that accepts input on stdin and produces output on stdout to be turned into
 a WebSocket server.
 
-To learn more about websocketd visit \fIhttp://websocketd.com\fR and project WIKI
+To learn more about websocketd visit \fIhttps://websocketd.com\fR and project WIKI
 on GitHub!
 .SH OPTIONS
 A summary of the options supported by websocketd is included below.
@@ -150,7 +150,7 @@ Log level to use (default access). From most to least verbose: debug, trace, acc
 .RE
 .SH SEE ALSO
 .RS 2
-* full documentation at \fIhttp://websocketd.com\fR
+* full documentation at \fIhttps://websocketd.com\fR
 .RE
 .RS 2
 * project source at \fIhttps://github.com/joewalnes/websocketd\fR

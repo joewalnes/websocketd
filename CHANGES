@@ -1,5 +1,8 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* The websocketd.com links in --help, the dev console, the man page and the
+  package metadata now use https. The site enforces HTTPS, so the old http
+  URLs only served a redirect
 * --unixsocket no longer starts when another server is already listening on
   the socket path; it now fails with "socket ... is already in use by a
   running server", matching what a TCP listener does when its port is taken.

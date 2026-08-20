@@ -159,7 +159,7 @@ Options:
                                  From most to least verbose:
                                  debug, trace, access, info, error, fatal
 
-Full documentation at http://websocketd.com/
+Full documentation at https://websocketd.com/
 
 Copyright 2013 Joe Walnes and the websocketd team. All rights reserved.
 BSD license: Run '{{binary}} --license' for details.
