@@ -93,11 +93,28 @@ func serveMutualTLS(listener net.Listener, certFile, keyFile, caFile string, log
 	return server.ServeTLS(listener, certFile, keyFile)
 }
 
+// unixSocketProbeTimeout bounds the liveness probe against an existing socket
+// file. A local AF_UNIX connect either succeeds or is refused immediately; the
+// timeout only guards against a pathological listener that accepts nothing.
+const unixSocketProbeTimeout = time.Second
+
 // serveUnixSocket removes a stale socket file left behind by an unclean
 // shutdown (if any) and then serves on it. It only ever removes a path that
 // is actually a socket, never an arbitrary file that happens to be there.
+//
+// A socket file at the path may equally belong to a server that is still
+// running, so removing it unconditionally is not safe: unlinking a live
+// server's socket and binding a new one in its place leaves that process
+// running but permanently unreachable, with no error on either side. Probing
+// first tells the two apart — a successful dial means someone is listening, a
+// refused connection means the file is stale. Refusing to start on a live
+// socket matches what a TCP listener already does when its port is taken.
 func serveUnixSocket(path string, config *Config, log *libwebsocketd.LogScope) error {
 	if info, err := os.Stat(path); err == nil && info.Mode()&os.ModeSocket != 0 {
+		if conn, err := net.DialTimeout("unix", path, unixSocketProbeTimeout); err == nil {
+			conn.Close()
+			return fmt.Errorf("socket %s is already in use by a running server", path)
+		}
 		if err := os.Remove(path); err != nil {
 			return fmt.Errorf("failed to remove stale socket %s: %w", path, err)
 		}

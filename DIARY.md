@@ -4,6 +4,46 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-08-17 — Unix socket: refuse to take over a live socket
+
+Prompted by #471 (a duplicate feature request for `--unixsocket`, already
+shipped for #435). Reviewing it surfaced a real bug and a design temptation;
+only the bug got fixed.
+
+The bug: `serveUnixSocket` unlinked any socket file at the path before
+binding, without checking whether anything was listening. Start a second
+instance on a path a healthy one already owns and the newcomer silently steals
+it — the incumbent keeps running and keeps its children, but nothing can ever
+reach it again, and neither process logs a thing.
+
+Fixed by probing before unlinking: `net.DialTimeout` on an AF_UNIX path either
+connects (someone is listening → refuse to start) or is refused immediately
+(stale → safe to remove). The framing that settled the design is TCP parity —
+a TCP listener already refuses a port that is in use, and the Unix socket was
+the odd one out in taking one over.
+
+The temptation was to also clean up the socket file on exit, which sounds
+obviously right and is where most of the exploration went. Go's `UnixListener`
+already unlinks on `Close()` (verified empirically); the file survives only
+because websocketd has *no* signal handling in `main()`, so SIGTERM kills it
+before anything unwinds. (The SIGINT/SIGTERM logic in `process_endpoint.go` is
+for child processes, unrelated.) So the fix would have been `signal.Notify` +
+`listener.Close()`.
+
+Deliberately not done. Installing a handler only on the `--unixsocket` path
+made an identical SIGTERM exit 143 for a TCP-only server and 0 for a socket
+one — an exit contract depending on an unrelated flag. Installing it globally
+fixed that inconsistency but changed Ctrl+C and SIGTERM semantics for *every*
+user (new exit code, new log lines) to serve a niche feature. Neither trade is
+worth it: too much blast radius for the payoff. Socket files therefore outlive
+their server, exactly as they did before, and startup recovery remains the
+only cleanup mechanism.
+
+That is also the more honest arrangement. Exit cleanup can never be complete —
+SIGKILL, OOM, power loss all skip it — so startup recovery has to work
+regardless, and adding a second partial mechanism would have implied a
+guarantee that does not exist.
+
 ## 2026-08-17 — Second-model audit follow-ups (XSS, DoS, TLS hardening)
 
 A second model ran a security audit after the CGI/static fixes. Reviewed and

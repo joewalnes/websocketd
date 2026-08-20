@@ -277,6 +277,28 @@ func (s *Server) probe(port int, probePath string) {
 	io.Copy(io.Discard, conn)
 }
 
+// WaitExit blocks until the server process has exited and its output buffers
+// are complete, or until timeout. It reports whether the process exited.
+func (s *Server) WaitExit(timeout time.Duration) bool {
+	s.t.Helper()
+	select {
+	case <-s.exited:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
+
+// ExitCode returns the process exit code. Only valid once the process has
+// exited (see WaitExit/Terminate).
+func (s *Server) ExitCode() int {
+	s.t.Helper()
+	if s.cmd.ProcessState == nil {
+		s.t.Fatal("ExitCode called before the process exited")
+	}
+	return s.cmd.ProcessState.ExitCode()
+}
+
 // abandon stops a start attempt that lost the port race, so its cleanup stays
 // quiet and the retry gets a clean slate.
 func (s *Server) abandon() {

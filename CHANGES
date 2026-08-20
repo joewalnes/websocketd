@@ -1,5 +1,14 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* --unixsocket no longer starts when another server is already listening on
+  the socket path; it now fails with "socket ... is already in use by a
+  running server", matching what a TCP listener does when its port is taken.
+  Previously it unlinked any socket file at the path and bound over it, which
+  left the running server alive but permanently unreachable, with no error on
+  either side. Note this turns a start that used to appear to succeed into a
+  hard failure — a restart script that launches the replacement before
+  stopping the incumbent must now stop it first. A stale socket file from an
+  unclean shutdown is still removed automatically, as before
 * Security: --maxforks now defaults to 1024 instead of unlimited, a runaway
   backstop so an unconfigured, network-facing deployment cannot be fork-bombed
   by opening connections. High-concurrency deployments should raise it; set 0

@@ -42,7 +42,9 @@ Options:
                                  (no --port, --address, or --redirport), no
                                  TCP listener is started at all. A leftover
                                  socket file from an unclean shutdown at the
-                                 same path is removed automatically.
+                                 same path is removed automatically, but a
+                                 path another server is still listening on is
+                                 left alone and websocketd will not start.
                                  Default: "" (do not listen on a Unix socket)
 
   --sameorigin={true,false}      Restrict (HTTP 403) protocol upgrades if the

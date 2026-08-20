@@ -417,9 +417,15 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 1 -nodes 
    unclean shutdown that leaves the socket file behind)
 4. `websocketd --port=8080 --unixsocket=/tmp/websocketd.sock cat` (combined
    with a TCP listener)
+5. With one instance running, start a second
+   `websocketd --unixsocket=/tmp/websocketd.sock cat`, then check the first
+   instance is still reachable
 
 **Expected Result**: Step 1 starts with no TCP listener at all (only the
 Unix socket log line appears). Step 2 connects and echoes normally. Step 3
 succeeds — the stale socket file is removed automatically rather than
 failing with "address already in use". Step 4 serves both listeners
-simultaneously.
+simultaneously. Step 5 fails with "socket ... is already in use by a running
+server" and leaves the first instance serving — it must not bind over the
+live socket. websocketd installs no signal handlers, so stopping an instance
+leaves its socket file behind; step 3 is what clears it.
