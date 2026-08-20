@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1787238098854,
+  "lastUpdate": 1787238478842,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -2909,6 +2909,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16340,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "distinct": true,
+          "id": "0a38c72ee298a2c6b438b0794b1dc95e1f317ef8",
+          "message": "Point downloads at v0.4.1, build Apple Silicon, rename OS X to macOS\n\nThe homepage still offered v0.3.0 binaries, four years after v0.4.1 shipped.\nEvery download link now points at v0.4.1, verified to return 200.\n\nTwo links could not simply be renumbered:\n\n  - OS X 32-bit is gone. v0.4.1 ships no darwin_386, Go dropped the target,\n    and the last 32-bit-only Macs predate 2007.\n  - Linux ARM64 is added. v0.4.1 ships one and PLATFORMS already built it,\n    but the page never linked it.\n\nApple Silicon had no build at all: PLATFORMS covered darwin_amd64 only, so\nM-series Macs ran under Rosetta 2 — even though the QA plan has covered macOS\nARM64 as BUILD-015 all along. Added darwin_arm64 to the release Makefile and\nverified it compiles. v0.4.1 predates it, so the homepage cannot link an\nApple Silicon asset yet; a comment there marks where to add it once a release\nships one.\n\nAlso renamed OS X/OSX to macOS across the site, README and the bash example,\nand upgraded two links that only redirected: en.wikipedia.org to https, and\ngolang.org to its current home at go.dev. The twitter.com profile links are\nleft as-is; they still resolve and the handles are personal.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+          "timestamp": "2026-08-20T08:04:12-07:00",
+          "tree_id": "241d2ae1d0019c8a5eedd0aa91b8fbc747911ebc",
+          "url": "https://github.com/joewalnes/websocketd/commit/0a38c72ee298a2c6b438b0794b1dc95e1f317ef8"
+        },
+        "date": 1787238477594,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 13040,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 13564,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 13520,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 13600,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.57,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 636.9,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 10940,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 66,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 46.46,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8632,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 8.55,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 6.8,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 10984,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 354,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 225.01,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8632,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.155,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 8856,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 29.796,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 33562,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 15600,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174950,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16208,
             "unit": "KB"
           }
         ]
