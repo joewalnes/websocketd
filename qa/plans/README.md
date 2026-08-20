@@ -25,7 +25,7 @@ Each plan file covers a category of functionality. Test cases are numbered withi
 | [05-security.md](05-security.md) | Security | Origin validation, TLS/SSL, environment isolation |
 | [06-environment-cgi.md](06-environment-cgi.md) | Environment Variables & CGI | RFC 3875 compliance, HTTP header passthrough |
 | [07-platform-windows.md](07-platform-windows.md) | Windows Platform | Windows-specific behavior, line endings, script types |
-| [08-platform-unix.md](08-platform-unix.md) | Unix Platforms | macOS, Linux, FreeBSD, Solaris, ARM, containers |
+| [08-platform-unix.md](08-platform-unix.md) | Unix Platforms | macOS, Linux, ARM, containers |
 | [09-protocol-compatibility.md](09-protocol-compatibility.md) | Protocol Compatibility | WebSocket versions, HTTP versions, browser testing |
 | [10-edge-cases-errors.md](10-edge-cases-errors.md) | Edge Cases & Errors | Malformed input, crashes, unexpected states |
 | [11-performance-scalability.md](11-performance-scalability.md) | Performance & Scalability | Concurrent connections, large messages, resource limits |
@@ -35,7 +35,7 @@ Each plan file covers a category of functionality. Test cases are numbered withi
 
 ## Test Environment Requirements
 
-- **Operating Systems**: Windows 10/11, macOS (Intel + ARM), Ubuntu/Debian, FreeBSD, Solaris
+- **Operating Systems**: Windows 10/11, macOS (Intel + ARM), Ubuntu/Debian
 - **Browsers**: Chrome (latest), Firefox (latest), Safari (latest), Edge (latest), mobile Safari, mobile Chrome
 - **Languages**: Bash, Python 3, Node.js, Ruby, Perl, PHP, Go, Java, C#, Rust, Lua
 - **Tools**: `wscat` or similar WebSocket CLI client, `curl`, `openssl`

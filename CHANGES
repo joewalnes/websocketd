@@ -1,5 +1,11 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Releases no longer ship FreeBSD, OpenBSD or Solaris binaries; the published
+  archives cover Linux (amd64/386/arm/arm64), macOS (amd64) and Windows
+  (amd64/386). Those binaries went unused, and the download links on
+  websocketd.com still pointed at v0.3.0. This only affects prebuilt
+  artifacts — the source still compiles for those systems with a plain
+  `go build`, and their --passenv defaults are unchanged
 * The websocketd.com links in --help, the dev console, the man page and the
   package metadata now use https. The site enforces HTTPS, so the old http
   URLs only served a redirect

@@ -1,4 +1,4 @@
-# Platform: Unix (macOS, Linux, FreeBSD, Solaris)
+# Platform: Unix (macOS, Linux)
 
 Tests for platform-specific behavior across Unix-like operating systems and architectures.
 
@@ -175,66 +175,6 @@ Tests for platform-specific behavior across Unix-like operating systems and arch
 3. Observe behavior
 
 **Expected Result**: websocketd shuts down gracefully. Child processes are terminated.
-
----
-
-## FreeBSD
-
-### BSD-001: FreeBSD amd64
-
-**Priority**: P2
-**Preconditions**: FreeBSD system, freebsd_amd64 build
-
-**Steps**:
-1. Build or download websocketd for freebsd_amd64
-2. Basic echo test
-
-**Expected Result**: Full functionality on FreeBSD.
-
----
-
-### BSD-002: FreeBSD 386
-
-**Priority**: P3
-**Preconditions**: FreeBSD 32-bit, freebsd_386 build
-
-**Steps**:
-1. Build for freebsd_386
-2. Basic echo test
-
-**Expected Result**: Full functionality on 32-bit FreeBSD.
-
----
-
-## OpenBSD
-
-### OBSD-001: OpenBSD amd64
-
-**Priority**: P3
-**Preconditions**: OpenBSD system, openbsd_amd64 build
-
-**Steps**:
-1. Build for openbsd_amd64
-2. Basic echo test
-
-**Expected Result**: Full functionality on OpenBSD.
-
----
-
-## Solaris
-
-### SOL-001: Solaris amd64
-
-**Priority**: P3
-**Preconditions**: Solaris system, solaris_amd64 build
-
-**Steps**:
-1. Build for solaris_amd64
-2. Basic echo test
-
-**Expected Result**: Full functionality on Solaris.
-
-**Notes**: Issue #419 — Solaris 11 SPARC support request (SPARC not currently built).
 
 ---
 

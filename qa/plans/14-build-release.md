@@ -170,39 +170,6 @@ Tests for cross-compilation, packaging, version tagging, and release artifacts.
 
 ---
 
-### BUILD-018: FreeBSD amd64
-
-**Priority**: P2
-
-**Steps**:
-1. `GOOS=freebsd GOARCH=amd64 go build -o websocketd_freebsd_amd64`
-
-**Expected Result**: Compiles successfully.
-
----
-
-### BUILD-019: OpenBSD amd64
-
-**Priority**: P3
-
-**Steps**:
-1. `GOOS=openbsd GOARCH=amd64 go build -o websocketd_openbsd_amd64`
-
-**Expected Result**: Compiles successfully.
-
----
-
-### BUILD-020: Solaris amd64
-
-**Priority**: P3
-
-**Steps**:
-1. `GOOS=solaris GOARCH=amd64 go build -o websocketd_solaris_amd64`
-
-**Expected Result**: Compiles successfully.
-
----
-
 ## Release Artifacts
 
 ### BUILD-030: Release Makefile

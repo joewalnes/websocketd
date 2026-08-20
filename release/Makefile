@@ -30,24 +30,11 @@ RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 # Cross-compiles with the system Go toolchain; see go.mod for the minimum
 # required version. (A vendored Go 1.15.7 was previously downloaded here,
 # but it predates the go.mod language version and cannot build the project.)
-PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 freebsd_amd64 freebsd_386 windows_386 windows_amd64 openbsd_386 openbsd_amd64 solaris_amd64
-
-
-# Would NOT WORK on: ARM, WINDOWS
-
-UNAME_SYS=$(shell uname -s | tr A-Z a-z)
-UNAME_ARCH=$(shell uname -m)
-ifeq ($(UNAME_ARCH),x86_64)
-	UNAME_ARCH=amd64
-else
-	UNAME_ARCH=386 
-endif
-
-ifeq ($(UNAME_SYS),gnu)
-	UNAME_SYS=linux
-else ifeq ($(UNAME_SYS),sunos)
-	UNAME_SYS=solaris
-endif
+# Release artifacts are built for Linux, macOS and Windows only. The FreeBSD,
+# OpenBSD and Solaris targets were dropped: nobody used the published binaries.
+# The source still builds for them with plain `go build` (see defaultPassEnv in
+# config.go), so this is only about which archives ship.
+PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 windows_386 windows_amd64
 
 # Prevent any global environment polluting the builds
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
@@ -55,14 +42,8 @@ FLAGS_linux_386     = GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
 FLAGS_linux_arm64   = GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
 FLAGS_darwin_amd64  = GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
-FLAGS_darwin_386    = GOOS=darwin  GOARCH=386   CGO_ENABLED=0
-FLAGS_freebsd_amd64 = GOOS=freebsd GOARCH=amd64 CGO_ENABLED=0
-FLAGS_freebsd_386   = GOOS=freebsd GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_386   = GOOS=windows GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_amd64 = GOOS=windows GOARCH=amd64 CGO_ENABLED=0
-FLAGS_openbsd_386   = GOOS=openbsd GOARCH=386   CGO_ENABLED=0
-FLAGS_openbsd_amd64 = GOOS=openbsd GOARCH=amd64 CGO_ENABLED=0
-FLAGS_solaris_amd64 = GOOS=solaris GOARCH=amd64 CGO_ENABLED=0
 
 EXTENSION_windows_386 = .exe
 EXTENSION_windows_amd64 = .exe
