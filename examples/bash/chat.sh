@@ -8,7 +8,7 @@
 # Run a simple chat server: websocketd --devconsole --port 8080 ./chat.sh
 #
 # Please note that this example requires GNU tail, which is not the default
-# tail on OS X. Even though this script properly escapes the variables,
+# tail on macOS. Even though this script properly escapes the variables,
 # please keep in mind that it is in general a bad idea to read
 # untrusted data into variables and pass this onto the command line.
 

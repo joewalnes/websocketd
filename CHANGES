@@ -1,5 +1,10 @@
 Version 0.5.0 (Apr 26, 2026)
 
+* Releases now include a native Apple Silicon binary (darwin_arm64). Previously
+  only darwin_amd64 was built, so Mac users on M-series hardware ran it under
+  Rosetta 2 — despite the QA plan having covered macOS ARM64 (BUILD-015) all
+  along. No darwin_386 build: Go dropped that target, and the last 32-bit-only
+  Macs predate 2007
 * Releases no longer ship FreeBSD, OpenBSD or Solaris binaries; the published
   archives cover Linux (amd64/386/arm/arm64), macOS (amd64) and Windows
   (amd64/386). Those binaries went unused, and the download links on

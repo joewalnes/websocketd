@@ -24,7 +24,7 @@ Download
 
 If you're on a Mac, you can install `websocketd` using [Homebrew](http://brew.sh/). Just run `brew install websocketd`. For other operating systems, or if you don't want to use Homebrew, check out the link below.
 
-**[Download for Linux, OS X and Windows](https://github.com/joewalnes/websocketd/wiki/Download-and-install)**
+**[Download for Linux, macOS and Windows](https://github.com/joewalnes/websocketd/wiki/Download-and-install)**
 
 
 Quickstart

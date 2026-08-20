@@ -34,7 +34,7 @@ RELEASE_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
 # OpenBSD and Solaris targets were dropped: nobody used the published binaries.
 # The source still builds for them with plain `go build` (see defaultPassEnv in
 # config.go), so this is only about which archives ship.
-PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 windows_386 windows_amd64
+PLATFORMS=linux_amd64 linux_386 linux_arm linux_arm64 darwin_amd64 darwin_arm64 windows_386 windows_amd64
 
 # Prevent any global environment polluting the builds
 FLAGS_linux_amd64   = GOOS=linux   GOARCH=amd64
@@ -42,6 +42,7 @@ FLAGS_linux_386     = GOOS=linux   GOARCH=386
 FLAGS_linux_arm     = GOOS=linux   GOARCH=arm   GOARM=5 # ARM5 support for Raspberry Pi
 FLAGS_linux_arm64   = GOOS=linux   GOARCH=arm64  # no need for GOARM= (which is technically 8)
 FLAGS_darwin_amd64  = GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0
+FLAGS_darwin_arm64  = GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 # Apple Silicon
 FLAGS_windows_386   = GOOS=windows GOARCH=386   CGO_ENABLED=0
 FLAGS_windows_amd64 = GOOS=windows GOARCH=amd64 CGO_ENABLED=0
 

@@ -39,7 +39,7 @@
                 <p>It takes care of handling the WebSocket connections,<br>
                 launching your programs to handle the WebSockets,<br>
                 and passing messages between programs and web-browser.</p>
-                <h3><em>It's like <a href="http://en.wikipedia.org/wiki/Common_Gateway_Interface" target="_blank">CGI</a>, twenty years later, for WebSockets</em></h3>
+                <h3><em>It's like <a href="https://en.wikipedia.org/wiki/Common_Gateway_Interface" target="_blank">CGI</a>, twenty years later, for WebSockets</em></h3>
                 <p><a id="github-star-button" class="button-small" href="https://github.com/joewalnes/websocketd" target="_blank" rel="noopener"><i class="fa fa-star"></i> Star on GitHub</a></p>
             </div>
         </section>
@@ -338,19 +338,19 @@ ws.onmessage = (event) => {
         <section class="section section-install">
             <div class="container">
                 <h1>Get it</h1>
-                <h3>Available for Linux, OSX and Windows</h3>
+                <h3>Available for Linux, macOS and Windows</h3>
 <!--
                 <h2>Install using a package manager</h2>
                 <div class="tab-box pkgmgr">
                     <ul class="tabs">
-                        <li data-content="content-osx">OS X</li>
+                        <li data-content="content-macos">macOS</li>
                         <li data-content="content-linux-apt">Linux (apt-get)</li>
                         <li data-content="content-linux-yum">Linux (yum)</li>
                         <li data-content="content-windows">Windows (chocolatey)</li>
                         <li data-content="content-other">Other</li>
                     </ul>
                     <div class="content">
-<pre class="code content-osx"><code class="language-bash">$ brew install websocketd</code></pre>
+<pre class="code content-macos"><code class="language-bash">$ brew install websocketd</code></pre>
 <pre class="code content-linux-apt"><code class="language-bash">$ sudo apt-get install websocketd</code></pre>
 <pre class="code content-linux-yum"><code class="language-bash">$ sudo yum install websocketd</code></pre>
 <pre class="code content-windows"><code class="language-bash">PS:\&gt; cinst websocketd</code></pre>
@@ -366,23 +366,28 @@ ws.onmessage = (event) => {
                 <div class="cols-3 download">
                     <div>
                         <div class="download-platform-icon"><i class="fa fa-linux"></i></div>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_amd64.zip" class="button-small">Linux 64-bit <i class="fa fa-download"></i></a></p>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_386.zip" class="button-small">Linux 32-bit <i class="fa fa-download"></i></a></p>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-linux_arm.zip" class="button-small">Linux ARM <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_amd64.zip" class="button-small">Linux 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_386.zip" class="button-small">Linux 32-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_arm.zip" class="button-small">Linux ARM <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-linux_arm64.zip" class="button-small">Linux ARM64 <i class="fa fa-download"></i></a></p>
                     </div>
                     <div>
                         <div class="download-platform-icon"><i class="fa fa-apple"></i></div>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-darwin_amd64.zip" class="button-small">OS X 64-bit <i class="fa fa-download"></i></a></p>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-darwin_386.zip" class="button-small">OS X 32-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-darwin_amd64.zip" class="button-small">macOS Intel <i class="fa fa-download"></i></a></p>
+                        <!-- Apple Silicon: darwin_arm64 is built from the next
+                             release onward (release/Makefile). v0.4.1 predates
+                             it, so there is no asset to link yet; add the link
+                             when a release ships one. Intel builds run on
+                             Apple Silicon under Rosetta 2 in the meantime. -->
                     </div>
                     <div>
                         <div class="download-platform-icon"><i class="fa fa-windows"></i></div>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-windows_amd64.zip" class="button-small">Windows 64-bit <i class="fa fa-download"></i></a></p>
-                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.3.0/websocketd-0.3.0-windows_386.zip" class="button-small">Windows 32-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-windows_amd64.zip" class="button-small">Windows 64-bit <i class="fa fa-download"></i></a></p>
+                        <p><a href="https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-windows_386.zip" class="button-small">Windows 32-bit <i class="fa fa-download"></i></a></p>
                     </div>
                 </div>
 
-                <p>Current version: 0.3.0</p>
+                <p>Current version: 0.4.1 &mdash; <a href="https://github.com/joewalnes/websocketd/releases/latest">all downloads</a></p>
 
             </div>
         </section>
@@ -395,7 +400,7 @@ ws.onmessage = (event) => {
                     Project&nbsp;lead:&nbsp;<a href="https://twitter.com/alexsergeyev" target="_blank">Alex&nbsp;Sergeyev</a>
                 </p>
                 <p>
-                    Written in <a href="http://golang.org/" target="_blank">Go</a>
+                    Written in <a href="https://go.dev/" target="_blank">Go</a>
                     -
                     Forky forky on <i class="fa fa-github"></i> <a href="https://github.com/joewalnes/websocketd" target="_blank">GitHub</a>
                 </p>
