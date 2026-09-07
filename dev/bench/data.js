@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788309836619,
+  "lastUpdate": 1788798799655,
   "repoUrl": "https://github.com/joewalnes/websocketd",
   "entries": {
     "websocketd Performance": [
@@ -3491,6 +3491,200 @@ window.BENCHMARK_DATA = {
           {
             "name": "sustained_load_peak_rss_kb",
             "value": 16324,
+            "unit": "KB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "committer": {
+            "email": "joe@walnes.com",
+            "name": "Joe Walnes",
+            "username": "joewalnes"
+          },
+          "distinct": true,
+          "id": "a9fa1f1da4a1b4edc1f61d9242addfc680837cdf",
+          "message": "Rename examples/c# and examples/f# to csharp and fsharp\n\nA \"#\" starts the fragment in a URL, so every link to a file inside those\ndirectories truncated at the directory name. github.com/.../examples/c#/README.md\nreaches examples/ and drops the rest, and the same is true of any relative\nlink on the docs site or in a README.\n\nThe contents are unchanged, including the .sln and .cmd files, which refer\nto their projects by relative path and do not name the parent directory.\n\nThe reference page's language table and the CHANGES entry listing the\nexample directories are updated to match. DIARY.md keeps the old names\nwhere it records what was true at the time.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+          "timestamp": "2026-09-07T09:05:00-07:00",
+          "tree_id": "03db194202b323704beeced75252cd349a810ffa",
+          "url": "https://github.com/joewalnes/websocketd/commit/a9fa1f1da4a1b4edc1f61d9242addfc680837cdf"
+        },
+        "date": 1788798799120,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "backpressure_msgs_echoed",
+            "value": 149,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "backpressure_delivery_ratio",
+            "value": 0.0149,
+            "unit": "ratio (info only)"
+          },
+          {
+            "name": "backpressure_peak_rss_kb",
+            "value": 13008,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_10k_MB_sec",
+            "value": 0.98,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_10k_peak_rss_kb",
+            "value": 10904,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_1k_MB_sec",
+            "value": 0.1,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_1k_peak_rss_kb",
+            "value": 10856,
+            "unit": "KB"
+          },
+          {
+            "name": "binary_64k_MB_sec",
+            "value": 6.25,
+            "unit": "MB/s (info only)"
+          },
+          {
+            "name": "binary_64k_peak_rss_kb",
+            "value": 10944,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_churn_avg_ms",
+            "value": 1.535,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_churn_conns_sec",
+            "value": 651.5,
+            "unit": "conn/sec (info only)"
+          },
+          {
+            "name": "connection_churn_peak_rss_kb",
+            "value": 10888,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_100_p95",
+            "value": 68,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_avg",
+            "value": 42.1,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_100_peak_rss_kb",
+            "value": 8520,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_10_p95",
+            "value": 8.1,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_avg",
+            "value": 6.3,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_10_peak_rss_kb",
+            "value": 10940,
+            "unit": "KB"
+          },
+          {
+            "name": "connection_storm_500_p95",
+            "value": 343.05,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_avg",
+            "value": 233.81,
+            "unit": "ms"
+          },
+          {
+            "name": "connection_storm_500_peak_rss_kb",
+            "value": 8520,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_latency_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_avg",
+            "value": 0.15,
+            "unit": "ms"
+          },
+          {
+            "name": "echo_latency_peak_rss_kb",
+            "value": 10860,
+            "unit": "KB"
+          },
+          {
+            "name": "echo_throughput_us_per_msg",
+            "value": 28.93,
+            "unit": "µs/msg"
+          },
+          {
+            "name": "echo_throughput_msgs_sec",
+            "value": 34566,
+            "unit": "msgs/sec (info only)"
+          },
+          {
+            "name": "echo_throughput_peak_rss_kb",
+            "value": 15648,
+            "unit": "KB"
+          },
+          {
+            "name": "sustained_load_rtt_p50",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p95",
+            "value": 1,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_rtt_p99",
+            "value": 0,
+            "unit": "ms"
+          },
+          {
+            "name": "sustained_load_total_msgs",
+            "value": 174950,
+            "unit": "msgs (info only)"
+          },
+          {
+            "name": "sustained_load_peak_rss_kb",
+            "value": 16268,
             "unit": "KB"
           }
         ]
