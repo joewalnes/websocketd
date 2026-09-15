@@ -119,6 +119,11 @@ WebSocket ping interval in milliseconds (0 disables). Default: 0. Zero disables 
 HTTP port to listen on. Default: 0. The default of 0 is not a real port: it means 80, or 443 when \-\-ssl is given. Every \-\-address binds this same port.
 .RE
 .PP
+\-\-raw
+.RS 4
+Set websocketd to experimental raw mode (like text mode but char by char instead of line by line). Default: false.
+.RE
+.PP
 \-\-redirport=REDIRPORT
 .RS 4
 HTTP port to redirect to canonical \-\-port address. Default: 0. Runs a second, plain HTTP listener on this port whose only response is a 301 redirect to the main listener. The redirect target keeps the host the client itself sent, along with the path and query it asked for, and rewrites only the scheme and the port, so a link into the site arrives at that link and it is not an open redirect.

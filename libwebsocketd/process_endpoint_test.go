@@ -66,7 +66,7 @@ func TestStderrLongLineKeepsProcessAlive(t *testing.T) {
 		t.Fatalf("launchCmd failed: %v", err)
 	}
 
-	pe := NewProcessEndpoint(lp, false, quietLogScope(), false)
+	pe := NewProcessEndpoint(lp, false, false, quietLogScope(), false)
 	pe.StartReading()
 	defer pe.Terminate()
 
@@ -97,7 +97,7 @@ func TestStderrLongLineKeepsProcessAlive_PassStderr(t *testing.T) {
 		t.Fatalf("launchCmd failed: %v", err)
 	}
 
-	pe := NewProcessEndpoint(lp, false, quietLogScope(), true)
+	pe := NewProcessEndpoint(lp, false, false, quietLogScope(), true)
 	pe.StartReading()
 	defer pe.Terminate()
 
@@ -195,7 +195,7 @@ func TestTerminateUnblocksParkedReader(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			before := runtime.NumGoroutine()
 
-			pe := NewProcessEndpoint(echoProcess(t), mode.bin, quietLogScope(), false)
+			pe := NewProcessEndpoint(echoProcess(t), false, mode.bin, quietLogScope(), false)
 			pe.StartReading()
 
 			// Never drain pe.Output(): the reader picks up "hello" and parks
@@ -227,7 +227,7 @@ func TestTerminateUnblocksParkedReader(t *testing.T) {
 func TestTerminateUnblocksParkedReader_PassStderr(t *testing.T) {
 	before := runtime.NumGoroutine()
 
-	pe := NewProcessEndpoint(stdoutStderrProcess(t, "out1", "err1"), false, quietLogScope(), true)
+	pe := NewProcessEndpoint(stdoutStderrProcess(t, "out1", "err1"), false, false, quietLogScope(), true)
 	pe.StartReading()
 
 	// Never drain pe.Output(): both taggers read their one line and park on
@@ -248,7 +248,7 @@ func TestTerminateUnblocksParkedReader_PassStderr(t *testing.T) {
 }
 
 func TestPassStderrTagging(t *testing.T) {
-	pe := NewProcessEndpoint(stdoutStderrProcess(t, "stdout-msg", "stderr-msg"), false, quietLogScope(), true)
+	pe := NewProcessEndpoint(stdoutStderrProcess(t, "stdout-msg", "stderr-msg"), false, false, quietLogScope(), true)
 	pe.StartReading()
 	defer pe.Terminate()
 

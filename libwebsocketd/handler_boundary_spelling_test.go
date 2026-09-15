@@ -98,8 +98,8 @@ func spellingTree(t *testing.T) (base, page string) {
 		{filepath.Join("sub", "x.txt"), "alias-samecase.txt"},
 		{filepath.Join(base, "page", "sub", "x.txt"), "alias-abs.txt"},
 		{filepath.Join("..", "page", "sub", "x.txt"), "alias-rel.txt"},
-		{filepath.Join(base, "out", "loot.txt"), "escape-abs.txt"},
-		{filepath.Join("..", "out", "loot.txt"), "escape-rel.txt"},
+		{filepath.Join(base, "OUT", "loot.txt"), "escape-abs.txt"},
+		{filepath.Join("..", "OUT", "loot.txt"), "escape-rel.txt"},
 	}
 	for _, l := range links {
 		if err := os.Symlink(l.target, filepath.Join(page, l.name)); err != nil {

@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -74,7 +73,7 @@ func writeMountCGIScript(t *testing.T, path, body string) {
 	script := "#!/bin/sh\n# " + cgiSourceMarker + "\n" +
 		"printf 'Content-Type: text/plain\\r\\n\\r\\n'\n" +
 		"printf '" + body + "\\n'\n"
-	if err := ioutil.WriteFile(path, []byte(script), 0755); err != nil {
+	if err := os.WriteFile(path, []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -267,7 +266,7 @@ func mountFixture(t *testing.T) (staticDir, cgiDir string, get func(string) (int
 		if err != nil {
 			t.Fatalf("GET %s: %v", target, err)
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return resp.StatusCode, string(body)
 	}
@@ -404,7 +403,7 @@ func TestStaticDirInsideCGIDirStillServes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /page.html: %v", err)
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "nested static page") {
 		t.Errorf("GET /page.html = %d %q, want the static page", resp.StatusCode, body)
@@ -444,7 +443,7 @@ func TestCGIMountPrefixCannotEscape(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET %s: %v", target, err)
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if strings.Contains(string(body), "PWNED") {
 			t.Errorf("SECURITY: %q escaped the CGI directory (status %d): %q", target, resp.StatusCode, body)
@@ -457,7 +456,7 @@ func TestCGIMountPrefixCannotEscape(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /cgi-bin/ok.sh: %v", err)
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "ok") {
 		t.Fatalf("control GET /cgi-bin/ok.sh = %d %q, want 200 with CGI output", resp.StatusCode, body)
@@ -631,7 +630,7 @@ func symlinkedMountFixture(t *testing.T) (get func(string) (int, string)) {
 		if err != nil {
 			t.Fatalf("GET %s: %v", target, err)
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return resp.StatusCode, string(body)
 	}
@@ -741,7 +740,7 @@ func TestCGIDirOutsideStaticTreeStaysRefused(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET %s: %v", target, err)
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return resp.StatusCode, string(body)
 	}

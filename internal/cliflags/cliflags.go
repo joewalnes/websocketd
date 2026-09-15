@@ -80,6 +80,7 @@ type Set struct {
 
 	// lib config options
 	Binary, PassStderr    *bool
+	Raw                   *bool
 	ReverseLookup         *bool
 	ScriptDir, StaticDir  *string
 	CgiDir                *string
@@ -130,6 +131,7 @@ func Register() *Set {
 
 	// lib config options
 	fv.Binary = fv.FS.Bool("binary", false, "Set websocketd to experimental binary mode (default is line by line)")
+	fv.Raw = fv.FS.Bool("raw", false, "Set websocketd to experimental raw mode (like text mode but char by char instead of line by line)")
 	fv.PassStderr = fv.FS.Bool("passstderr", false, "Forward STDERR to WebSocket clients as tagged JSON messages, alongside tagged STDOUT (mutually exclusive with --binary)")
 	fv.ReverseLookup = fv.FS.Bool("reverselookup", false, "Perform reverse DNS lookups on remote clients")
 	fv.ScriptDir = fv.FS.String("dir", "", "Base directory for WebSocket scripts")

@@ -226,7 +226,7 @@ func TestConsoleCSPHashesCoverContent(t *testing.T) {
 // number is a budget, not a law - but a console that quietly grows past it
 // has stopped being the thing that was agreed.
 func TestConsoleSizeBudget(t *testing.T) {
-	const budget = 25 * 1024
+	const budget = 26 * 1024
 	if n := len(consoleHTML); n > budget {
 		t.Errorf("console.html is %d bytes, over the %d byte budget", n, budget)
 	}

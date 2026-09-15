@@ -21,9 +21,10 @@ type WebSocketEndpoint struct {
 	log          *LogScope
 	mtype        int
 	pingInterval time.Duration
+	raw          bool
 }
 
-func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInterval time.Duration, maxFrameSize int64) *WebSocketEndpoint {
+func NewWebSocketEndpoint(ws *websocket.Conn, raw bool, bin bool, log *LogScope, pingInterval time.Duration, maxFrameSize int64) *WebSocketEndpoint {
 	endpoint := &WebSocketEndpoint{
 		ws:           ws,
 		output:       make(chan []byte),
@@ -31,6 +32,7 @@ func NewWebSocketEndpoint(ws *websocket.Conn, bin bool, log *LogScope, pingInter
 		log:          log,
 		mtype:        websocket.TextMessage,
 		pingInterval: pingInterval,
+		raw:          raw,
 	}
 	if bin {
 		endpoint.mtype = websocket.BinaryMessage
@@ -138,7 +140,9 @@ func (we *WebSocketEndpoint) readFrames() {
 			break
 		}
 		if we.mtype == websocket.TextMessage {
-			p = append(p, '\n')
+			if !we.raw {
+				p = append(p, '\n')
+			}
 		}
 		select {
 		case we.output <- p:
