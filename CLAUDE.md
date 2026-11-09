@@ -59,9 +59,10 @@ allowed to be long; the others are short *because* it exists.
   a third copy.
 - `README.md` serves two readers briefly, one evaluating and one about to
   build, and points onward for everything else.
-- `website/index.html` is marketing and orientation: no flag reference, no
-  deploy recipes, no tutorial. A visitor scrolling past the fold for "how do
-  I actually use this" means content landed on the wrong surface.
+- `website/index.html` is marketing and orientation, with the compact
+  10-second counting tutorial approved for the homepage. Keep the language
+  examples and launch commands together; flag references, deployment recipes,
+  and longer explanations belong in `docsite/`.
 
 `pages.yml` copies `website/` verbatim to the site root, so anything left in
 that directory is published. Planning documents go in `docs-archive/`.

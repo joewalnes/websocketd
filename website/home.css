@@ -1,285 +1,124 @@
-/*
- * websocketd.com homepage -- layout only.
- * ======================================================================
- *
- * READ THIS BEFORE ADDING A COLOUR OR A FONT-SIZE HERE.
- *
- * This file defines no colour, no font family, and no token block of
- * its own. Type, palette and spacing all come from the docs site's own
- * stylesheet, which index.html links ahead of this one:
- *
- *   /docs/fonts/fonts.css    self-hosted JetBrains Mono + IBM Plex Sans
- *   /docs/css/blueprint.css  the token block, the 8px baseline grid, and
- *                            the two text-box-trim padding formulas
- *
- * Both are served from the same GitHub Pages artifact as this page --
- * .github/workflows/pages.yml copies website/ to the artifact root and
- * docsite/public/ to /docs -- so the two surfaces share one source of
- * truth for eleven colour tokens, two font files and one grid unit
- * rather than keeping a second copy in sync by hand. Verify this page by
- * serving that assembled tree, never website/ on its own and never a
- * file:// URL; the /docs/* paths do not exist otherwise.
- *
- * THE TWO NEW TYPE ROLES. The homepage needs a display headline and a
- * lede, which the docs site has no use for. It does NOT re-type the
- * padding arithmetic for them. blueprint.css applies
- *
- *   padding-top: calc(var(--lh) - var(--cap) * var(--f))
- *
- * to h1 and p; overriding only --f and --lh on a more specific selector
- * re-runs the docs' own formula with new inputs. Every rendered number
- * below therefore still comes from blueprint.css. Grid check, using the
- * rule in blueprint.css's own header comment, (asc + desc) * F <= n * U:
- *
- *   role                  font  F     (asc+desc)*F  chosen n*U
- *   headline, >=700px     mono  48px  1.320*48=63.4  8U = 64  ok
- *   headline, <700px      mono  32px  1.320*32=42.2  6U = 48  ok
- *   lede                  sans  20px  1.300*20=26.0  4U = 32  ok
- *
- * CLASS NAMING. Everything the homepage lays out for itself is prefixed
- * home-, because blueprint.css already owns .layout, .site-nav, .content,
- * .hero, .cta, .section-list and .site-footer and a collision would style
- * this page as a docs page. The three exceptions are deliberate reuse of
- * shared chrome, not accidents: .site-header, .site-header-inner and
- * .site-logo give the homepage byte-identical header furniture to every
- * docs page, and .site-header-inner's 1200px max-width and 3U side
- * padding are what .home-main below is aligned to. .role-small is
- * blueprint's own named text role, used here as intended.
- */
-
-/* ----------------------------------------------------------------
- * Header
- * -------------------------------------------------------------- */
-
-/* Three links, one row, at every width. No drawer: the docs site needs
- * one because it carries 24 nav entries; three links fit on one 390px
- * row in the 12px sans role with room to spare, and a toggle for three
- * links is machinery for its own sake. */
-.home-nav {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 3);
+/* Homepage styles; font files are shared with the docs site. */
+:root{color-scheme:light dark}
+body{margin:0;background:light-dark(#f6f9fc,#101923)}
+#wsd-bridge{--w-bg:light-dark(#f6f9fc,#101923);--w-ink:light-dark(#192630,#edf2fa);--w-sub:light-dark(#566675,#a8b7c8);--w-line:light-dark(#d6dfe9,#344557);--w-paper:light-dark(#fff,#172330);--w-blue:light-dark(#245fbe,#8db8ff);--w-wash:light-dark(#eaf0fb,#1b2f49);background:var(--w-bg);color:var(--w-ink);font:16px/1.6 'IBM Plex Sans',sans-serif;overflow-wrap:anywhere}
+#wsd-bridge *{box-sizing:border-box}
+#wsd-bridge [hidden]{display:none!important}
+#wsd-bridge h1,#wsd-bridge h2,#wsd-bridge h3,#wsd-bridge p,#wsd-bridge pre{padding:0;margin:0;color:inherit;font-family:inherit}
+#wsd-bridge h1{font:500 72px/1.03 'IBM Plex Sans',sans-serif;letter-spacing:-3.4px}
+#wsd-bridge h2{font-size:36px;line-height:1.16;font-weight:500;letter-spacing:-1.1px}
+#wsd-bridge h3{font-size:19px;line-height:1.3;font-weight:500;letter-spacing:-.3px}
+#wsd-bridge a{color:var(--w-blue);text-decoration:none}
+#wsd-bridge a:hover{text-decoration:underline}
+#wsd-bridge button{font:inherit}
+#wsd-bridge button:hover{filter:brightness(.95)}
+#wsd-bridge .w-wrap{max-width:1100px;margin:0 auto;padding:0 48px}
+#wsd-bridge .w-nav{display:flex;justify-content:space-between;gap:20px;align-items:center;min-height:88px;border-bottom:1px solid var(--w-line);padding-right:48px}
+#wsd-bridge .w-logo{font:500 20px 'JetBrains Mono',monospace;letter-spacing:-1px;color:var(--w-ink)}
+#wsd-bridge .w-mark{color:var(--w-blue);margin-right:8px}
+#wsd-bridge .w-navlinks{display:flex;gap:22px;font-size:13px;align-items:center;flex-wrap:wrap}
+#wsd-bridge .w-navlinks a{color:var(--w-ink)}
+#wsd-bridge .w-kicker{display:block;margin-bottom:20px;font:12px/1.6 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--w-blue)}
+#wsd-bridge .w-accent{color:var(--w-blue)}
+#wsd-bridge .w-muted{color:var(--w-sub)}
+#wsd-bridge .w-hero{display:grid;grid-template-columns:1.25fr 1fr;gap:40px;padding-top:64px;align-items:center}
+#wsd-bridge .w-hero p{font-size:20px;line-height:1.6;color:var(--w-sub);max-width:360px}
+#wsd-bridge .w-hero strong{font-weight:500;color:var(--w-ink)}
+#wsd-bridge .w-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px;align-items:center}
+#wsd-bridge .w-button{border:1px solid var(--w-line);border-radius:4px;background:var(--w-paper);color:var(--w-ink);font-size:14px;line-height:1.5;padding:12px 20px;min-height:44px;display:inline-flex;justify-content:center;align-items:center;gap:20px}
+#wsd-bridge .w-button.primary{background:var(--w-blue);border-color:var(--w-blue);color:var(--w-bg)}
+#wsd-bridge .w-small{font-size:12px;color:var(--w-sub)}
+#wsd-bridge .w-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:44px 0 50px}
+#wsd-bridge .w-benefits p{font-size:14px;color:var(--w-sub);margin-top:12px}
+#wsd-bridge .w-philosophy{background:var(--w-wash);padding:32px 0}
+#wsd-bridge .w-philosophy-inner{display:grid;grid-template-columns:1fr 1.35fr;gap:48px;align-items:center}
+#wsd-bridge .w-philosophy .w-kicker{margin:0}
+#wsd-bridge .w-philosophy p{font-size:23px;line-height:1.5;letter-spacing:-.5px}
+#wsd-bridge .w-philosophy small{display:block;font-size:13px;margin-top:9px;color:var(--w-sub)}
+#wsd-bridge .w-section{padding-top:60px}
+#wsd-bridge .w-section .w-kicker{margin-bottom:12px}
+#wsd-bridge .w-section-lede{color:var(--w-sub);margin-top:16px;font-size:16px;max-width:650px}
+#wsd-bridge .w-tutorial{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:28px;margin-top:30px}
+#wsd-bridge .w-step-label{font-size:14px;font-weight:500;margin-bottom:14px;display:flex;gap:11px;align-items:center}
+#wsd-bridge .w-step-label b{font:12px 'JetBrains Mono',monospace;color:var(--w-blue);font-weight:400}
+#wsd-bridge .w-codebox{background:var(--w-paper);border:1px solid var(--w-line);border-radius:5px;overflow:hidden}
+#wsd-bridge .w-tabbar{display:flex;align-items:stretch;min-width:0;background:var(--w-wash);border-bottom:1px solid var(--w-line)}
+#wsd-bridge .w-tabs{display:flex;flex:1;gap:4px;flex-wrap:nowrap;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--w-line) var(--w-wash);padding:8px 4px}
+#wsd-bridge .w-tabs button{flex:none;white-space:nowrap}
+#wsd-bridge .w-tab-arrow{flex:none;min-width:32px;min-height:44px;border:0;background:var(--w-wash);color:var(--w-blue);font-size:22px}
+#wsd-bridge .w-tab-arrow:disabled{opacity:.35}
+#wsd-bridge .w-file-label{padding:10px 20px;border-bottom:1px solid var(--w-line);color:var(--w-sub);font:11px/1.6 'JetBrains Mono',monospace}
+#wsd-bridge .w-program pre.w-code{padding:16px 20px;white-space:pre-wrap;overflow-wrap:anywhere}
+#wsd-bridge .w-command{white-space:pre-wrap}
+#wsd-bridge .w-tutorial>div{min-width:0}
+#wsd-bridge .w-tabs button{min-height:36px;padding:7px 12px;font-size:12px;line-height:1.5;background:transparent;border:0;border-radius:3px;color:var(--w-sub)}
+#wsd-bridge .w-tabs button[aria-pressed=true]{background:var(--w-paper);color:var(--w-ink)}
+#wsd-bridge .w-tabs small{margin-left:auto;font-size:11px;color:var(--w-sub);font-family:'JetBrains Mono',monospace}
+#wsd-bridge .w-code{font:12px/1.85 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+#wsd-bridge pre.w-code{padding:20px}
+#wsd-bridge .w-program{min-height:223px}
+#wsd-bridge .w-steps-right{display:flex;flex-direction:column;gap:24px}
+#wsd-bridge .w-command{background:var(--w-paper);border-left:3px solid var(--w-blue);padding:16px;font:12px/1.8 'JetBrains Mono',monospace;overflow-wrap:anywhere}
+#wsd-bridge .w-client-code{background:var(--w-paper);border:1px solid var(--w-line);border-radius:5px}
+#wsd-bridge .w-tutorial-end{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:18px;font-size:13px;color:var(--w-sub)}
+#wsd-bridge .w-features{display:grid;grid-template-columns:repeat(3,1fr);gap:34px;margin-top:30px}
+#wsd-bridge .w-features-section{margin-top:58px;padding:46px 0;background:var(--w-paper)}
+#wsd-bridge .w-features-section+.w-download{margin-top:0}
+#wsd-bridge .w-features h3{font-size:17px}
+#wsd-bridge .w-features p{font-size:14px;color:var(--w-sub);margin-top:10px}
+#wsd-bridge .w-feature-icon{color:var(--w-blue);display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:10px;background:var(--w-wash);margin-bottom:16px}
+#wsd-bridge .w-feature-icon svg.lucide{width:32px!important;height:32px!important;margin:0!important;stroke-width:2}
+#wsd-bridge .w-feature-foot{font-size:13px;margin-top:25px}
+#wsd-bridge .w-download{margin-top:58px;padding:46px 0;background:var(--w-wash)}
+#wsd-bridge .w-download-heading{display:flex;justify-content:space-between;align-items:center;gap:28px}
+#wsd-bridge .w-download-heading p{font-size:16px;color:var(--w-sub);max-width:380px}
+#wsd-bridge .w-platforms{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:28px}
+#wsd-bridge .w-platform{padding:22px;background:var(--w-paper);border:1px solid var(--w-line);border-radius:5px}
+#wsd-bridge .w-platform p{font-size:12px;color:var(--w-sub);margin-top:7px}
+#wsd-bridge .w-platform a{display:inline-block;font-size:13px;margin-top:18px}
+#wsd-bridge .w-download-foot{margin-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--w-sub)}
+#wsd-bridge .w-footer{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:start;padding:32px 0;font-size:12px;color:var(--w-sub)}
+#wsd-bridge .w-footer p+p{margin-top:6px}
+#wsd-bridge .w-footer a{color:var(--w-sub)}
+#wsd-bridge .w-navlinks a{display:inline-flex;gap:7px;align-items:center}
+#wsd-bridge .w-navlinks i svg{width:15px;height:15px}
+#wsd-bridge .w-hero h1 .w-accent{border-bottom:3px solid var(--w-blue);padding-bottom:6px;display:inline-block}
+#wsd-bridge .w-philosophy .w-kicker{display:flex;gap:12px;align-items:center}
+#wsd-bridge .w-platform h3{display:flex;align-items:center;gap:10px}
+#wsd-bridge .w-platform h3 i{color:var(--w-blue)}
+@media(max-width:850px){
+ #wsd-bridge .w-wrap{padding:0 28px}
+ #wsd-bridge .w-nav{padding-right:55px;align-items:flex-start;justify-content:center;flex-direction:column;gap:10px;padding-top:20px;padding-bottom:20px}
+ #wsd-bridge .w-navlinks{gap:20px}
+ #wsd-bridge h1{font-size:60px}
+ #wsd-bridge .w-hero{gap:24px}
+ #wsd-bridge .w-hero p{font-size:17px}
+ #wsd-bridge .w-philosophy-inner{gap:28px}
+ #wsd-bridge .w-tabs small{display:none}
+ #wsd-bridge .w-tutorial{grid-template-columns:1fr}
+ #wsd-bridge .w-program{min-height:180px}
+ #wsd-bridge .w-steps-right{display:grid;grid-template-columns:1fr 1.1fr;gap:24px}
+}
+@media(max-width:600px){
+ #wsd-bridge .w-wrap{padding:0 20px}
+ #wsd-bridge .w-navlinks{gap:10px 18px;font-size:12px}
+ #wsd-bridge h1{font-size:clamp(36px,8.5vw,49px);letter-spacing:-1.8px}
+ #wsd-bridge h2{font-size:30px}
+ #wsd-bridge .w-hero{grid-template-columns:1fr;padding-top:38px;gap:24px}
+ #wsd-bridge .w-hero p{max-width:none}
+ #wsd-bridge .w-philosophy-inner{grid-template-columns:1fr;gap:18px}
+ #wsd-bridge .w-benefits{grid-template-columns:1fr;gap:26px;padding:34px 0}
+ #wsd-bridge .w-philosophy p{font-size:21px}
+ #wsd-bridge .w-section{padding-top:42px}
+ #wsd-bridge .w-steps-right{grid-template-columns:1fr}
+ #wsd-bridge pre.w-code{padding:16px}
+ #wsd-bridge .w-code,#wsd-bridge .w-command{font-size:11px}
+ #wsd-bridge .w-features{grid-template-columns:1fr;gap:24px}
+ #wsd-bridge .w-features>div{border-bottom:1px solid var(--w-line);padding-bottom:20px}
+ #wsd-bridge .w-feature-icon{margin-bottom:12px}
+ #wsd-bridge .w-download-heading{flex-direction:column;align-items:start;gap:15px}
+ #wsd-bridge .w-platforms{grid-template-columns:1fr;gap:12px}
+ #wsd-bridge .w-platform{padding:18px}
 }
 
-.home-nav a {
-  color: var(--fg);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.home-nav a:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
-/* ----------------------------------------------------------------
- * Page shell
- * -------------------------------------------------------------- */
-
-/* Same max-width and side padding as .site-header-inner, so the logo in
- * the bar and the headline below it sit on one vertical line. */
-.home-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: calc(var(--u) * 6) calc(var(--u) * 3) calc(var(--u) * 8);
-}
-
-.home-section {
-  margin-top: calc(var(--u) * 8);
-}
-
-.home-section > * + * {
-  margin-top: calc(var(--u) * 2);
-}
-
-.home-section > h3 {
-  margin-top: calc(var(--u) * 3);
-}
-
-/* ----------------------------------------------------------------
- * Hero
- * -------------------------------------------------------------- */
-
-.home-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: calc(var(--u) * 5);
-  align-items: start;
-}
-
-.home-hero-copy > * + * {
-  margin-top: calc(var(--u) * 3);
-}
-
-/* The two new type roles: --f and --lh only. See the header comment. */
-.home-hero h1 {
-  --f: 32px;
-  --lh: calc(var(--u) * 6);
-}
-
-.home-lede {
-  --f: 20px;
-  --lh: calc(var(--u) * 4);
-  max-width: 60ch;
-}
-
-.home-note a {
-  text-decoration: none;
-}
-
-.home-note a:hover {
-  text-decoration: underline;
-}
-
-/* ----------------------------------------------------------------
- * Buttons
- * -------------------------------------------------------------- */
-
-.home-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--u) * 2);
-}
-
-/* 1U + a 3U line + 1U = 5U tall, with 1px taken off each side of the
- * padding to pay for the border -- so the outlined secondary and the
- * solid primary are the same height and neither knocks the flow off the
- * grid. Same trick blueprint.css uses on pre and .site-header-inner. */
-.home-btn {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  line-height: calc(var(--u) * 3);
-  padding: calc(var(--u) - 1px) calc(var(--u) * 3 - 1px);
-  border: 1px solid;
-  border-radius: 4px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-/* The label is painted in the page background colour, not white:
- * --accent is a light blue in dark mode, where white-on-accent falls
- * below WCAG AA. blueprint.css's .cta makes the same choice for the same
- * reason; this button cannot reuse .cta because .cta is scoped to the
- * docs site's own .hero. */
-.home-btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
-}
-
-.home-btn-primary:hover {
-  text-decoration: underline;
-}
-
-.home-btn-secondary {
-  background: var(--bg-panel);
-  border-color: var(--border);
-  color: var(--accent);
-}
-
-.home-btn-secondary:hover {
-  border-color: var(--accent);
-  text-decoration: underline;
-}
-
-/* ----------------------------------------------------------------
- * Media
- * -------------------------------------------------------------- */
-
-.home-shot,
-.home-video {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-}
-
-.home-video-wrap {
-  max-width: 800px;
-}
-
-/* ----------------------------------------------------------------
- * Column groups
- * -------------------------------------------------------------- */
-
-.home-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: calc(var(--u) * 4);
-}
-
-.home-cols > div > * + * {
-  margin-top: calc(var(--u) * 2);
-}
-
-.home-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.home-list li + li {
-  margin-top: var(--u);
-}
-
-/* ----------------------------------------------------------------
- * Footer
- * -------------------------------------------------------------- */
-
-/* Not blueprint's .site-footer: that rule pads 3U/4U straight off the
- * viewport edge, which would put the footer text on a different vertical
- * line from the header and the hero. Same tokens, this page's measure. */
-.home-footer {
-  border-top: 1px solid var(--border);
-  color: var(--fg-muted);
-}
-
-.home-footer-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: calc(var(--u) * 3) calc(var(--u) * 3) calc(var(--u) * 5);
-}
-
-.home-footer a {
-  color: var(--fg-muted);
-}
-
-.home-footer a:hover {
-  color: var(--accent);
-}
-
-.home-footer p + p {
-  margin-top: 0;
-}
-
-/* ----------------------------------------------------------------
- * Breakpoints
- *
- * 700px: the headline steps up to its 48px/8U role.
- * 900px: hero splits into copy + screenshot, and the three "How it
- *        works" items become three columns. Below it everything is one
- *        column, in source order -- headline, lede, code, both buttons,
- *        the releases line, then the screenshot. The screenshot stays
- *        last so a 1200px-wide image can never push the two buttons off
- *        a phone's first screen.
- * -------------------------------------------------------------- */
-
-@media (min-width: 700px) {
-  .home-hero h1 {
-    --f: 48px;
-    --lh: calc(var(--u) * 8);
-  }
-}
-
-@media (min-width: 900px) {
-  .home-hero {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: calc(var(--u) * 6);
-  }
-
-  .home-cols {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
+#wsd-bridge svg.lucide{width:16px;height:16px;flex-shrink:0;vertical-align:middle}

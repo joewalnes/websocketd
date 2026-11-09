@@ -4,6 +4,22 @@ Latest entries first. Record significant decisions, architecture changes, and no
 
 ---
 
+## 2026-11-08 - Ship the approved homepage with its short tutorial
+
+The reviewed design puts the counting example back on the homepage. That is
+an explicit exception to the earlier orientation-only rule: a visitor can see
+an ordinary program, its launch command, and the browser client together,
+while the detailed documentation remains a separate surface. Compiled
+examples launch their binary or runtime directly; only scripting languages
+use a shebang.
+
+The production page uses the existing docs font files and a local SVG sprite
+for the approved Lucide icons. It does not depend on the design preview's
+icon loader or scripting environment. The existing analytics and the Pages
+deployment configuration stay in place.
+
+---
+
 ## 2026-09-07 - What qa/plans still holds that no test does
 
 162 of the 317 cases are now asserted by a named test or CI job; the other

@@ -2,151 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- charset is the first thing in <head>, before any content byte. The page
-     this replaced declared none at all: its em-dashes were correct UTF-8, so
-     under any server that does not send a charset header they rendered as
-     mojibake. GitHub Pages happens to send one, which is why production was
-     saved from it; the page has to be self-describing anyway. Reproduced:
-     python3 -m http.server sends no charset, and Chrome read the old page as
-     windows-1252. -->
-<title>websocketd: turn any program into a WebSocket server</title>
-<meta name="description" content="websocketd is a single binary that wraps a command-line program and serves it over a WebSocket. Your program reads lines from stdin and writes lines to stdout.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- Type, palette and spacing are the docs site's, not a copy of them.
-     pages.yml publishes website/ at the artifact root and docsite/public/
-     at /docs in the same deploy, so these two root-absolute paths resolve
-     on the live domain and in any locally assembled _site. Verify this
-     page by serving that assembled tree; serving website/ alone or
-     opening this file over file:// 404s both stylesheets. -->
+<title>websocketd</title>
+<meta name="description" content="websocketd runs your command-line programs as WebSocket servers. Read messages from stdin and write replies to stdout, in whatever language you use.">
+<link rel="canonical" href="https://websocketd.com/">
 <link rel="stylesheet" href="/docs/fonts/fonts.css">
-<link rel="stylesheet" href="/docs/css/blueprint.css">
 <link rel="stylesheet" href="home.css">
+<script src="home.js" defer></script>
 </head>
 <body>
-
-<header class="site-header">
-  <div class="site-header-inner">
-    <a class="site-logo" href="/">websocketd</a>
-    <nav class="home-nav">
-      <a class="role-small" href="/docs/">Docs</a>
-      <a class="role-small" href="https://github.com/joewalnes/websocketd">GitHub</a>
-      <a class="role-small" href="/docs/start/install/">Download</a>
-    </nav>
-  </div>
-</header>
-
-<main class="home-main">
-
-  <section class="home-hero">
-    <div class="home-hero-copy">
-      <h1>Turn any program into a WebSocket server</h1>
-
-      <p class="home-lede">websocketd is a single binary that wraps a
-      command-line program and serves it over a WebSocket. Your program reads
-      lines from stdin and writes lines to stdout. No library, no framework,
-      no change to your code.</p>
-
-      <pre>$ cat count.sh
-#!/bin/bash
-for COUNT in 1 2 3 4 5; do echo $COUNT; sleep 1; done
-
-$ websocketd --port=8080 ./count.sh</pre>
-
-      <div class="home-buttons">
-        <a class="home-btn home-btn-primary" href="/docs/start/tutorial/">Start the tutorial &rarr;</a>
-        <a class="home-btn home-btn-secondary" href="/docs/start/install/">Download</a>
-      </div>
-
-      <p class="role-small home-note"><a href="https://github.com/joewalnes/websocketd/releases/latest">All releases on GitHub &rarr;</a></p>
-    </div>
-
-    <div class="home-hero-media">
-      <!-- The still, not the video, in the hero: it paints instantly and
-           <picture> matches it to the reader's own colour scheme, which is
-           itself the demonstration that the console has both themes. -->
-      <picture>
-        <source srcset="img/console/console-dark.png" media="(prefers-color-scheme: dark)">
-        <img class="home-shot" src="img/console/console-light.png" width="1200" height="800"
-             alt="The websocketd dev console: a list of WebSocket frames beside a detail pane showing the selected frame.">
-      </picture>
-    </div>
+<div id="wsd-bridge" aria-label="websocketd homepage">
+ <div class="w-wrap">
+  <header class="w-nav"><a class="w-logo" href="/"><span class="w-mark">&gt;_</span>websocketd</a><nav class="w-navlinks" aria-label="Main navigation"><a href="/docs/"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#book-open"></use></svg>Docs</a><a href="https://github.com/joewalnes/websocketd"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#git-branch"></use></svg>GitHub</a><a href="#w-download"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#download"></use></svg>Download ↓</a></nav></header>
+ </div>
+ <main>
+  <section id="w-about" class="w-wrap" aria-label="About websocketd">
+   <div class="w-hero" aria-label="Homepage headline">
+    <div><h1>WebSockets<br><span class="w-accent">the UNIX way.</span></h1></div>
+    <div><p><strong>websocketd</strong> runs your command-line programs as WebSocket servers, so browsers can send and receive messages from them.</p><div class="w-actions"><a class="w-button primary cursor-interaction" href="#w-tutorial">Try the 10-second tutorial →</a><a class="w-button cursor-interaction" href="#w-download">Get it ↓</a></div></div>
+   </div>
+   <div class="w-benefits"><div><h3>Language agnostic.</h3><p>If you can run your program from the command line, you can make it a WebSocket endpoint.</p></div><div><h3>No libraries required.</h3><p>Your program reads incoming messages from stdin and writes replies to stdout.</p></div><div><h3>One process per connection</h3><p>Each connection runs your program in a separate process, so each client has its own program state.</p></div></div>
   </section>
+  <section class="w-philosophy" aria-label="UNIX philosophy"><div class="w-wrap w-philosophy-inner"><span class="w-kicker"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#quote"></use></svg>Built for the UNIX philosophy</span><div><p>Write programs that do one thing and do it well.<br>Write programs to work together.<br>Write programs to handle text streams,<br>because that is a universal interface.</p><small>If you dig that, you'll dig websocketd.</small></div></div></section>
+  <section id="w-tutorial" class="w-wrap w-section" aria-label="10-second tutorial">
+   <span class="w-kicker">From program to browser</span><h2>10-second tutorial.</h2><p class="w-section-lede">Create a WebSocket server that counts to ten, pausing briefly between each number.</p>
+   <div class="w-tutorial">
+    <div><div class="w-step-label"><b>01</b> Write your program.</div><div class="w-codebox"><div class="w-tabbar"><button id="w-tabs-prev" type="button" class="w-tab-arrow cursor-interaction" aria-label="Previous languages">‹</button><div class="w-tabs" role="group" aria-label="Tutorial language"><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Bash">Bash</button><button type="button" class="cursor-interaction" aria-pressed="true" data-lang="Python">Python</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Node.js">Node.js</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Rust">Rust</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Ruby">Ruby</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="PHP">PHP</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Perl">Perl</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="C">C</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="C#">C#</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Swift">Swift</button><button type="button" class="cursor-interaction" aria-pressed="false" data-lang="Anything">In fact… anything!</button></div><button id="w-tabs-next" type="button" class="w-tab-arrow cursor-interaction" aria-label="More languages">›</button></div><div id="w-filename" class="w-file-label">count.py</div><div id="w-program" class="w-program"><pre class="w-code">#!/usr/bin/env python3
+import time
 
-  <section class="home-section">
-    <h2>How it works</h2>
+for count in range(1, 11):
+    print(count, flush=True)
+    time.sleep(0.5)</pre></div></div></div>
+    <div class="w-steps-right"><div><div class="w-step-label"><b>02</b> Start websocketd.</div><div id="w-command" class="w-command">$ chmod +x count.py
+$ websocketd --port=8080 ./count.py</div></div><div><div class="w-step-label"><b>03</b> Connect from the browser.</div><div class="w-client-code"><pre class="w-code">const ws = new WebSocket(
+  'ws://localhost:8080/'
+);
 
-    <div class="home-cols">
-      <div>
-        <h3>Your program stays a program</h3>
-        <p>It reads lines from stdin and writes lines to stdout. It does not
-        import anything and it does not know a WebSocket exists.</p>
-      </div>
-      <div>
-        <h3>One process per connection</h3>
-        <p>Every browser that connects gets its own copy of your program.
-        Connections are fully isolated and share nothing.</p>
-      </div>
-      <div>
-        <h3>Any language</h3>
-        <p>Bash, Python, Ruby, Node, PHP, Perl, C, Go. If you can run it from
-        a shell, you can serve it.
-        <a href="/docs/how-to/languages/">Examples in every language &rarr;</a></p>
-      </div>
-    </div>
-
-    <p>It is CGI&rsquo;s idea, applied to WebSockets.
-    <a href="/docs/understanding/process-model/">How the process model works &rarr;</a></p>
+ws.onmessage = (event) => {
+  console.log(`Count is: ${event.data}`);
+};</pre></div></div></div>
+   </div>
+   <div class="w-tutorial-end"><span>Each line of stdout becomes a WebSocket message.</span></div>
   </section>
-
-  <section class="home-section">
-    <h2>See every frame while you build</h2>
-
-    <p>Start the server with <code>--devconsole</code> and open the root URL in
-    a browser. Connect, send a frame, and read back what your script wrote to
-    stdout. You write no client code.</p>
-
-    <div class="home-video-wrap">
-      <video class="home-video" src="img/console/console-demo.mp4"
-             poster="img/console/console-light.png"
-             width="800" height="438"
-             autoplay muted loop playsinline></video>
-    </div>
-
-    <p><a href="/docs/reference/dev-console/">Dev console reference &rarr;</a></p>
-  </section>
-
-  <section class="home-section">
-    <h2>Also in the box</h2>
-
-    <ul class="home-list">
-      <li>Serves your static files alongside your program</li>
-      <li>Routes different URLs to different programs</li>
-      <li>CGI for ordinary HTTP responses</li>
-      <li>HTTPS and <code>wss://</code></li>
-      <li>Origin checking, so only your pages can connect</li>
-    </ul>
-
-    <p><a href="/docs/reference/cli-flags/">All CLI flags &rarr;</a></p>
-  </section>
-
-</main>
-
-<footer class="home-footer">
-  <div class="home-footer-inner">
-    <p class="role-small">
-      <a href="/docs/">Docs</a> &middot;
-      <a href="https://github.com/joewalnes/websocketd">GitHub</a> &middot;
-      <a href="/docs/changelog/">Changelog</a>
-    </p>
-    <p class="role-small">
-      Created by <a href="https://twitter.com/joewalnes">Joe Walnes</a> &middot;
-      Project lead <a href="https://twitter.com/alexsergeyev">Alex Sergeyev</a> &middot;
-      Written in <a href="https://go.dev/">Go</a>
-    </p>
-  </div>
-</footer>
-
+  <section class="w-features-section" aria-label="Additional features"><div class="w-wrap"><h2>Batteries included</h2><div class="w-features">
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#folder"></use></svg></span><h3>Static server</h3><p>Serve your HTML, JavaScript, and other files alongside your program.</p></div>
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#route"></use></svg></span><h3>Program routing</h3><p>Assign different programs to different URLs to serve multiple WebSocket endpoints.</p></div>
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#file-code"></use></svg></span><h3>CGI server</h3><p>Generate ordinary HTTP responses with your programs, too.</p></div>
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#lock"></use></svg></span><h3>HTTPS and WSS</h3><p>Serve encrypted HTTP and WebSocket connections with your certificate.</p></div>
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#shield-check"></use></svg></span><h3>Origin checking</h3><p>Restrict which pages can connect to your WebSocket endpoints.</p></div>
+   <div><span class="w-feature-icon" aria-hidden="true"><svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="icons.svg#terminal"></use></svg></span><h3>Development console</h3><p>Add --devconsole and exchange messages before you've built a frontend.</p></div>
+  </div><p class="w-feature-foot"><a href="/docs/reference/cli-flags/">Explore the CLI →</a></p></div></section>
+  <section id="w-download" class="w-download" aria-label="Download websocketd"><div class="w-wrap"><div class="w-download-heading"><div><h2>Get websocketd</h2></div><p>Download the executable for your platform and put it on your PATH.</p></div><div class="w-platforms"><div class="w-platform"><h3>Linux</h3><p>Find a build for your architecture.</p><a href="https://github.com/joewalnes/websocketd/releases/latest">View Linux downloads ↓</a></div><div class="w-platform"><h3>macOS</h3><p>Find a build for your Mac.</p><a href="https://github.com/joewalnes/websocketd/releases/latest">View macOS downloads ↓</a></div><div class="w-platform"><h3>Windows</h3><p>Find a build for your PC.</p><a href="https://github.com/joewalnes/websocketd/releases/latest">View Windows downloads ↓</a></div></div><div class="w-download-foot"><a href="/docs/start/install/">Installation instructions →</a></div></div></section>
+ </main>
+ <div class="w-wrap"><footer class="w-footer"><div><p>Created by <a href="https://github.com/joewalnes">Joe Walnes</a> · Project lead <a href="https://github.com/alexsergeyev">Alex Sergeyev</a></p><p>Written in Go</p></div><div><a href="/docs/">Docs</a> · <a href="https://github.com/joewalnes/websocketd">GitHub</a> · <a href="/docs/changelog/">Changelog</a></div></footer></div>
+</div>
 <!-- Privacy-friendly analytics by Plausible. The 2013-era Google Analytics
      ga.js snippet that used to sit here is gone: it pointed at a Universal
      Analytics property, and Google shut Universal Analytics down in 2023,
@@ -156,6 +65,5 @@ $ websocketd --port=8080 ./count.sh</pre>
   window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
   plausible.init()
 </script>
-
 </body>
 </html>

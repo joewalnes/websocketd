@@ -1,3 +1,9 @@
+Unreleased
+
+* Website: refresh the homepage with a compact counting tutorial, scrolling
+  language examples, and clearer feature and download sections. Fonts and
+  icons are served locally, and the page follows the system color scheme.
+
 Version 0.5.0 (Apr 26, 2026)
 
 Breaking changes — read before upgrading:
