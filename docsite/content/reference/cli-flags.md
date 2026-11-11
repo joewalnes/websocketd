@@ -165,6 +165,12 @@ HTTP port to listen on.
 
 The default of 0 is not a real port: it means 80, or 443 when --ssl is given. Every --address binds this same port.
 
+### `--raw`
+
+**Default:** `false`
+
+Set websocketd to experimental raw mode (like text mode but char by char instead of line by line).
+
 ### `--redirport=REDIRPORT`
 
 **Default:** `0`

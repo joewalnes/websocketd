@@ -31,7 +31,7 @@ func TestWebSocketTerminateUnblocksParkedReader(t *testing.T) {
 		if err != nil {
 			return
 		}
-		we := NewWebSocketEndpoint(conn, false, quietLogScope(), 0, 0)
+		we := NewWebSocketEndpoint(conn, false, false, quietLogScope(), 0, 0)
 		we.StartReading()
 		endpoints <- we
 	}))
@@ -82,7 +82,7 @@ func TestWebSocketReadLimit(t *testing.T) {
 		if err != nil {
 			return
 		}
-		we := NewWebSocketEndpoint(conn, false, quietLogScope(), 0, limit)
+		we := NewWebSocketEndpoint(conn, false, false, quietLogScope(), 0, limit)
 		we.StartReading()
 		endpoints <- we
 	}))

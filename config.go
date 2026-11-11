@@ -127,9 +127,17 @@ func validateSSL(ssl bool, certFile, keyFile, caFile string) error {
 // set. Tagging binary chunks as JSON isn't implemented (--passstderr always
 // reads line by line), so combining the two would silently discard --binary
 // instead of behaving as either flag alone.
-func validateBinaryPassStderr(binary, passStderr bool) error {
+func validateBinaryPassStderr(binary bool, passStderr bool) error {
 	if binary && passStderr {
 		return fmt.Errorf("please only specify one of --binary and --passstderr")
+	}
+	return nil
+}
+
+// make sure binary and raw are not used together
+func validateRawBinary(raw bool, binary bool) error {
+	if binary && raw {
+		return fmt.Errorf("please only specify one of --binary and --raw")
 	}
 	return nil
 }
@@ -305,6 +313,12 @@ func parseCommandLine() *Config {
 		exitWithError(err)
 	}
 
+	// Validate --binary / --raw
+	if err := validateRawBinary(*fv.Raw, *fv.Binary); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
 	// Validate --maxframesize
 	if err := validateMaxFrameSize(*fv.MaxFrameSize); err != nil {
 		exitWithError(err)
@@ -318,6 +332,7 @@ func parseCommandLine() *Config {
 	config.PingInterval = time.Duration(*fv.PingMs) * time.Millisecond
 	config.MaxFrameSize = *fv.MaxFrameSize
 	config.Binary = *fv.Binary
+	config.Raw = *fv.Raw
 	config.PassStderr = *fv.PassStderr
 	config.ReverseLookup = *fv.ReverseLookup
 	config.Ssl = *fv.SSL
@@ -348,6 +363,7 @@ func parseCommandLine() *Config {
 	// Resolve command or script directory
 	args := fv.FS.Args()
 	if len(args) < 1 && config.ScriptDir == "" && config.StaticDir == "" && config.CgiDir == "" {
+		//lint:ignore ST1005 COMMAND is ok to be upper case
 		exitWithUsageError(fmt.Errorf("Please specify COMMAND or provide --dir, --staticdir or --cgidir argument."))
 	}
 

@@ -144,6 +144,28 @@ func TestValidateBinaryPassStderr(t *testing.T) {
 	}
 }
 
+func TestValidateRawBinary(t *testing.T) {
+	tests := []struct {
+		name    string
+		binary  bool
+		raw     bool
+		wantErr bool
+	}{
+		{"neither set", false, false, false},
+		{"binary only", true, false, false},
+		{"raw only", false, true, false},
+		{"both set", true, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateRawBinary(tt.raw, tt.binary)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateRawBinary(%v, %v) error = %v, wantErr %v", tt.raw, tt.binary, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 // TestValidateMaxFrameSize verifies that negative --maxframesize values are
 // rejected. NewWebSocketEndpoint only applies a read limit when the value is
 // positive, so a negative value silently meant "unlimited" — exactly the

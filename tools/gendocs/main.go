@@ -277,15 +277,15 @@ func valueHint(name string) string {
 func main() {
 	docs := collectFlagDocs()
 
-	if err := os.WriteFile(manPath, []byte(renderMan(docs)), 0644); err != nil {
+	if err := os.WriteFile(manPath, []byte(renderMan(docs)), 0644); err != nil { // #nosec G306
 		fmt.Fprintf(os.Stderr, "gendocs: writing %s: %s\n", manPath, err)
 		os.Exit(1)
 	}
-	if err := os.MkdirAll(cliFlagsDir, 0755); err != nil {
+	if err := os.MkdirAll(cliFlagsDir, 0755); err != nil { // #nosec G301
 		fmt.Fprintf(os.Stderr, "gendocs: creating %s: %s\n", cliFlagsDir, err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(cliFlagsMdPath, []byte(renderCliFlagsMd(docs)), 0644); err != nil {
+	if err := os.WriteFile(cliFlagsMdPath, []byte(renderCliFlagsMd(docs)), 0644); err != nil { // #nosec G306
 		fmt.Fprintf(os.Stderr, "gendocs: writing %s: %s\n", cliFlagsMdPath, err)
 		os.Exit(1)
 	}

@@ -6,7 +6,7 @@
 package libwebsocketd
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -23,7 +23,7 @@ func writeFile(t *testing.T, path, contents string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := ioutil.WriteFile(path, []byte(contents), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -152,7 +152,7 @@ func TestServeStaticHTTP(t *testing.T) {
 	if resp := get("/nolisting/"); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("SECURITY: GET /nolisting/ = %d, want %d", resp.StatusCode, http.StatusNotFound)
 	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if strings.Contains(string(body), "secret.txt") {
 			t.Errorf("GET /nolisting/ body leaked directory contents: %s", body)
@@ -162,7 +162,7 @@ func TestServeStaticHTTP(t *testing.T) {
 	if resp := get("/ok.txt"); resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /ok.txt = %d, want %d", resp.StatusCode, http.StatusOK)
 	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if string(body) != "ordinary file" {
 			t.Errorf("GET /ok.txt body = %q, want %q", body, "ordinary file")
@@ -172,7 +172,7 @@ func TestServeStaticHTTP(t *testing.T) {
 	if resp := get("/file.env"); resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /file.env = %d, want %d (dot in extension, not a segment start)", resp.StatusCode, http.StatusOK)
 	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if string(body) != "file with dot" {
 			t.Errorf("GET /file.env body = %q, want %q", body, "file with dot")
@@ -182,7 +182,7 @@ func TestServeStaticHTTP(t *testing.T) {
 	if resp := get("/a.b/c.txt"); resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /a.b/c.txt = %d, want %d (dot in dir name, not a leading dot)", resp.StatusCode, http.StatusOK)
 	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if string(body) != "dotted dir file" {
 			t.Errorf("GET /a.b/c.txt body = %q, want %q", body, "dotted dir file")
@@ -192,7 +192,7 @@ func TestServeStaticHTTP(t *testing.T) {
 	if resp := get("/withindex/"); resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /withindex/ = %d, want %d", resp.StatusCode, http.StatusOK)
 	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if string(body) != "index page" {
 			t.Errorf("GET /withindex/ body = %q, want %q", body, "index page")
@@ -293,7 +293,7 @@ func TestServeStaticHTTPWellKnown(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET /.well-known/acme-challenge/tok123 = %d, want %d", resp.StatusCode, http.StatusOK)
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if string(body) != "challenge response" {
 		t.Errorf("GET /.well-known/acme-challenge/tok123 body = %q, want %q", body, "challenge response")
 	}
@@ -333,7 +333,7 @@ func TestServeStaticDirectoryNamedIndexHTML(t *testing.T) {
 			t.Fatalf("GET %s: %v", p, err)
 		}
 		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		return resp.StatusCode, string(body)
 	}
 

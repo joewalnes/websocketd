@@ -23,17 +23,19 @@ type ProcessEndpoint struct {
 	doneOnce   sync.Once
 	log        *LogScope
 	bin        bool
+	raw        bool
 	passStderr bool
 	wg         sync.WaitGroup
 }
 
-func NewProcessEndpoint(process *LaunchedProcess, bin bool, log *LogScope, passStderr bool) *ProcessEndpoint {
+func NewProcessEndpoint(process *LaunchedProcess, raw bool, bin bool, log *LogScope, passStderr bool) *ProcessEndpoint {
 	return &ProcessEndpoint{
 		process:    process,
 		output:     make(chan []byte),
 		done:       make(chan struct{}),
 		log:        log,
 		bin:        bin,
+		raw:        raw,
 		passStderr: passStderr,
 	}
 }
@@ -143,7 +145,15 @@ func (pe *ProcessEndpoint) relayStdout(wrap func([]byte) []byte, finish func()) 
 	defer finish()
 	bufin := bufio.NewReader(pe.process.stdout)
 	for {
-		buf, err := bufin.ReadBytes('\n')
+		var buf []byte
+		var err error
+		if pe.raw {
+			var b byte
+			b, err = bufin.ReadByte()
+			buf = []byte{b}
+		} else {
+			buf, err = bufin.ReadBytes('\n')
+		}
 		if err != nil {
 			if err != io.EOF {
 				pe.log.Error("process", "Unexpected error while reading STDOUT from process: %s", err)
@@ -153,7 +163,7 @@ func (pe *ProcessEndpoint) relayStdout(wrap func([]byte) []byte, finish func()) 
 			break
 		}
 		select {
-		case pe.output <- wrap(trimEOL(buf)):
+		case pe.output <- wrap(pe.trimEOLifNotRaw(buf)):
 		case <-pe.done:
 			return
 		}
@@ -219,9 +229,17 @@ func (pe *ProcessEndpoint) relayStderr(tag bool, finish func()) {
 	}
 	bufstderr := bufio.NewReader(pe.process.stderr)
 	for {
-		buf, err := bufstderr.ReadSlice('\n')
+		var buf []byte
+		var err error
+		if pe.raw {
+			var b byte
+			b, err = bufstderr.ReadByte()
+			buf = []byte{b}
+		} else {
+			buf, err = bufstderr.ReadSlice('\n')
+		}
 		if len(buf) > 0 {
-			line := trimEOL(buf)
+			line := pe.trimEOLifNotRaw(buf)
 			pe.log.Error("stderr", "%s", string(line))
 			if tag {
 				select {
@@ -243,6 +261,14 @@ func (pe *ProcessEndpoint) relayStderr(tag bool, finish func()) {
 			return
 		}
 	}
+}
+
+// trimEOL cuts unixy style \n and windowsy style \r\n suffix from the string (only if raw mode is not enabled)
+func (pe *ProcessEndpoint) trimEOLifNotRaw(b []byte) []byte {
+	if pe.raw {
+		return b
+	}
+	return trimEOL(b)
 }
 
 // trimEOL cuts unixy style \n and windowsy style \r\n suffix from the string
